@@ -4,7 +4,7 @@ const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
-    .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // ကိုယ့် Web App လင့်ခ်ထည့်ရန်
+    .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // ဒီနေရာမှာ ကိုယ့်ရဲ့ တကယ့် Mining Web App (သို့) Website လင့်ခ်ကို ထည့်ပါ
     .row()
     .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // Discord Community လင့်ခ်
 
@@ -17,7 +17,6 @@ bot.command("start", async (ctx) => {
     "Click below to start.";
 
   try {
-    // Repository နာမည်အရှေ့မှ '-' ကို ထည့်သွင်းထားသော မှန်ကန်သော Raw URL
     await ctx.replyWithPhoto(
       "https://raw.githubusercontent.com/gyikyaw/-GRM_TRADING_bot/main/IMG_20260910_112246_587.jpg",
       {
