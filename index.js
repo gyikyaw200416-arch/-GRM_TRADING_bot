@@ -22,7 +22,7 @@ bot.command("start", async (ctx) => {
       invitedBy = Number(payload);
       
       // Give bonus to the inviter
-      await supabase.rpc("increment_balance", { user_id: invitedBy, amount: 100 }); // ဖိတ်တဲ့သူကို 100 coin ပေးမယ်
+      await supabase.rpc("increment_balance", { user_id: invitedBy, amount: 100 }); 
     }
 
     // Insert new user
@@ -30,30 +30,40 @@ bot.command("start", async (ctx) => {
       {
         id: userId,
         username: username,
-        balance: 50, // အသစ်ဝင်လာသူကို Welcome bonus 50 coin ပေးမယ်
+        balance: 50, // Welcome bonus
         invited_by: invitedBy,
         verified: false
       }
     ]);
   }
 
-  // 2. Welcome Message & Buttons
+  // 2. Welcome Message & Buttons (ATF ပုံစံအတိုင်း ခလုတ်များ တည်ဆောက်ခြင်း)
   const keyboard = new InlineKeyboard()
-    .web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/") // Mini App link ထည့်သွင်းပြီးပါပြီ
+    .web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
     .row()
-    .url("📢 Community", "https://t.me/AI_TRADING_FOREX"); // လိုအပ်ပါက သင့် Channel Link ကို ဒီမှာ ပြောင်းထည့်နိုင်ပါတယ်
+    .url("🌐 Community", "https://t.me/AI_TRADING_FOREX"); // သင့် Channel Link ထည့်ရန်
 
-  const photoUrl = "GITHUB_RAW_IMAGE_URL_HERE"; // GitHub မှာ တင်ထားတဲ့ သင့်ပုံရဲ့ Raw URL ကို ဒီနေရာမှာ ထည့်ပေးပါ (ဥပမာ- https://raw.githubusercontent.com/.../image.jpg)
+  // ⚠️ အရေးကြီးသည်: ဒီနေရာမှာ သင်ပြချင်တဲ့ ပုံရဲ့ GitHub Raw URL ကို ထည့်ပေးပါ
+  const photoUrl = "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/your-banner-image.jpg";
+
+  const captionText = 
+    `👋 *Welcome to TRADING_GRAM!*\n\n` +
+    `⛏ Mine tokens directly to your Pool Wallet.\n` +
+    `⚡ Tap to boost mining speed!\n` +
+    `🔗 Connect your TON wallet.\n` +
+    `💰 Hold tokens to upgrade your miner level!\n\n` +
+    `👤 Your ID: \`${userId}\`\n\n` +
+    `Click below to start.`;
 
   try {
     await ctx.replyWithPhoto(photoUrl, {
-      caption: `✨ *Welcome to TRADING_GRAM!*\n\nEarn tokens by mining and inviting friends.\n\n👤 Your ID: \`${userId}\``,
+      caption: captionText,
       parse_mode: "Markdown",
       reply_markup: keyboard
     });
   } catch (error) {
-    // ပုံလင့်ခ် မမှန်သေးရင် သို့မဟုတ် ပုံမပေါ်လာရင် စာသားသက်သက်နဲ့ Error မတက်အောင် ပို့ပေးမယ့် Fallback
-    await ctx.reply(`✨ *Welcome to TRADING_GRAM!*\n\nEarn tokens by mining and inviting friends.\n\n👤 Your ID: \`${userId}\``, {
+    // ပုံလင့်ခ် မမှန်သေးရင် စာသားသက်သက်နဲ့ ခလုတ်ပါ ပို့ပေးမည့် Fallback
+    await ctx.reply(captionText, {
       parse_mode: "Markdown",
       reply_markup: keyboard
     });
