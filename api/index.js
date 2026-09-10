@@ -3,7 +3,6 @@ import { Bot, InlineKeyboard } from "grammy";
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
-  // အောက်ပါ ပုံစံတူ Web App သို့မဟုတ် Inline Button ထည့်ရန်
   const keyboard = new InlineKeyboard()
     .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // ကိုယ့် Web App လင့်ခ်ထည့်ရန်
     .row()
@@ -18,9 +17,9 @@ bot.command("start", async (ctx) => {
     "Click below to start.";
 
   try {
-    // ပုံနဲ့အတူ စာပါ ပို့ပေးမည့် ပုံစံ
+    // GitHub ကနေ ပုံမှန် Raw URL ကို တိုက်ရိုက်ယူသုံးထားသည်
     await ctx.replyWithPhoto(
-      "https://your-image-url.com/image.jpg", // ပုံရဲ့ Direct URL ကို ဒီနေရာမှာ ထည့်ပါ
+      "https://raw.githubusercontent.com/gyikyaw/GRM_TRADING_bot/main/IMG_20260910_112246_587.jpg",
       {
         caption: captionText,
         parse_mode: "Markdown",
@@ -28,7 +27,8 @@ bot.command("start", async (ctx) => {
       }
     );
   } catch (error) {
-    // ပုံလင့်ခ် အလုပ်မလုပ်ရင် စာနဲ့ ခလုတ်သက်သက် ပို့ပေးရန် Fallback
+    console.error("Error sending photo:", error);
+    // ပုံပို့လို့မရရင် စာနဲ့ ခလုတ်သက်သက် ပို့ပေးမည်
     await ctx.reply(captionText, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
@@ -37,7 +37,6 @@ bot.command("start", async (ctx) => {
 });
 
 bot.on("message", async (ctx) => {
-  // အခြားစာများ ပို့လာပါက /start ကို ပြန်ညွှန်းပေးရန် သို့မဟုတ် တုံ့ပြန်ရန်
   if (ctx.message.text && !ctx.message.text.startsWith("/")) {
     await ctx.reply("Please type /start to open the GRAM Mining bot.");
   }
