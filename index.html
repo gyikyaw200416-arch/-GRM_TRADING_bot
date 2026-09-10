@@ -90,12 +90,8 @@
             padding: 15px;
             padding-bottom: 80px;
         }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
         /* Top Bar */
         .top-bar {
@@ -126,9 +122,7 @@
         }
 
         /* Wallet Buttons */
-        .wallet-container {
-            position: relative;
-        }
+        .wallet-container { position: relative; }
         .connect-wallet-btn {
             background: #0088cc;
             color: #fff;
@@ -170,9 +164,7 @@
             z-index: 100;
             overflow: hidden;
         }
-        .wallet-dropdown.show {
-            display: block;
-        }
+        .wallet-dropdown.show { display: block; }
         .dropdown-item {
             padding: 10px 12px;
             font-size: 12px;
@@ -184,14 +176,10 @@
             border: none;
             border-bottom: 1px solid #212d42;
         }
-        .dropdown-item:hover {
-            background: #212d42;
-        }
-        .dropdown-item.disconnect {
-            color: #ff5722;
-        }
+        .dropdown-item:hover { background: #212d42; }
+        .dropdown-item.disconnect { color: #ff5722; }
 
-        /* Modal Overlay for Wallet Connection */
+        /* Modal Overlay for Wallet Selection & Tonkeeper Simulation */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -204,9 +192,7 @@
             justify-content: center;
             align-items: flex-end;
         }
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         .wallet-modal-content {
             background: #121824;
             width: 100%;
@@ -251,11 +237,7 @@
             cursor: pointer;
             margin-bottom: 15px;
         }
-        .other-apps-title {
-            font-size: 12px;
-            color: #8b949e;
-            margin-bottom: 10px;
-        }
+        .other-apps-title { font-size: 12px; color: #8b949e; margin-bottom: 10px; }
         .wallet-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -275,9 +257,7 @@
             font-size: 11px;
             color: #fff;
         }
-        .wallet-option:hover {
-            border-color: #0088cc;
-        }
+        .wallet-option:hover { border-color: #0088cc; }
         .wallet-icon {
             width: 32px;
             height: 32px;
@@ -290,6 +270,56 @@
             color: #000;
         }
 
+        /* Tonkeeper Connection Approval Screen (Like video) */
+        .tonkeeper-connect-box {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .tk-logo-ring {
+            width: 60px;
+            height: 60px;
+            background: #0088cc;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 15px auto;
+            font-size: 24px;
+            box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
+        }
+        .tk-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+        .tk-desc { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.4; }
+        .tk-account-selector {
+            background: #1a233a;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .tk-acc-left { display: flex; align-items: center; gap: 10px; text-align: left; }
+        .tk-key-icon {
+            width: 30px; height: 30px; background: #222; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 14px;
+        }
+        .tk-acc-name { font-size: 13px; font-weight: bold; }
+        .tk-acc-addr { font-size: 11px; color: #8b949e; }
+        
+        .tk-connect-action-btn {
+            background: #0088cc;
+            color: #fff;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
         /* Cards Style */
         .card {
             background: #121824;
@@ -298,95 +328,34 @@
             padding: 15px;
             margin-bottom: 12px;
         }
-        .mine-header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .asset-title {
-            color: #8b949e;
-            font-size: 12px;
-            letter-spacing: 1px;
-            margin-bottom: 3px;
-        }
-        .asset-amount {
-            font-size: 22px;
-            font-weight: bold;
-            color: #00f0ff;
-        }
-        .wallet-info-row {
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-            font-size: 11px;
-            color: #8b949e;
-            margin-bottom: 8px;
-        }
-        .mining-rate {
-            text-align: center;
-            color: #00f0ff;
-            font-size: 20px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
+        .mine-header { text-align: center; margin-bottom: 15px; }
+        .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
+        .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
+        .wallet-info-row { display: flex; justify-content: space-around; text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 8px; }
+        .mining-rate { text-align: center; color: #00f0ff; font-size: 20px; font-weight: bold; margin: 10px 0; }
         .coin-box {
-            width: 150px;
-            height: 150px;
-            margin: 15px auto;
+            width: 150px; height: 150px; margin: 15px auto;
             background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 25px rgba(240, 185, 11, 0.4);
-            border: 4px solid #ffe873;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); border: 4px solid #ffe873;
         }
-        .coin-inner-text {
-            font-size: 30px;
-            font-weight: 900;
-            color: #111;
-        }
+        .coin-inner-text { font-size: 30px; font-weight: 900; color: #111; }
         .claim-btn {
             background: linear-gradient(135deg, #f0b90b 0%, #ff9800 100%);
-            color: #000;
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(240, 185, 11, 0.4);
-            margin-top: 10px;
+            color: #000; width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(240, 185, 11, 0.4); margin-top: 10px;
         }
 
         /* Miners Grid */
-        .miners-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .miner-card {
-            background: #0f141f;
-            border: 1px solid #212d42;
-            border-radius: 12px;
-            padding: 12px;
-            position: relative;
-        }
+        .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .miner-card { background: #0f141f; border: 1px solid #212d42; border-radius: 12px; padding: 12px; position: relative; }
         .miner-card.active-border { border: 1px solid #f0b90b; }
         .miner-card.unlock-border { border: 1px solid #2ea043; }
         .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
         .miner-price-box { font-size: 18px; font-weight: bold; color: #2ea043; margin-bottom: 4px; }
         .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; }
-        .status-badge {
-            width: 100%;
-            padding: 6px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: bold;
-            text-align: center;
-            border: none;
-            cursor: pointer;
-        }
+        .status-badge { width: 100%; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; text-align: center; border: none; cursor: pointer; }
         .badge-active { background-color: #238636; color: #fff; }
         .badge-need { background-color: #f0b90b; color: #000; }
         .badge-locked { background-color: #1a233a; color: #8b949e; }
@@ -400,28 +369,11 @@
 
         /* Bottom Navigation Bar */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            background-color: #0b0f19;
-            border-top: 1px solid #212d42;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 1000;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+            background-color: #0b0f19; border-top: 1px solid #212d42;
+            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
         }
-        .nav-item {
-            background: none;
-            border: none;
-            color: #8b949e;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            font-size: 11px;
-        }
+        .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #f0b90b; }
         .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
     </style>
@@ -440,34 +392,62 @@
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
-    <!-- Wallet Connection Modal -->
+    <!-- 1. Wallet Selection Modal -->
     <div id="wallet-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
                 <span>Connect your TON wallet</span>
-                <button class="modal-close" onclick="closeWalletModal()">✕</button>
+                <button class="modal-close" onclick="closeModal('wallet-modal')">✕</button>
             </div>
-            <button class="tg-wallet-btn" onclick="simulateWalletConnect('UQBL...Npbv')">
+            <button class="tg-wallet-btn" onclick="selectWallet('Telegram Wallet', 'UQTR...8wQz')">
                 <span>🧊</span> Connect Wallet in Telegram
             </button>
             <div class="other-apps-title">Choose other application</div>
             <div class="wallet-grid">
-                <div class="wallet-option" onclick="simulateWalletConnect('UQKP...9xyz')">
+                <div class="wallet-option" onclick="openTonkeeperApproval()">
                     <div class="wallet-icon" style="background:#0088cc;">T</div>
                     <span>Tonkeeper</span>
                 </div>
-                <div class="wallet-option" onclick="simulateWalletConnect('UQGR...7mno')">
+                <div class="wallet-option" onclick="selectWallet('Gram Wallet', 'UQGR...7mno')">
                     <div class="wallet-icon" style="background:#f0b90b;">G</div>
                     <span>Gram Wallet</span>
                 </div>
-                <div class="wallet-option" onclick="simulateWalletConnect('UQMY...3abc')">
+                <div class="wallet-option" onclick="selectWallet('My Wallet', 'UQMY...3abc')">
                     <div class="wallet-icon" style="background:#2ea043;">M</div>
                     <span>My Wallet</span>
                 </div>
-                <div class="wallet-option" onclick="simulateWalletConnect('UQAL...5def')">
+                <div class="wallet-option" onclick="selectWallet('Web Wallet', 'UQAL...5def')">
                     <div class="wallet-icon" style="background:#ff5722;">🌐</div>
-                    <span>View all wallets</span>
+                    <span>View all</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Tonkeeper Approval Screen (Exact match to video) -->
+    <div id="tonkeeper-approval-modal" class="modal-overlay">
+        <div class="wallet-modal-content">
+            <div class="modal-header">
+                <span>Tonkeeper</span>
+                <button class="modal-close" onclick="closeModal('tonkeeper-approval-modal')">✕</button>
+            </div>
+            <div class="tonkeeper-connect-box">
+                <div class="tk-logo-ring">💎</div>
+                <div class="tk-title">Connect to GRM</div>
+                <div class="tk-desc">GRM is requesting access to your wallet address:</div>
+                
+                <div class="tk-account-selector" onclick="cycleAddress()">
+                    <div class="tk-acc-left">
+                        <div class="tk-key-icon">🔑</div>
+                        <div>
+                            <div class="tk-acc-name">Rampage528</div>
+                            <div class="tk-acc-addr" id="selected-tk-addr">UQBV...zssX</div>
+                        </div>
+                    </div>
+                    <span style="color: #00f0ff; font-size: 14px;">⇄</span>
+                </div>
+
+                <button class="tk-connect-action-btn" onclick="confirmTonkeeperConnect()">Connect wallet</button>
             </div>
         </div>
     </div>
@@ -475,7 +455,7 @@
     <!-- Main App Container -->
     <div class="main-container">
 
-        <!-- 1. MINE TAB -->
+        <!-- MINE TAB -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
@@ -484,14 +464,14 @@
                     <span style="font-size: 10px; color: #8b949e;">IDLE</span>
                 </div>
                 
-                <!-- Wallet Section -->
+                <!-- Wallet Area -->
                 <div class="wallet-container">
                     <div id="wallet-unconnected">
                         <button class="connect-wallet-btn" onclick="openWalletModal()">💎 Connect Wallet</button>
                     </div>
                     <div id="wallet-connected" style="display: none;">
                         <button class="wallet-address-btn" onclick="toggleWalletMenu()">
-                            <span id="wallet-text">UQBL...Npbv</span> ▾
+                            <span id="wallet-text">UQBV...zssX</span> ▾
                         </button>
                         <div id="wallet-dropdown" class="wallet-dropdown">
                             <button class="dropdown-item" onclick="copyAddress()">📋 Copy address</button>
@@ -521,32 +501,21 @@
             <button class="claim-btn" onclick="alert('START / CLAIM GRM!')">START</button>
         </div>
 
-        <!-- 2. TASKS TAB -->
+        <!-- TASKS TAB -->
         <div id="tab-tasks" class="tab-content">
-            <div class="top-bar">
-                <span>Tasks & Channel Joins</span>
-            </div>
+            <div class="top-bar"><span>Tasks & Channel Joins</span></div>
             <div class="card profile-row">
                 <div>
                     <strong>Join Official Telegram Channel</strong>
                     <p style="font-size: 12px; color: #8b949e;">Earn +5 GRM</p>
                 </div>
-                <button class="action-btn" onclick="alert('Redirecting to Channel...')">Join</button>
-            </div>
-            <div class="card profile-row">
-                <div>
-                    <strong>YouTube Like & Comment</strong>
-                    <p style="font-size: 12px; color: #8b949e;">Earn +1 GRM</p>
-                </div>
-                <button class="action-btn" onclick="alert('Task opened!')">Start</button>
+                <button class="action-btn" onclick="alert('Redirecting...')">Join</button>
             </div>
         </div>
 
-        <!-- 3. MINERS TAB -->
+        <!-- MINERS TAB -->
         <div id="tab-miners" class="tab-content">
-            <div class="top-bar">
-                <span>Miner Store</span>
-            </div>
+            <div class="top-bar"><span>Miner Store</span></div>
             <div class="miners-grid">
                 <div class="miner-card active-border">
                     <div class="lvl-text">Lvl 185</div>
@@ -558,58 +527,29 @@
                     <div class="lvl-text">Lvl 186</div>
                     <div class="miner-price-box">7.91$</div>
                     <div class="miner-speed">Speed 5.56 TH/s</div>
-                    <button class="status-badge badge-need" onclick="alert('Unlocked!')">NEED 10,695 GRM</button>
-                    <div class="unlock-subtext">$0.15 left to unlock</div>
-                </div>
-                <div class="miner-card">
-                    <div class="lvl-text">Lvl 187</div>
-                    <div class="miner-price-box">8.12$</div>
-                    <div class="miner-speed">Speed 5.66 TH/s</div>
-                    <div class="lock-icon">🔒</div>
-                    <button class="status-badge badge-locked">Locked</button>
-                </div>
-                <div class="miner-card">
-                    <div class="lvl-text">Lvl 188</div>
-                    <div class="miner-price-box">8.33$</div>
-                    <div class="miner-speed">Speed 5.78 TH/s</div>
-                    <div class="lock-icon">🔒</div>
-                    <button class="status-badge badge-locked">Locked</button>
+                    <button class="status-badge badge-need">NEED 10,695 GRM</button>
                 </div>
             </div>
         </div>
 
-        <!-- 4. FRIENDS TAB -->
+        <!-- FRIENDS TAB -->
         <div id="tab-friends" class="tab-content">
-            <div class="top-bar">
-                <span>Friends & Referrals</span>
-            </div>
+            <div class="top-bar"><span>Friends & Referrals</span></div>
             <div class="card" style="text-align: center; padding: 25px;">
                 <h3 style="color: #f0b90b; margin-bottom: 10px;">Invite Friends!</h3>
-                <p style="color: #8b949e; font-size: 13px; margin-bottom: 20px;">Get 10% bonus from your friends' GRM mining speed.</p>
-                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="alert('Referral link copied!')">Copy Invite Link</button>
+                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="alert('Link copied!')">Copy Invite Link</button>
             </div>
         </div>
 
-        <!-- 5. PROFILE TAB -->
+        <!-- PROFILE TAB -->
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span>Profile</span>
                 <button class="action-btn" style="background:none; color:#fff;" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
             </div>
             <div class="card profile-row">
-                <div>User ID</div>
-                <div style="color: #8b949e;">... ✔️</div>
-            </div>
-            <div class="card profile-row">
-                <div>
-                    <div>Account Verification</div>
-                    <div style="font-size: 11px; color: #8b949e;">Verified ✔️</div>
-                </div>
-                <div class="verified-badge">Verified</div>
-            </div>
-            <div class="card">
-                <div style="font-size: 12px; color: #8b949e;">Assets</div>
-                <div style="font-size: 16px; font-weight: bold; color: #f0b90b; margin-top: 4px;">9,958.2175 GRM</div>
+                <div>Account Status</div>
+                <div class="verified-badge">Verified ✔️</div>
             </div>
         </div>
 
@@ -617,26 +557,11 @@
 
     <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
-        <button class="nav-item active" onclick="switchTab('mine', this)">
-            <span class="icon">⛏️</span>
-            <span>Mine</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('tasks', this)">
-            <span class="icon">📋</span>
-            <span>Tasks</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('miners', this)">
-            <span class="icon">⚡</span>
-            <span>Miners</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('friends', this)">
-            <span class="icon">👥</span>
-            <span>Friends</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('profile', this)">
-            <span class="icon">👤</span>
-            <span>Profile</span>
-        </button>
+        <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">⛏️</span><span>Mine</span></button>
+        <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
+        <button class="nav-item" onclick="switchTab('miners', this)"><span class="icon">⚡</span><span>Miners</span></button>
+        <button class="nav-item" onclick="switchTab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
+        <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
     </div>
 
     <script>
@@ -651,34 +576,53 @@
             }, 500);
         }, 1500);
 
-        // Tab Switching Function
+        // Tab Switching
         function switchTab(tabName, element) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-item').forEach(nav => {
-                nav.classList.remove('active');
-            });
-            
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
             element.classList.add('active');
         }
 
-        // Wallet Modal & Connect Logic
-        let currentWalletAddress = 'UQBL...Npbv';
+        // Wallet & Tonkeeper Logic (VPN-free local bridge simulation)
+        let addresses = ['UQBV...zssX', 'UQAK...99pL', 'UQ77...11aB'];
+        let currentAddrIndex = 0;
+        let activeWalletAddress = addresses[0];
 
         function openWalletModal() {
             document.getElementById('wallet-modal').classList.add('active');
         }
 
-        function closeWalletModal() {
-            document.getElementById('wallet-modal').classList.remove('active');
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
         }
 
-        function simulateWalletConnect(address) {
-            currentWalletAddress = address;
-            document.getElementById('wallet-text').innerText = address;
-            closeWalletModal();
+        function openTonkeeperApproval() {
+            closeModal('wallet-modal');
+            document.getElementById('tonkeeper-approval-modal').classList.add('active');
+        }
+
+        // Cycle through different TON addresses when user taps the address box
+        function cycleAddress() {
+            currentAddrIndex = (currentAddrIndex + 1) % addresses.length;
+            activeWalletAddress = addresses[currentAddrIndex];
+            document.getElementById('selected-tk-addr').innerText = activeWalletAddress;
+        }
+
+        function selectWallet(walletName, address) {
+            activeWalletAddress = address;
+            finalizeConnection();
+        }
+
+        function confirmTonkeeperConnect() {
+            finalizeConnection();
+        }
+
+        function finalizeConnection() {
+            closeModal('wallet-modal');
+            closeModal('tonkeeper-approval-modal');
+            
+            document.getElementById('wallet-text').innerText = activeWalletAddress;
             document.getElementById('wallet-unconnected').style.display = 'none';
             document.getElementById('wallet-connected').style.display = 'block';
         }
@@ -689,8 +633,8 @@
         }
 
         function copyAddress() {
-            navigator.clipboard.writeText(currentWalletAddress);
-            alert('Wallet address copied to clipboard!');
+            navigator.clipboard.writeText(activeWalletAddress);
+            alert('Address copied to clipboard: ' + activeWalletAddress);
             toggleWalletMenu();
         }
 
@@ -700,17 +644,11 @@
             toggleWalletMenu();
         }
 
-        // Close dropdown when clicking outside
+        // Close dropdown / modals on outside click
         window.onclick = function(event) {
             if (!event.target.matches('.wallet-address-btn') && !event.target.closest('.wallet-address-btn')) {
                 const dropdown = document.getElementById('wallet-dropdown');
-                if (dropdown && dropdown.classList.contains('show')) {
-                    dropdown.classList.remove('show');
-                }
-            }
-            const modal = document.getElementById('wallet-modal');
-            if (event.target === modal) {
-                closeWalletModal();
+                if (dropdown && dropdown.classList.contains('show')) dropdown.classList.remove('show');
             }
         }
     </script>
