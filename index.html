@@ -3,19 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRAM Mining Core</title>
+    <title>GRM Mining Core</title>
     <style>
         body {
             background-color: #0d1117;
             color: #ffffff;
             font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
             margin: 0;
+            padding: 0;
+        }
+        /* Splash Screen (ဝင်ဝင်ချင်းပေါ်မည့် ပုံစံ) */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #05070b;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .logo-container {
+            text-align: center;
+        }
+        .logo-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #f0b90b;
+            box-shadow: 0 0 20px rgba(240, 185, 11, 0.4);
+            margin-bottom: 20px;
+        }
+        .brand-title {
+            color: #f0b90b;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        /* Main App Content */
+        #main-app {
+            display: none;
+            padding: 20px;
+            text-align: center;
         }
         .container {
             max-width: 400px;
-            margin: 50px auto;
+            margin: 40px auto;
             background: #161b22;
             padding: 20px;
             border-radius: 12px;
@@ -23,7 +61,7 @@
         }
         h1 {
             color: #f0b90b;
-            font-size: 24px;
+            font-size: 22px;
         }
         p {
             color: #8b949e;
@@ -43,11 +81,39 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>GRAM Mining Core</h1>
-        <p>Welcome to your Mining Dashboard!</p>
-        <p>Your Balance: <strong style="color: #2ea043;">0.00 GRM</strong></p>
-        <button class="btn" onclick="alert('Mining Started!')">Start Mining Now</button>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="logo-container">
+            <!-- သင့်ရဲ့ GRM ပုံလင့်ခ် (သို့မဟုတ် file cdn လင့်ခ်) -->
+            <img src="https://cdn.jsdelivr.net/gh/gyikyaw/-GRM_TRADING_bot@main/IMG_20260910_112246_587.jpg" alt="GRM Logo" class="logo-img">
+            <div class="brand-title">GRM MINER</div>
+        </div>
     </div>
+
+    <!-- Main Dashboard -->
+    <div id="main-app">
+        <div class="container">
+            <h1>GRM Mining Dashboard</h1>
+            <p>Mine GRM tokens directly to your wallet.</p>
+            <p>Your Balance: <strong style="color: #2ea043;">0.00 GRM</strong></p>
+            <button class="btn" onclick="alert('Mining Started Successfully!')">Start Mining</button>
+        </div>
+    </div>
+
+    <script>
+        // ၂ စက္ကန့်ကြာရင် Splash Screen ပျောက်ပြီး Dashboard ပွင့်လာပါမယ်
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            const mainApp = document.getElementById('main-app');
+            
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.display = 'none';
+                mainApp.style.display = 'block';
+            }, 500);
+        }, 2000);
+    </script>
+
 </body>
 </html>
