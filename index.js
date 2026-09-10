@@ -22,7 +22,7 @@ bot.command("start", async (ctx) => {
         `🔗 Connect your TON wallet.\n\n` +
         `Click below to start.`;
 
-    await ctx.replyWithPhoto("https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/gram.jpg", {
+    await ctx.replyWithPhoto("https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/IMG_20260910_112211.jpg", {
         caption: welcomeCaption,
         parse_mode: "Markdown",
         reply_markup: {
