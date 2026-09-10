@@ -5,55 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
     <style>
-        body {
-            background-color: #0d1117;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
+        body, html {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
         }
-        /* Splash Screen (ဝင်ဝင်ချင်းပေါ်မည့် ပုံစံ) */
+        /* Splash Screen (ပုံအပြည့်ပေါ်စေရန်) */
         #splash-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #05070b;
+            background-image: url('https://raw.githubusercontent.com/gyikyaw/-GRM_TRADING_bot/main/1000088048.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-end;
             align-items: center;
+            padding-bottom: 50px;
             z-index: 9999;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.6s ease;
         }
-        .logo-container {
-            text-align: center;
-        }
-        .logo-img {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #f0b90b;
-            box-shadow: 0 0 20px rgba(240, 185, 11, 0.4);
-            margin-bottom: 20px;
-        }
-        .brand-title {
+        .loading-text {
             color: #f0b90b;
-            font-size: 26px;
+            font-size: 18px;
             font-weight: bold;
-            letter-spacing: 2px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            border: 1px solid #f0b90b;
         }
         /* Main App Content */
         #main-app {
             display: none;
             padding: 20px;
             text-align: center;
+            color: #ffffff;
         }
         .container {
             max-width: 400px;
-            margin: 40px auto;
+            margin: 60px auto;
             background: #161b22;
             padding: 20px;
             border-radius: 12px;
@@ -82,13 +81,9 @@
 </head>
 <body>
 
-    <!-- Splash Screen -->
+    <!-- Splash Screen with Full Background Image -->
     <div id="splash-screen">
-        <div class="logo-container">
-            <!-- သင့်ရဲ့ GRM ပုံလင့်ခ် (သို့မဟုတ် file cdn လင့်ခ်) -->
-            <img src="https://cdn.jsdelivr.net/gh/gyikyaw/-GRM_TRADING_bot@main/IMG_20260910_112246_587.jpg" alt="GRM Logo" class="logo-img">
-            <div class="brand-title">GRM MINER</div>
-        </div>
+        <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
     <!-- Main Dashboard -->
@@ -102,7 +97,7 @@
     </div>
 
     <script>
-        // ၂ စက္ကန့်ကြာရင် Splash Screen ပျောက်ပြီး Dashboard ပွင့်လာပါမယ်
+        // ၂ စက္ကန့်ကြာရင် ပုံပေါ်ပြီး Main Dashboard ထဲ ရောက်သွားပါမယ်
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
             const mainApp = document.getElementById('main-app');
@@ -111,8 +106,8 @@
             setTimeout(() => {
                 splash.style.display = 'none';
                 mainApp.style.display = 'block';
-            }, 500);
-        }, 2000);
+            }, 600);
+        }, 2500);
     </script>
 
 </body>
