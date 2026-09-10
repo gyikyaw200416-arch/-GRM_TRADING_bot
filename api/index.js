@@ -4,9 +4,9 @@ const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
-    .webApp("🚀 Start Mining", "https://your-mining-website-url.com")
+    .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // Replace with your actual Web App URL
     .row()
-    .url("🌐 Community", "https://discord.gg/NwsPcvukX");
+    .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // Discord Community link
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
@@ -16,15 +16,23 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // GitHub URL အစား Bot ချတ်ထဲ ပုံပို့ပြီးရလာတဲ့ file_id (သို့မဟုတ်) Telegram file id ကို ဒီကွင်းစကွင်းပိတ်ထဲမှာ ထည့်ပါ
-  await ctx.replyWithPhoto(
-    "AgACAgUAAxkBAAI...", 
-    {
-      caption: captionText,
+  try {
+    // GitHub Raw URL အစား ပုံသေပေါက်ပေါ်စေမည့် jsdelivr CDN လင့်ခ်ကို သုံးထားသည်
+    await ctx.replyWithPhoto(
+      "https://cdn.jsdelivr.net/gh/gyikyaw/-GRM_TRADING_bot@main/IMG_20260910_112246_587.jpg",
+      {
+        caption: captionText,
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      }
+    );
+  } catch (error) {
+    console.error("Error sending photo:", error);
+    await ctx.reply(captionText, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
-    }
-  );
+    });
+  }
 });
 
 bot.on("message", async (ctx) => {
