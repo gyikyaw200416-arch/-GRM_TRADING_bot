@@ -125,25 +125,28 @@
             color: #f0b90b;
         }
 
-        /* Wallet Connect Button & Dropdown */
+        /* Wallet Buttons */
         .wallet-container {
             position: relative;
         }
         .connect-wallet-btn {
-            background: #00f0ff;
-            color: #000;
+            background: #0088cc;
+            color: #fff;
             border: none;
             padding: 8px 14px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .wallet-address-btn {
             background: #121824;
-            color: #fff;
-            border: 1px solid #212d42;
+            color: #00f0ff;
+            border: 1px solid #00f0ff;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
@@ -152,6 +155,8 @@
             align-items: center;
             gap: 5px;
         }
+
+        /* Wallet Dropdown Menu */
         .wallet-dropdown {
             display: none;
             position: absolute;
@@ -173,17 +178,116 @@
             font-size: 12px;
             color: #fff;
             cursor: pointer;
-            border-bottom: 1px solid #212d42;
             background: none;
             width: 100%;
             text-align: left;
             border: none;
+            border-bottom: 1px solid #212d42;
         }
         .dropdown-item:hover {
             background: #212d42;
         }
         .dropdown-item.disconnect {
             color: #ff5722;
+        }
+
+        /* Modal Overlay for Wallet Connection */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .wallet-modal-content {
+            background: #121824;
+            width: 100%;
+            max-width: 450px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 20px;
+            border-top: 1px solid #30363d;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #8b949e;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .tg-wallet-btn {
+            background: #0088cc;
+            color: #fff;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .other-apps-title {
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 10px;
+        }
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+        .wallet-option {
+            background: #1a233a;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 10px 5px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #fff;
+        }
+        .wallet-option:hover {
+            border-color: #0088cc;
+        }
+        .wallet-icon {
+            width: 32px;
+            height: 32px;
+            background: #00f0ff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #000;
         }
 
         /* Cards Style */
@@ -194,8 +298,6 @@
             padding: 15px;
             margin-bottom: 12px;
         }
-
-        /* Mine Tab Specifics */
         .mine-header {
             text-align: center;
             margin-bottom: 15px;
@@ -270,28 +372,11 @@
             padding: 12px;
             position: relative;
         }
-        .miner-card.active-border {
-            border: 1px solid #f0b90b;
-        }
-        .miner-card.unlock-border {
-            border: 1px solid #2ea043;
-        }
-        .lvl-text {
-            font-size: 11px;
-            color: #8b949e;
-            margin-bottom: 4px;
-        }
-        .miner-price-box {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2ea043;
-            margin-bottom: 4px;
-        }
-        .miner-speed {
-            font-size: 11px;
-            color: #8b949e;
-            margin-bottom: 8px;
-        }
+        .miner-card.active-border { border: 1px solid #f0b90b; }
+        .miner-card.unlock-border { border: 1px solid #2ea043; }
+        .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
+        .miner-price-box { font-size: 18px; font-weight: bold; color: #2ea043; margin-bottom: 4px; }
+        .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; }
         .status-badge {
             width: 100%;
             padding: 6px;
@@ -302,53 +387,16 @@
             border: none;
             cursor: pointer;
         }
-        .badge-active {
-            background-color: #238636;
-            color: #fff;
-        }
-        .badge-need {
-            background-color: #f0b90b;
-            color: #000;
-        }
-        .badge-locked {
-            background-color: #1a233a;
-            color: #8b949e;
-        }
-        .unlock-subtext {
-            font-size: 9px;
-            color: #2ea043;
-            text-align: center;
-            margin-top: 4px;
-        }
-        .lock-icon {
-            text-align: center;
-            font-size: 16px;
-            margin: 4px 0;
-        }
+        .badge-active { background-color: #238636; color: #fff; }
+        .badge-need { background-color: #f0b90b; color: #000; }
+        .badge-locked { background-color: #1a233a; color: #8b949e; }
+        .unlock-subtext { font-size: 9px; color: #2ea043; text-align: center; margin-top: 4px; }
+        .lock-icon { text-align: center; font-size: 16px; margin: 4px 0; }
 
         /* Profile & Common */
-        .profile-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .verified-badge {
-            background-color: #238636;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .action-btn {
-            background-color: #f0b90b;
-            color: #000;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        .profile-row { display: flex; justify-content: space-between; align-items: center; }
+        .verified-badge { background-color: #238636; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .action-btn { background-color: #f0b90b; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
         /* Bottom Navigation Bar */
         .bottom-nav {
@@ -374,13 +422,8 @@
             cursor: pointer;
             font-size: 11px;
         }
-        .nav-item.active {
-            color: #f0b90b;
-        }
-        .nav-item span.icon {
-            font-size: 18px;
-            margin-bottom: 3px;
-        }
+        .nav-item.active { color: #f0b90b; }
+        .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
     </style>
 </head>
 <body>
@@ -397,6 +440,38 @@
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
+    <!-- Wallet Connection Modal -->
+    <div id="wallet-modal" class="modal-overlay">
+        <div class="wallet-modal-content">
+            <div class="modal-header">
+                <span>Connect your TON wallet</span>
+                <button class="modal-close" onclick="closeWalletModal()">✕</button>
+            </div>
+            <button class="tg-wallet-btn" onclick="simulateWalletConnect('UQBL...Npbv')">
+                <span>🧊</span> Connect Wallet in Telegram
+            </button>
+            <div class="other-apps-title">Choose other application</div>
+            <div class="wallet-grid">
+                <div class="wallet-option" onclick="simulateWalletConnect('UQKP...9xyz')">
+                    <div class="wallet-icon" style="background:#0088cc;">T</div>
+                    <span>Tonkeeper</span>
+                </div>
+                <div class="wallet-option" onclick="simulateWalletConnect('UQGR...7mno')">
+                    <div class="wallet-icon" style="background:#f0b90b;">G</div>
+                    <span>Gram Wallet</span>
+                </div>
+                <div class="wallet-option" onclick="simulateWalletConnect('UQMY...3abc')">
+                    <div class="wallet-icon" style="background:#2ea043;">M</div>
+                    <span>My Wallet</span>
+                </div>
+                <div class="wallet-option" onclick="simulateWalletConnect('UQAL...5def')">
+                    <div class="wallet-icon" style="background:#ff5722;">🌐</div>
+                    <span>View all wallets</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main App Container -->
     <div class="main-container">
 
@@ -409,10 +484,10 @@
                     <span style="font-size: 10px; color: #8b949e;">IDLE</span>
                 </div>
                 
-                <!-- Wallet Connect / Address Section -->
+                <!-- Wallet Section -->
                 <div class="wallet-container">
                     <div id="wallet-unconnected">
-                        <button class="connect-wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+                        <button class="connect-wallet-btn" onclick="openWalletModal()">💎 Connect Wallet</button>
                     </div>
                     <div id="wallet-connected" style="display: none;">
                         <button class="wallet-address-btn" onclick="toggleWalletMenu()">
@@ -467,7 +542,7 @@
             </div>
         </div>
 
-        <!-- 3. MINERS TAB (Miner Store) -->
+        <!-- 3. MINERS TAB -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar">
                 <span>Miner Store</span>
@@ -519,7 +594,7 @@
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span>Profile</span>
-                <button class="close-btn" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
+                <button class="action-btn" style="background:none; color:#fff;" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
             </div>
             <div class="card profile-row">
                 <div>User ID</div>
@@ -589,8 +664,21 @@
             element.classList.add('active');
         }
 
-        // Wallet Functions
-        function connectWallet() {
+        // Wallet Modal & Connect Logic
+        let currentWalletAddress = 'UQBL...Npbv';
+
+        function openWalletModal() {
+            document.getElementById('wallet-modal').classList.add('active');
+        }
+
+        function closeWalletModal() {
+            document.getElementById('wallet-modal').classList.remove('active');
+        }
+
+        function simulateWalletConnect(address) {
+            currentWalletAddress = address;
+            document.getElementById('wallet-text').innerText = address;
+            closeWalletModal();
             document.getElementById('wallet-unconnected').style.display = 'none';
             document.getElementById('wallet-connected').style.display = 'block';
         }
@@ -601,7 +689,7 @@
         }
 
         function copyAddress() {
-            navigator.clipboard.writeText('UQBL...Npbv');
+            navigator.clipboard.writeText(currentWalletAddress);
             alert('Wallet address copied to clipboard!');
             toggleWalletMenu();
         }
@@ -619,6 +707,10 @@
                 if (dropdown && dropdown.classList.contains('show')) {
                     dropdown.classList.remove('show');
                 }
+            }
+            const modal = document.getElementById('wallet-modal');
+            if (event.target === modal) {
+                closeWalletModal();
             }
         }
     </script>
