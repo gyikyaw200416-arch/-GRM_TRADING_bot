@@ -18,7 +18,6 @@
             color: #ffffff;
             overflow: hidden;
         }
-        /* Background Styling */
         .app-bg {
             position: fixed;
             top: 0;
@@ -171,7 +170,76 @@
             margin-top: 15px;
         }
 
-        /* Profile Tab Specifics */
+        /* Miners Grid (2 Columns like image) */
+        .miners-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .miner-card {
+            background: #0f141f;
+            border: 1px solid #212d42;
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+        }
+        .miner-card.active-border {
+            border: 1px solid #f0b90b;
+        }
+        .miner-card.unlock-border {
+            border: 1px solid #2ea043;
+        }
+        .lvl-text {
+            font-size: 11px;
+            color: #8b949e;
+            margin-bottom: 6px;
+        }
+        .miner-price-box {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2ea043;
+            margin-bottom: 6px;
+        }
+        .miner-speed {
+            font-size: 11px;
+            color: #8b949e;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            width: 100%;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+        }
+        .badge-active {
+            background-color: #238636;
+            color: #fff;
+        }
+        .badge-need {
+            background-color: #f0b90b;
+            color: #000;
+        }
+        .badge-locked {
+            background-color: #1a233a;
+            color: #8b949e;
+        }
+        .unlock-subtext {
+            font-size: 9px;
+            color: #2ea043;
+            text-align: center;
+            margin-top: 4px;
+        }
+        .lock-icon {
+            text-align: center;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        /* Profile & Other Styles */
         .profile-row {
             display: flex;
             justify-content: space-between;
@@ -190,36 +258,6 @@
             color: #000;
             border: none;
             padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* Miner Store Tab */
-        .store-card {
-            background: linear-gradient(145deg, #161b22, #0d1117);
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .miner-level {
-            font-size: 14px;
-            color: #8b949e;
-        }
-        .miner-price {
-            font-size: 18px;
-            font-weight: bold;
-            color: #f0b90b;
-        }
-        .buy-btn {
-            background-color: #238636;
-            color: #fff;
-            border: none;
-            padding: 8px 14px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
@@ -296,7 +334,7 @@
             <button class="claim-btn" onclick="alert('Successfully Claimed GRM!')">CLAIM</button>
         </div>
 
-        <!-- 2. TASKS TAB (Channel Join & Social Tasks) -->
+        <!-- 2. TASKS TAB -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar">
                 <span>Tasks & Channel Joins</span>
@@ -324,35 +362,69 @@
             </div>
         </div>
 
-        <!-- 3. MINERS TAB (Miner Store) -->
+        <!-- 3. MINERS TAB (Store with Unique Level Cards & Locks) -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar">
                 <span>Miner Store</span>
             </div>
-            <div class="store-card">
-                <div>
-                    <div class="miner-level">Level 185 (Active)</div>
-                    <div class="miner-price">7.72$</div>
+            
+            <div class="miners-grid">
+                <!-- Level 185 (Active) -->
+                <div class="miner-card active-border">
+                    <div class="lvl-text">Lvl 185</div>
+                    <div class="miner-price-box" style="color: #2ea043;">7.72$</div>
+                    <div class="miner-speed">Speed 5.46 TH/s</div>
+                    <button class="status-badge badge-active">ACTIVE</button>
                 </div>
-                <button class="buy-btn" style="background-color: #1f6feb;">ACTIVE</button>
-            </div>
-            <div class="store-card">
-                <div>
-                    <div class="miner-level">Level 186</div>
-                    <div class="miner-price">7.91$</div>
+
+                <!-- Level 186 (Need Unlock) -->
+                <div class="miner-card unlock-border">
+                    <div class="lvl-text">Lvl 186</div>
+                    <div class="miner-price-box" style="color: #2ea043;">7.91$</div>
+                    <div class="miner-speed">Speed 5.56 TH/s</div>
+                    <button class="status-badge badge-need" onclick="alert('Unlocking Miner...')">NEED 10,695 GRM</button>
+                    <div class="unlock-subtext">$0.15 left to unlock</div>
                 </div>
-                <button class="buy-btn" onclick="alert('Miner unlocked!')">Unlock</button>
-            </div>
-            <div class="store-card">
-                <div>
-                    <div class="miner-level">Level 187</div>
-                    <div class="miner-price">8.12$</div>
+
+                <!-- Level 187 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 187</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.12$</div>
+                    <div class="miner-speed">Speed 5.66 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
                 </div>
-                <button class="buy-btn" style="background: #30363d; color: #8b949e;">Locked 🔒</button>
+
+                <!-- Level 188 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 188</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.33$</div>
+                    <div class="miner-speed">Speed 5.78 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
+                </div>
+
+                <!-- Level 189 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 189</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.54$</div>
+                    <div class="miner-speed">Speed 5.88 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
+                </div>
+
+                <!-- Level 190 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 190</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.76$</div>
+                    <div class="miner-speed">Speed 5.98 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
+                </div>
             </div>
         </div>
 
-        <!-- 4. FRIENDS TAB (Referral) -->
+        <!-- 4. FRIENDS TAB -->
         <div id="tab-friends" class="tab-content">
             <div class="top-bar">
                 <span>Friends & Referrals</span>
@@ -364,7 +436,7 @@
             </div>
         </div>
 
-        <!-- 5. PROFILE TAB (Verify, Balances, Controls) -->
+        <!-- 5. PROFILE TAB -->
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span>Profile</span>
@@ -441,7 +513,7 @@
                 splash.style.display = 'none';
                 mainApp.style.display = 'block';
             }, 500);
-        }, 2000);
+        }, 1500);
 
         // Tab Switching Function
         function switchTab(tabName, element) {
