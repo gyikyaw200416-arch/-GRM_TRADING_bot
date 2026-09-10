@@ -1,12 +1,10 @@
 {
   "name": "grm-trading-bot",
   "version": "1.0.0",
-  "description": "Telegram Bot with GrammY",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "description": "Telegram Trading Bot",
+  "main": "api/index.js",
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "grammy": "^1.21.1"
   }
 }
