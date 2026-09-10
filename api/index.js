@@ -10,15 +10,16 @@ bot.command("start", async (ctx) => {
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
-    "🚀 *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+    "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
     "⚡ *Tap to boost mining speed!*\n" +
     "🔗 *Connect your TON wallet.*\n" +
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
   try {
+    // GitHub Raw URL အစား Telegram File ID (သို့) ImgBB ကဲ့သို့ Image Hosting လင့်ခ်ကို ဒီနေရာမှာ ထည့်ပါ
     await ctx.replyWithPhoto(
-      "https://raw.githubusercontent.com/gyikyaw/-GRM_TRADING_bot/main/IMG_20260910_112246_587.jpg",
+      "YOUR_TELEGRAM_PHOTO_FILE_ID_OR_DIRECT_IMAGE_URL",
       {
         caption: captionText,
         parse_mode: "Markdown",
