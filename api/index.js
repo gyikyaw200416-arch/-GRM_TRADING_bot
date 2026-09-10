@@ -1,12 +1,36 @@
-import { Bot } from "grammy";
+import { Bot, InlineKeyboard } from "grammy";
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
-// User ပို့လိုက်တဲ့ပုံရဲ့ file_id ကို chat ထဲ ပြန်ပို့ပေးမည့် code
-bot.on("message:photo", async (ctx) => {
-  const photoArray = ctx.message.photo;
-  const fileId = photoArray[photoArray.length - 1].file_id;
-  await ctx.reply(`Your Photo File ID is:\n\n\`${fileId}\``, { parse_mode: "Markdown" });
+bot.command("start", async (ctx) => {
+  const keyboard = new InlineKeyboard()
+    .webApp("🚀 Start Mining", "https://your-mining-website-url.com")
+    .row()
+    .url("🌐 Community", "https://discord.gg/NwsPcvukX");
+
+  const captionText = 
+    "👋 *Welcome to GRAM Mining Core!*\n\n" +
+    "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+    "⚡ *Tap to boost mining speed!*\n" +
+    "🔗 *Connect your TON wallet.*\n" +
+    "💰 *GRAM to upgrade your miner level!*\n\n" +
+    "Click below to start.";
+
+  // GitHub URL အစား Bot ချတ်ထဲ ပုံပို့ပြီးရလာတဲ့ file_id (သို့မဟုတ်) Telegram file id ကို ဒီကွင်းစကွင်းပိတ်ထဲမှာ ထည့်ပါ
+  await ctx.replyWithPhoto(
+    "AgACAgUAAxkBAAI...", 
+    {
+      caption: captionText,
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    }
+  );
+});
+
+bot.on("message", async (ctx) => {
+  if (ctx.message.text && !ctx.message.text.startsWith("/")) {
+    await ctx.reply("Please type /start to open the GRAM Mining bot.");
+  }
 });
 
 export default async function handler(req, res) {
