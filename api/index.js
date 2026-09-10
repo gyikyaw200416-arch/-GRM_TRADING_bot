@@ -2,18 +2,11 @@ import { Bot, InlineKeyboard } from "grammy";
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
-// 📸 ပို့လိုက်တဲ့ပုံရဲ့ file_id ကို chat ထဲ ပြန်ပို့ပေးမည့် handler
-bot.on("message:photo", async (ctx) => {
-  const photo = ctx.message.photo;
-  const fileId = photo[photo.length - 1].file_id;
-  await ctx.reply(`ဒီမှာ သင့်ပုံရဲ့ File ID ပါ:\n\n\`${fileId}\``, { parse_mode: "Markdown" });
-});
-
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
-    .webApp("🚀 Start Mining", "https://your-mining-website-url.com")
+    .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // Replace with your actual Web App URL
     .row()
-    .url("🌐 Community", "https://discord.gg/NwsPcvukX");
+    .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // Discord Community link
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
@@ -23,14 +16,23 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  await ctx.replyWithPhoto(
-    "https://cdn.jsdelivr.net/gh/gyikyaw/-GRM_TRADING_bot@main/IMG_20260910_112246_587.jpg",
-    {
-      caption: captionText,
+  try {
+    // ဓာတ်ပုံအတွက် Telegram file_id ကို တိုက်ရိုက်အသုံးပြုထားသည်
+    await ctx.replyWithPhoto(
+      "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
+      {
+        caption: captionText,
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      }
+    );
+  } catch (error) {
+    console.error("Error sending photo:", error);
+    await ctx.reply(captionText, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
-    }
-  );
+    });
+  }
 });
 
 bot.on("message", async (ctx) => {
