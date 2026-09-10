@@ -5,67 +5,78 @@ const bot = new Bot(process.env.BOT_TOKEN);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 bot.command("start", async (ctx) => {
-  const userId = ctx.from.id;
-  const username = ctx.from.username || "";
-  const payload = ctx.match; // Referral ID (e.g., /start 123456789)
+  try {
+    const userId = ctx.from.id;
+    const username = ctx.from.username || "";
+    const payload = ctx.match; // Referral ID (ဥပမာ - /start 123456789)
 
-  // 1. Check if user already exists in database
-  const { data: existingUser } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", userId)
-    .single();
+    // 1. Check if user already exists in database
+    const { data: existingUser, error: fetchError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
 
-  if (!existingUser) {
-    let invitedBy = null;
-    if (payload && !isNaN(payload) && Number(payload) !== userId) {
-      invitedBy = Number(payload);
-      
-      // Give bonus to the inviter
-      await supabase.rpc("increment_balance", { user_id: invitedBy, amount: 100 }); 
+    if (fetchError) {
+      console.error("Supabase fetch error:", fetchError);
     }
 
-    // Insert new user
-    await supabase.from("users").insert([
-      {
-        id: userId,
-        username: username,
-        balance: 50, // Welcome bonus
-        invited_by: invitedBy,
-        verified: false
+    if (!existingUser) {
+      let invitedBy = null;
+      if (payload && !isNaN(payload) && Number(payload) !== userId) {
+        invitedBy = Number(payload);
+        
+        // Give bonus to the inviter
+        await supabase.rpc("increment_balance", { user_id: invitedBy, amount: 100 }); 
       }
-    ]);
-  }
 
-  // 2. Welcome Message & Buttons (ATF ပုံစံအတိုင်း ခလုတ်များ တည်ဆောက်ခြင်း)
-  const keyboard = new InlineKeyboard()
-    .web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
-    .row()
-    .url("🌐 Community", "https://t.me/AI_TRADING_FOREX"); // သင့် Channel Link ထည့်ရန်
+      // Insert new user
+      await supabase.from("users").insert([
+        {
+          id: userId,
+          username: username,
+          balance: 50, // Welcome bonus
+          invited_by: invitedBy,
+          verified: false
+        }
+      ]);
+    }
 
-  // ⚠️ အရေးကြီးသည်: ဒီနေရာမှာ သင်ပြချင်တဲ့ ပုံရဲ့ GitHub Raw URL ကို ထည့်ပေးပါ
-  const photoUrl = "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/your-banner-image.jpg";
+    // 2. Welcome Message & Buttons
+    const keyboard = new InlineKeyboard()
+      .web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
+      .row()
+      .url("🌐 Community", "https://t.me/AI_TRADING_FOREX"); // လိုအပ်ပါက သင့် Channel Link ထည့်ပါ
 
-  const captionText = 
-    `👋 *Welcome to TRADING_GRAM!*\n\n` +
-    `⛏ Mine tokens directly to your Pool Wallet.\n` +
-    `⚡ Tap to boost mining speed!\n` +
-    `🔗 Connect your TON wallet.\n` +
-    `💰 Hold tokens to upgrade your miner level!\n\n` +
-    `👤 Your ID: \`${userId}\`\n\n` +
-    `Click below to start.`;
+    // အလုပ်လုပ်သေချာစေရန် အဆင်သင့်သုံးနိုင်သော ပုံလင့်ခ် (လိုချင်ရင် ကိုယ့်ပုံလင့်ခ်နဲ့ လဲနိုင်ပါတယ်)
+    const photoUrl = "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1000&auto=format&fit=crop";
 
-  try {
+    const captionText = 
+      `👋 *Welcome to TRADING_GRAM!*\n\n` +
+      `⛏ Mine tokens directly to your Pool Wallet.\n` +
+      `⚡ Tap to boost mining speed!\n` +
+      `🔗 Connect your TON wallet.\n` +
+      `💰 Hold tokens to upgrade your miner level!\n\n` +
+      `👤 Your ID: \`${userId}\`\n\n` +
+      `Click below to start.`;
+
+    // ပုံနဲ့တကွ ပို့ရန်
     await ctx.replyWithPhoto(photoUrl, {
       caption: captionText,
       parse_mode: "Markdown",
       reply_markup: keyboard
     });
+
   } catch (error) {
-    // ပုံလင့်ခ် မမှန်သေးရင် စာသားသက်သက်နဲ့ ခလုတ်ပါ ပို့ပေးမည့် Fallback
-    await ctx.reply(captionText, {
+    console.error("Error in /start command:", error);
+    // တစ်စုံတစ်ရာ Error တက်ခဲ့လျှင်တောင် စာနဲ့ခလုတ် ပုံမှန်ထွက်လာစေရန် Fallback
+    const userId = ctx.from?.id || "Unknown";
+    const fallbackKeyboard = new InlineKeyboard()
+      .web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/");
+
+    await ctx.reply(`👋 *Welcome to TRADING_GRAM!*\n\nClick below to start mining.\n\n👤 Your ID: \`${userId}\``, {
       parse_mode: "Markdown",
-      reply_markup: keyboard
+      reply_markup: fallbackKeyboard
     });
   }
 });
@@ -73,7 +84,11 @@ bot.command("start", async (ctx) => {
 // Vercel serverless webhook export
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    await bot.handleUpdate(req.body);
+    try {
+      await bot.handleUpdate(req.body);
+    } catch (err) {
+      console.error("Webhook error:", err);
+    }
     return res.status(200).send("OK");
   }
   return res.status(200).send("TRADING_GRAM Bot is running!");
