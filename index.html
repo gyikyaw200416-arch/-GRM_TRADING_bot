@@ -4,23 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
-    
-    <!-- Supabase JS CDN -->
+    <!-- Supabase CDN ထည့်သွင်းခြင်း -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
-        * {
-            box-sizing: border-box;
+        body, html {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-        }
-        body, html {
             width: 100%;
             height: 100%;
             background-color: #05070b;
-            color: #ffffff;
-            overflow-x: hidden;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
         }
         #splash-screen {
             position: fixed;
@@ -67,6 +61,7 @@
             display: none;
             padding: 20px;
             text-align: center;
+            color: #ffffff;
         }
         .container {
             max-width: 400px;
@@ -76,15 +71,8 @@
             border-radius: 12px;
             border: 1px solid #30363d;
         }
-        h1 {
-            color: #f0b90b;
-            font-size: 22px;
-            margin-bottom: 10px;
-        }
-        p {
-            color: #8b949e;
-            margin-bottom: 15px;
-        }
+        h1 { color: #f0b90b; font-size: 22px; }
+        p { color: #8b949e; }
         .btn {
             background-color: #f0b90b;
             color: #000;
@@ -94,23 +82,18 @@
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 16px;
         }
         .wallet-input {
             width: 100%;
             padding: 10px;
+            margin-top: 10px;
             background: #0d1117;
             border: 1px solid #30363d;
             color: #fff;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-align: center;
-        }
-        .status-msg {
-            font-size: 13px;
-            margin-top: 10px;
+            border-radius: 6px;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -129,29 +112,26 @@
         <div class="container">
             <h1>GRM Mining Dashboard</h1>
             <p>Mine GRM tokens directly to your wallet.</p>
+            <p>Your Balance: <strong style="color: #2ea043;">0.00 GRM</strong></p>
             
-            <div style="margin-bottom: 15px;">
-                <input type="text" id="walletAddressInput" class="wallet-input" placeholder="Enter TON Wallet Address (UQ...)">
-                <button class="btn" onclick="saveWalletToSupabase()">Connect & Save Address</button>
+            <div style="margin-top: 20px; text-align: left;">
+                <label style="font-size: 12px; color: #8b949e;">TON Wallet Address:</label>
+                <input type="text" id="walletAddressInput" class="wallet-input" placeholder="UQBV...zssX">
+                <button class="btn" onclick="connectAndSaveWallet()">Connect Wallet & Save</button>
             </div>
 
-            <p>Your Balance: <strong style="color: #2ea043;">0.00 GRM</strong></p>
-            <button class="btn" style="background-color: #2ea043; color: #fff;" onclick="alert('Mining Started Successfully!')">Start Mining</button>
-            
-            <div id="statusMessage" class="status-msg"></div>
+            <button class="btn" style="background-color: #238636; color: #fff;" onclick="alert('Mining Started!')">Start Mining</button>
         </div>
     </div>
 
     <script>
-        // Supabase Configuration (သင့်ရဲ့ Supabase URL နဲ့ Anon Key ကို ဒီမှာ ထည့်ပါ)
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+        // Supabase Configuration (သင့်ရဲ့ Project အချက်အလက်များ ထည့်ရန်)
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
         
-        // Supabase client initialize လုပ်ခြင်း
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Splash Screen ဖျောက်ရန်
+        // Splash screen timer
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
             const mainApp = document.getElementById('main-app');
@@ -163,36 +143,30 @@
             }, 600);
         }, 2000);
 
-        // Wallet Address ကို Supabase Table ထဲသို့ ပို့ရန် Function
-        async function saveWalletToSupabase() {
-            const walletInput = document.getElementById('walletAddressInput').value.trim();
-            const statusMsg = document.getElementById('statusMessage');
+        // Wallet Address ကို Supabase Table သို့ ပို့ပေးမည့် Function
+        async function connectAndSaveWallet() {
+            const address = document.getElementById('walletAddressInput').value.trim();
 
-            if (!walletInput) {
-                statusMsg.style.color = '#ff5722';
-                statusMsg.innerText = 'ကျေးဇူးပြု၍ Wallet Address ထည့်ပါရန်။';
+            if (!address) {
+                alert('ကျေးဇူးပြု၍ Wallet Address ထည့်ပါ။');
                 return;
             }
 
-            statusMsg.style.color = '#f0b90b';
-            statusMsg.innerText = 'ချိတ်ဆက်နေပါသည်...';
-
             try {
-                // 'wallets' ဆိုတဲ့ Table နာမည်ထဲသို့ ထည့်မည် (သင့် Database Table နာမည်အတိုင်း ပြင်နိုင်ပါတယ်)
+                // 'wallets' ဆိုတဲ့ Table ထဲသို့ address ထည့်မည် (သင့် Supabase ထဲတွင် wallets table ရှိရပါမည်)
                 const { data, error } = await supabaseClient
                     .from('wallets')
-                    .insert([{ wallet_address: walletInput, created_at: new Date() }]);
+                    .insert([{ wallet_address: address, created_at: new Date() }]);
 
                 if (error) {
-                    throw error;
+                    console.error('Supabase Error:', error);
+                    alert('Database သို့ ပို့ရာတွင် အမှားအယွင်းရှိTနေသည်: ' + error.message);
+                } else {
+                    alert('Wallet ချိတ်ဆက်ပြီး Supabase သို့ အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ!');
                 }
-
-                statusMsg.style.color = '#2ea043';
-                statusMsg.innerText = 'Wallet Address အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ!';
             } catch (err) {
-                console.error('Error:', err.message);
-                statusMsg.style.color = '#ff5722';
-                statusMsg.innerText = 'သိမ်းဆည်းရာတွင် အမှားရှိV နေပါသည် (Table နာမည် စစ်ဆေးပါ)။';
+                console.error('Error:', err);
+                alert('ချိတ်ဆက်၍ မရပါ။ အင်တာနက်လိုင်း သို့မဟုတ် Supabase ချိတ်ဆက်မှုကို စစ်ဆေးပါ။');
             }
         }
     </script>
