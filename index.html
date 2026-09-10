@@ -4,15 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
+    
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
-        body, html {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        body, html {
             width: 100%;
             height: 100%;
-            background-color: #000000;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
+            background-color: #05070b;
+            color: #ffffff;
+            overflow-x: hidden;
         }
         #splash-screen {
             position: fixed;
@@ -20,7 +28,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #000000;
+            background: linear-gradient(135deg, #0a0f1d 0%, #000000 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -28,38 +36,41 @@
             z-index: 9999;
             transition: opacity 0.6s ease;
         }
-        .full-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
+        .logo-box {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1a233a 0%, #0d1117 100%);
+            border: 2px solid #f0b90b;
+            box-shadow: 0 0 25px rgba(240, 185, 11, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .logo-box span {
+            color: #f0b90b;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
         }
         .loading-text {
-            position: relative;
-            z-index: 2;
             color: #f0b90b;
             font-size: 18px;
             font-weight: bold;
-            background: rgba(0, 0, 0, 0.75);
-            padding: 12px 24px;
+            background: rgba(22, 27, 34, 0.8);
+            padding: 12px 30px;
             border-radius: 25px;
-            letter-spacing: 1px;
             border: 1px solid #f0b90b;
-            margin-top: auto;
-            margin-bottom: 60px;
         }
         #main-app {
             display: none;
             padding: 20px;
             text-align: center;
-            color: #ffffff;
         }
         .container {
             max-width: 400px;
-            margin: 60px auto;
+            margin: 40px auto;
             background: #161b22;
             padding: 20px;
             border-radius: 12px;
@@ -68,9 +79,11 @@
         h1 {
             color: #f0b90b;
             font-size: 22px;
+            margin-bottom: 10px;
         }
         p {
             color: #8b949e;
+            margin-bottom: 15px;
         }
         .btn {
             background-color: #f0b90b;
@@ -81,8 +94,23 @@
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-            margin-top: 20px;
+            margin-top: 10px;
             font-size: 16px;
+        }
+        .wallet-input {
+            width: 100%;
+            padding: 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #fff;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .status-msg {
+            font-size: 13px;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -90,8 +118,9 @@
 
     <!-- Splash Screen -->
     <div id="splash-screen">
-        <!-- ဤနေရာတွင် ဖိုင်နာမည်တူ grm.jpg ကို ချိတ်ထားပါသည် -->
-        <img src="grm.jpg" alt="GRAM Mining Bot" class="full-img" onerror="this.src='https://via.placeholder.com/400x800/000/fff?text=GRM+Miner'">
+        <div class="logo-box">
+            <span>GRM</span>
+        </div>
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
@@ -100,12 +129,29 @@
         <div class="container">
             <h1>GRM Mining Dashboard</h1>
             <p>Mine GRM tokens directly to your wallet.</p>
+            
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="walletAddressInput" class="wallet-input" placeholder="Enter TON Wallet Address (UQ...)">
+                <button class="btn" onclick="saveWalletToSupabase()">Connect & Save Address</button>
+            </div>
+
             <p>Your Balance: <strong style="color: #2ea043;">0.00 GRM</strong></p>
-            <button class="btn" onclick="alert('Mining Started Successfully!')">Start Mining</button>
+            <button class="btn" style="background-color: #2ea043; color: #fff;" onclick="alert('Mining Started Successfully!')">Start Mining</button>
+            
+            <div id="statusMessage" class="status-msg"></div>
         </div>
     </div>
 
     <script>
+        // Supabase Configuration (သင့်ရဲ့ Supabase URL နဲ့ Anon Key ကို ဒီမှာ ထည့်ပါ)
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+        
+        // Supabase client initialize လုပ်ခြင်း
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Splash Screen ဖျောက်ရန်
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
             const mainApp = document.getElementById('main-app');
@@ -115,7 +161,40 @@
                 splash.style.display = 'none';
                 mainApp.style.display = 'block';
             }, 600);
-        }, 2500);
+        }, 2000);
+
+        // Wallet Address ကို Supabase Table ထဲသို့ ပို့ရန် Function
+        async function saveWalletToSupabase() {
+            const walletInput = document.getElementById('walletAddressInput').value.trim();
+            const statusMsg = document.getElementById('statusMessage');
+
+            if (!walletInput) {
+                statusMsg.style.color = '#ff5722';
+                statusMsg.innerText = 'ကျေးဇူးပြု၍ Wallet Address ထည့်ပါရန်။';
+                return;
+            }
+
+            statusMsg.style.color = '#f0b90b';
+            statusMsg.innerText = 'ချိတ်ဆက်နေပါသည်...';
+
+            try {
+                // 'wallets' ဆိုတဲ့ Table နာမည်ထဲသို့ ထည့်မည် (သင့် Database Table နာမည်အတိုင်း ပြင်နိုင်ပါတယ်)
+                const { data, error } = await supabaseClient
+                    .from('wallets')
+                    .insert([{ wallet_address: walletInput, created_at: new Date() }]);
+
+                if (error) {
+                    throw error;
+                }
+
+                statusMsg.style.color = '#2ea043';
+                statusMsg.innerText = 'Wallet Address အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ!';
+            } catch (err) {
+                console.error('Error:', err.message);
+                statusMsg.style.color = '#ff5722';
+                statusMsg.innerText = 'သိမ်းဆည်းရာတွင် အမှားရှိV နေပါသည် (Table နာမည် စစ်ဆေးပါ)။';
+            }
+        }
     </script>
 
 </body>
