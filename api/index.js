@@ -4,13 +4,13 @@ const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
-    .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // ဒီနေရာမှာ ကိုယ့်ရဲ့ တကယ့် Mining Web App (သို့) Website လင့်ခ်ကို ထည့်ပါ
+    .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // Replace with your actual Web App URL
     .row()
-    .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // Discord Community လင့်ခ်
+    .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // Discord Community link
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
-    "⛏️ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+    "🚀 *Mine GRAM tokens directly to your Pool Wallet.*\n" +
     "⚡ *Tap to boost mining speed!*\n" +
     "🔗 *Connect your TON wallet.*\n" +
     "💰 *GRAM to upgrade your miner level!*\n\n" +
