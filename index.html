@@ -21,19 +21,26 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://raw.githubusercontent.com/gyikyaw/-GRM_TRADING_bot/main/1000088048.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background-color: #000000;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            justify-content: center;
             align-items: center;
-            padding-bottom: 50px;
             z-index: 9999;
             transition: opacity 0.6s ease;
         }
+        .full-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
         .loading-text {
+            position: relative;
+            z-index: 2;
             color: #f0b90b;
             font-size: 18px;
             font-weight: bold;
@@ -42,6 +49,8 @@
             border-radius: 20px;
             letter-spacing: 1px;
             border: 1px solid #f0b90b;
+            margin-top: auto;
+            margin-bottom: 50px;
         }
         /* Main App Content */
         #main-app {
@@ -81,8 +90,9 @@
 </head>
 <body>
 
-    <!-- Splash Screen with Full Background Image -->
+    <!-- Splash Screen with Full Image Tag -->
     <div id="splash-screen">
+        <img src="https://raw.githubusercontent.com/gyikyaw/-GRM_TRADING_bot/main/1000088048.jpg" alt="GRAM Mining Bot" class="full-img">
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
@@ -97,7 +107,7 @@
     </div>
 
     <script>
-        // ၂ စက္ကန့်ကြာရင် ပုံပေါ်ပြီး Main Dashboard ထဲ ရောက်သွားပါမယ်
+        // ၂ စက္ကန့်ခွဲကြာရင် ပုံပြပြီး Dashboard ထဲ ဝင်သွားပါမယ်
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
             const mainApp = document.getElementById('main-app');
