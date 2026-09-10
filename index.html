@@ -105,13 +105,85 @@
             margin-bottom: 15px;
             font-size: 15px;
             font-weight: bold;
+            position: relative;
         }
-        .close-btn {
-            color: #fff;
-            background: none;
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            background: #121824;
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid #212d42;
+        }
+        .lvl-badge {
+            background: #212d42;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #f0b90b;
+        }
+
+        /* Wallet Connect Button & Dropdown */
+        .wallet-container {
+            position: relative;
+        }
+        .connect-wallet-btn {
+            background: #00f0ff;
+            color: #000;
             border: none;
-            font-size: 16px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
             cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        }
+        .wallet-address-btn {
+            background: #121824;
+            color: #fff;
+            border: 1px solid #212d42;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .wallet-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 38px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            width: 150px;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .wallet-dropdown.show {
+            display: block;
+        }
+        .dropdown-item {
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #fff;
+            cursor: pointer;
+            border-bottom: 1px solid #212d42;
+            background: none;
+            width: 100%;
+            text-align: left;
+            border: none;
+        }
+        .dropdown-item:hover {
+            background: #212d42;
+        }
+        .dropdown-item.disconnect {
+            color: #ff5722;
         }
 
         /* Cards Style */
@@ -126,33 +198,48 @@
         /* Mine Tab Specifics */
         .mine-header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .asset-title {
             color: #8b949e;
-            font-size: 13px;
+            font-size: 12px;
             letter-spacing: 1px;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         .asset-amount {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            color: #f0b90b;
+            color: #00f0ff;
+        }
+        .wallet-info-row {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            font-size: 11px;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+        .mining-rate {
+            text-align: center;
+            color: #00f0ff;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
         }
         .coin-box {
-            width: 160px;
-            height: 160px;
-            margin: 20px auto;
+            width: 150px;
+            height: 150px;
+            margin: 15px auto;
             background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 0 30px rgba(240, 185, 11, 0.4);
+            box-shadow: 0 0 25px rgba(240, 185, 11, 0.4);
             border: 4px solid #ffe873;
         }
         .coin-inner-text {
-            font-size: 32px;
+            font-size: 30px;
             font-weight: 900;
             color: #111;
         }
@@ -160,17 +247,17 @@
             background: linear-gradient(135deg, #f0b90b 0%, #ff9800 100%);
             color: #000;
             width: 100%;
-            padding: 15px;
+            padding: 14px;
             border: none;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(240, 185, 11, 0.4);
-            margin-top: 15px;
+            margin-top: 10px;
         }
 
-        /* Miners Grid (2 Columns like image) */
+        /* Miners Grid */
         .miners-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -192,18 +279,18 @@
         .lvl-text {
             font-size: 11px;
             color: #8b949e;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .miner-price-box {
             font-size: 18px;
             font-weight: bold;
             color: #2ea043;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .miner-speed {
             font-size: 11px;
             color: #8b949e;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .status-badge {
             width: 100%;
@@ -236,10 +323,10 @@
         .lock-icon {
             text-align: center;
             font-size: 16px;
-            margin: 5px 0;
+            margin: 4px 0;
         }
 
-        /* Profile & Other Styles */
+        /* Profile & Common */
         .profile-row {
             display: flex;
             justify-content: space-between;
@@ -248,9 +335,9 @@
         .verified-badge {
             background-color: #238636;
             color: white;
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
         }
         .action-btn {
@@ -316,22 +403,47 @@
         <!-- 1. MINE TAB -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
-                <span>Shadow 🛡️</span>
-                <span>UQBV...zs</span>
+                <div class="user-info">
+                    <span class="lvl-badge">Lvl 1</span>
+                    <span>Sky ⛏️</span>
+                    <span style="font-size: 10px; color: #8b949e;">IDLE</span>
+                </div>
+                
+                <!-- Wallet Connect / Address Section -->
+                <div class="wallet-container">
+                    <div id="wallet-unconnected">
+                        <button class="connect-wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+                    </div>
+                    <div id="wallet-connected" style="display: none;">
+                        <button class="wallet-address-btn" onclick="toggleWalletMenu()">
+                            <span id="wallet-text">UQBL...Npbv</span> ▾
+                        </button>
+                        <div id="wallet-dropdown" class="wallet-dropdown">
+                            <button class="dropdown-item" onclick="copyAddress()">📋 Copy address</button>
+                            <button class="dropdown-item disconnect" onclick="disconnectWallet()">🔌 Disconnect</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <div style="font-size: 10px; color: #2ea043; margin-bottom: 10px;">0.07$ left to Lvl UP</div>
+
             <div class="mine-header">
                 <div class="asset-title">ASSETS</div>
-                <div class="asset-amount">10,486.5742 GRM</div>
+                <div class="asset-amount">0.0000 GRM</div>
             </div>
-            <div class="card" style="text-align: center;">
-                <p style="color: #8b949e; font-size: 13px;">HOLDING WALLET: 9,618.027 GRM</p>
-                <p style="color: #8b949e; font-size: 13px; margin-top: 5px;">POOL WALLET: 868.5468 GRM</p>
-                <div style="color: #2ea043; font-size: 20px; font-weight: bold; margin-top: 10px;">+0.0253 GRM</div>
+
+            <div class="wallet-info-row">
+                <span>HOLDING WALLET: 0 GRM</span>
+                <span>POOL WALLET: 0.0000 GRM</span>
             </div>
+
+            <div class="mining-rate">+0.0000</div>
+
             <div class="coin-box">
                 <div class="coin-inner-text">GRM</div>
             </div>
-            <button class="claim-btn" onclick="alert('Successfully Claimed GRM!')">CLAIM</button>
+            <button class="claim-btn" onclick="alert('START / CLAIM GRM!')">START</button>
         </div>
 
         <!-- 2. TASKS TAB -->
@@ -353,71 +465,38 @@
                 </div>
                 <button class="action-btn" onclick="alert('Task opened!')">Start</button>
             </div>
-            <div class="card profile-row">
-                <div>
-                    <strong>X (Twitter) Retweet</strong>
-                    <p style="font-size: 12px; color: #8b949e;">Earn +1 GRM</p>
-                </div>
-                <button class="action-btn" onclick="alert('Task opened!')">Start</button>
-            </div>
         </div>
 
-        <!-- 3. MINERS TAB (Store with Unique Level Cards & Locks) -->
+        <!-- 3. MINERS TAB (Miner Store) -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar">
                 <span>Miner Store</span>
             </div>
-            
             <div class="miners-grid">
-                <!-- Level 185 (Active) -->
                 <div class="miner-card active-border">
                     <div class="lvl-text">Lvl 185</div>
-                    <div class="miner-price-box" style="color: #2ea043;">7.72$</div>
+                    <div class="miner-price-box">7.72$</div>
                     <div class="miner-speed">Speed 5.46 TH/s</div>
                     <button class="status-badge badge-active">ACTIVE</button>
                 </div>
-
-                <!-- Level 186 (Need Unlock) -->
                 <div class="miner-card unlock-border">
                     <div class="lvl-text">Lvl 186</div>
-                    <div class="miner-price-box" style="color: #2ea043;">7.91$</div>
+                    <div class="miner-price-box">7.91$</div>
                     <div class="miner-speed">Speed 5.56 TH/s</div>
-                    <button class="status-badge badge-need" onclick="alert('Unlocking Miner...')">NEED 10,695 GRM</button>
+                    <button class="status-badge badge-need" onclick="alert('Unlocked!')">NEED 10,695 GRM</button>
                     <div class="unlock-subtext">$0.15 left to unlock</div>
                 </div>
-
-                <!-- Level 187 (Locked) -->
                 <div class="miner-card">
                     <div class="lvl-text">Lvl 187</div>
-                    <div class="miner-price-box" style="color: #2ea043;">8.12$</div>
+                    <div class="miner-price-box">8.12$</div>
                     <div class="miner-speed">Speed 5.66 TH/s</div>
                     <div class="lock-icon">🔒</div>
                     <button class="status-badge badge-locked">Locked</button>
                 </div>
-
-                <!-- Level 188 (Locked) -->
                 <div class="miner-card">
                     <div class="lvl-text">Lvl 188</div>
-                    <div class="miner-price-box" style="color: #2ea043;">8.33$</div>
+                    <div class="miner-price-box">8.33$</div>
                     <div class="miner-speed">Speed 5.78 TH/s</div>
-                    <div class="lock-icon">🔒</div>
-                    <button class="status-badge badge-locked">Locked</button>
-                </div>
-
-                <!-- Level 189 (Locked) -->
-                <div class="miner-card">
-                    <div class="lvl-text">Lvl 189</div>
-                    <div class="miner-price-box" style="color: #2ea043;">8.54$</div>
-                    <div class="miner-speed">Speed 5.88 TH/s</div>
-                    <div class="lock-icon">🔒</div>
-                    <button class="status-badge badge-locked">Locked</button>
-                </div>
-
-                <!-- Level 190 (Locked) -->
-                <div class="miner-card">
-                    <div class="lvl-text">Lvl 190</div>
-                    <div class="miner-price-box" style="color: #2ea043;">8.76$</div>
-                    <div class="miner-speed">Speed 5.98 TH/s</div>
                     <div class="lock-icon">🔒</div>
                     <button class="status-badge badge-locked">Locked</button>
                 </div>
@@ -440,7 +519,7 @@
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span>Profile</span>
-                <button class="close-btn">✕ Close</button>
+                <button class="close-btn" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
             </div>
             <div class="card profile-row">
                 <div>User ID</div>
@@ -455,25 +534,7 @@
             </div>
             <div class="card">
                 <div style="font-size: 12px; color: #8b949e;">Assets</div>
-                <div style="font-size: 16px; font-weight: bold; color: #f0b90b; margin-top: 4px;">9,958.2175 GRM <span style="color: #2ea043; font-size: 13px;">≈ 7.38$</span></div>
-            </div>
-            <div class="card">
-                <div style="font-size: 12px; color: #8b949e;">Holding Wallet</div>
-                <div style="font-size: 15px; font-weight: bold; margin-top: 4px;">8,618.027 GRM</div>
-            </div>
-            <div class="card profile-row">
-                <div>
-                    <div style="font-size: 12px; color: #8b949e;">Pool Wallet</div>
-                    <div style="font-size: 13px;">Withdrawable balance</div>
-                </div>
-                <div style="color: #2ea043; font-weight: bold;">1,340.1901 GRM</div>
-            </div>
-            <div class="card profile-row">
-                <div>
-                    <strong>Withdraw</strong>
-                    <div style="font-size: 11px; color: #8b949e;">Transfer Pool to Wallet</div>
-                </div>
-                <button class="action-btn" onclick="alert('Withdraw requested!')">Withdraw</button>
+                <div style="font-size: 16px; font-weight: bold; color: #f0b90b; margin-top: 4px;">9,958.2175 GRM</div>
             </div>
         </div>
 
@@ -481,7 +542,7 @@
 
     <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
-        <button class="nav-item" onclick="switchTab('mine', this)">
+        <button class="nav-item active" onclick="switchTab('mine', this)">
             <span class="icon">⛏️</span>
             <span>Mine</span>
         </button>
@@ -489,7 +550,7 @@
             <span class="icon">📋</span>
             <span>Tasks</span>
         </button>
-        <button class="nav-item active" onclick="switchTab('miners', this)">
+        <button class="nav-item" onclick="switchTab('miners', this)">
             <span class="icon">⚡</span>
             <span>Miners</span>
         </button>
@@ -526,6 +587,39 @@
             
             document.getElementById('tab-' + tabName).classList.add('active');
             element.classList.add('active');
+        }
+
+        // Wallet Functions
+        function connectWallet() {
+            document.getElementById('wallet-unconnected').style.display = 'none';
+            document.getElementById('wallet-connected').style.display = 'block';
+        }
+
+        function toggleWalletMenu() {
+            const dropdown = document.getElementById('wallet-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        function copyAddress() {
+            navigator.clipboard.writeText('UQBL...Npbv');
+            alert('Wallet address copied to clipboard!');
+            toggleWalletMenu();
+        }
+
+        function disconnectWallet() {
+            document.getElementById('wallet-connected').style.display = 'none';
+            document.getElementById('wallet-unconnected').style.display = 'block';
+            toggleWalletMenu();
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.wallet-address-btn') && !event.target.closest('.wallet-address-btn')) {
+                const dropdown = document.getElementById('wallet-dropdown');
+                if (dropdown && dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
         }
     </script>
 </body>
