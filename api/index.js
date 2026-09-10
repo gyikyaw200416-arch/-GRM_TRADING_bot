@@ -3,27 +3,21 @@ import { Bot, InlineKeyboard } from "grammy";
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
-  // Web App UI ပုံစံတူ ခလုတ်များ ဖန်တီးခြင်း (ATF အစား GRM သုံးထားသည်)
   const keyboard = new InlineKeyboard()
-    .webApp("✈ Mine (Claim)", "https://your-mining-website-url.com")
+    .webApp("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
     .row()
-    .webApp("📋 Tasks (+1 GRM)", "https://your-mining-website-url.com/tasks")
-    .webApp("⚡ Miners Store", "https://your-mining-website-url.com/miners")
-    .row()
-    .webApp("👥 Friends", "https://your-mining-website-url.com/friends")
-    .webApp("👤 Profile", "https://your-mining-website-url.com/profile")
-    .row()
-    .url("🌐 Community Channel", "https://discord.gg/NwsPcvukX");
+    .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // Discord Community link
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
-    "✈ *Mine GRM tokens directly to your Pool Wallet.*\n" +
-    "⚡ *Tap to boost mining speed & level up!* (Active Level 185)\n" +
-    "📋 *Complete Tasks to earn extra GRM rewards.*\n" +
-    "🔗 *Connect your TON wallet and track assets.*\n\n" +
-    "👇 *Click below to open Mining Dashboard:*";
+    "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+    "⚡ *Tap to boost mining speed!*\n" +
+    "🔗 *Connect your TON wallet.*\n" +
+    "💰 *GRAM to upgrade your miner level!*\n\n" +
+    "Click below to start.";
 
   try {
+    // ဓာတ်ပုံအတွက် Telegram file_id ကို တိုက်ရိုက်အသုံးပြုထားသည်
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
       {
