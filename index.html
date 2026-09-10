@@ -14,7 +14,6 @@
             font-family: Arial, sans-serif;
             overflow: hidden;
         }
-        /* Splash Screen (ပုံအပြည့်ပေါ်စေရန်) */
         #splash-screen {
             position: fixed;
             top: 0;
@@ -44,15 +43,14 @@
             color: #f0b90b;
             font-size: 18px;
             font-weight: bold;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 20px;
-            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 12px 24px;
+            border-radius: 25px;
             letter-spacing: 1px;
             border: 1px solid #f0b90b;
             margin-top: auto;
-            margin-bottom: 50px;
+            margin-bottom: 60px;
         }
-        /* Main App Content */
         #main-app {
             display: none;
             padding: 20px;
@@ -90,9 +88,10 @@
 </head>
 <body>
 
-    <!-- Splash Screen with Full Image Tag -->
+    <!-- Splash Screen -->
     <div id="splash-screen">
-        <img src="https://raw.githubusercontent.com/gyikyaw/-GRM_TRADING_bot/main/1000088048.jpg" alt="GRAM Mining Bot" class="full-img">
+        <!-- ဤနေရာတွင် ဖိုင်နာမည်တူ grm.jpg ကို ချိတ်ထားပါသည် -->
+        <img src="grm.jpg" alt="GRAM Mining Bot" class="full-img" onerror="this.src='https://via.placeholder.com/400x800/000/fff?text=GRM+Miner'">
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
@@ -107,7 +106,6 @@
     </div>
 
     <script>
-        // ၂ စက္ကန့်ခွဲကြာရင် ပုံပြပြီး Dashboard ထဲ ဝင်သွားပါမယ်
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
             const mainApp = document.getElementById('main-app');
