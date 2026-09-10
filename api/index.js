@@ -17,7 +17,6 @@ bot.command("start", async (ctx) => {
     "Click below to start.";
 
   try {
-    // GitHub ကနေ ပုံမှန် Raw URL ကို တိုက်ရိုက်ယူသုံးထားသည်
     await ctx.replyWithPhoto(
       "https://raw.githubusercontent.com/gyikyaw/GRM_TRADING_bot/main/IMG_20260910_112246_587.jpg",
       {
@@ -28,7 +27,6 @@ bot.command("start", async (ctx) => {
     );
   } catch (error) {
     console.error("Error sending photo:", error);
-    // ပုံပို့လို့မရရင် စာနဲ့ ခလုတ်သက်သက် ပို့ပေးမည်
     await ctx.reply(captionText, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
