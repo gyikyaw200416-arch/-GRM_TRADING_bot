@@ -3,300 +3,529 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monsterland Mining</title>
+    <title>GRM Mining Core</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body, html { width: 100%; height: 100%; background-color: #0b0f19; color: #ffffff; overflow: hidden; }
-        .app-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #16223b 0%, #0b0f19 100%); z-index: -1; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #05070b;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        .app-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a233a 0%, #05070b 100%);
+            z-index: -1;
+        }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #05070b;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.6s ease;
+        }
+        .logo-box {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f0b90b 0%, #ff5722 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 35px rgba(240, 185, 11, 0.6);
+            margin-bottom: 30px;
+        }
+        .logo-inner {
+            width: 138px;
+            height: 138px;
+            border-radius: 50%;
+            background-color: #0b0f19;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .logo-box span {
+            background: linear-gradient(135deg, #f0b90b, #ff9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+        .loading-text {
+            color: #f0b90b;
+            font-size: 16px;
+            font-weight: 600;
+            background: rgba(240, 185, 11, 0.1);
+            padding: 12px 30px;
+            border-radius: 30px;
+            border: 1px solid rgba(240, 185, 11, 0.4);
+        }
 
         /* Main Container */
-        .main-container { width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .main-container {
+            display: none;
+            width: 100%;
+            height: calc(100% - 65px);
+            overflow-y: auto;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
 
         /* Top Bar */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; }
-        .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: #121824; padding: 5px 10px; border-radius: 8px; border: 1px solid #212d42; }
-        .lvl-badge { background: #d4af37; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .close-btn {
+            color: #fff;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
 
-        /* Wallet Button */
-        .wallet-container { position: relative; }
-        .connect-wallet-btn { background: #0088cc; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 0 10px rgba(0, 136, 204, 0.4); }
-        .wallet-address-btn { background: #121824; color: #00f0ff; border: 1px solid #00f0ff; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        /* Cards Style */
+        .card {
+            background: #121824;
+            border: 1px solid #212d42;
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
 
-        /* Wallet Dropdown Menu */
-        .wallet-dropdown { display: none; position: absolute; right: 0; top: 38px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); width: 150px; z-index: 100; overflow: hidden; }
-        .wallet-dropdown.show { display: block; }
-        .dropdown-item { padding: 10px 12px; font-size: 12px; color: #fff; cursor: pointer; background: none; width: 100%; text-align: left; border: none; border-bottom: 1px solid #212d42; }
-        .dropdown-item:hover { background: #212d42; }
-        .dropdown-item.disconnect { color: #ff5722; }
+        /* Mine Tab Specifics */
+        .mine-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .asset-title {
+            color: #8b949e;
+            font-size: 13px;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .asset-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f0b90b;
+        }
+        .coin-box {
+            width: 160px;
+            height: 160px;
+            margin: 20px auto;
+            background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(240, 185, 11, 0.4);
+            border: 4px solid #ffe873;
+        }
+        .coin-inner-text {
+            font-size: 32px;
+            font-weight: 900;
+            color: #111;
+        }
+        .claim-btn {
+            background: linear-gradient(135deg, #f0b90b 0%, #ff9800 100%);
+            color: #000;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(240, 185, 11, 0.4);
+            margin-top: 15px;
+        }
 
-        /* Modals Overlay */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; justify-content: center; align-items: flex-end; }
-        .modal-overlay.active { display: flex; }
-        
-        /* Modal Content */
-        .wallet-modal-content { background: #121824; width: 100%; max-width: 450px; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; border-top: 1px solid #30363d; animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 16px; font-weight: bold; }
-        .modal-close { background: none; border: none; color: #8b949e; font-size: 18px; cursor: pointer; }
-        
-        /* Spinner & Loading States inside Modal */
-        .ton-connect-loading { text-align: center; padding: 20px 0; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 136, 204, 0.2); border-top: 4px solid #0088cc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .select-app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .select-app-option { background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: #fff; }
-        .select-app-option:hover { border-color: #0088cc; }
-        .app-icon-circle { width: 36px; height: 36px; background: #0088cc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; }
+        /* Miners Grid (2 Columns like image) */
+        .miners-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .miner-card {
+            background: #0f141f;
+            border: 1px solid #212d42;
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+        }
+        .miner-card.active-border {
+            border: 1px solid #f0b90b;
+        }
+        .miner-card.unlock-border {
+            border: 1px solid #2ea043;
+        }
+        .lvl-text {
+            font-size: 11px;
+            color: #8b949e;
+            margin-bottom: 6px;
+        }
+        .miner-price-box {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2ea043;
+            margin-bottom: 6px;
+        }
+        .miner-speed {
+            font-size: 11px;
+            color: #8b949e;
+            margin-bottom: 10px;
+        }
+        .status-badge {
+            width: 100%;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+        }
+        .badge-active {
+            background-color: #238636;
+            color: #fff;
+        }
+        .badge-need {
+            background-color: #f0b90b;
+            color: #000;
+        }
+        .badge-locked {
+            background-color: #1a233a;
+            color: #8b949e;
+        }
+        .unlock-subtext {
+            font-size: 9px;
+            color: #2ea043;
+            text-align: center;
+            margin-top: 4px;
+        }
+        .lock-icon {
+            text-align: center;
+            font-size: 16px;
+            margin: 5px 0;
+        }
 
-        /* Passcode Screen (Video style) */
-        #passcode-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0f19; z-index: 3000; flex-direction: column; justify-content: center; align-items: center; }
-        .passcode-dots { display: flex; gap: 15px; margin: 25px 0; }
-        .dot { width: 14px; height: 14px; border: 2px solid #58a6ff; border-radius: 50%; background: transparent; transition: 0.2s; }
-        .dot.filled { background: #58a6ff; }
-        .passcode-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 15px; text-align: center; }
-        .num-btn { background: #161b22; border: 1px solid #30363d; color: #fff; font-size: 24px; height: 60px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 0 auto; width: 60px; }
-        .num-btn:active { background: #30363d; }
-
-        /* Tonkeeper Approval Screen (Video style 00:07 - 00:09) */
-        .tk-approval-box { text-align: center; padding: 10px 0; }
-        .tk-ring { width: 50px; height: 50px; background: #0088cc; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 10px auto; font-size: 22px; }
-        .tk-project-logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #f0b90b; }
-        .tk-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-        .tk-desc { font-size: 12px; color: #8b949e; margin-bottom: 15px; line-height: 1.4; }
-        
-        .account-box { background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .acc-left { display: flex; align-items: center; gap: 10px; text-align: left; }
-        .acc-key { width: 28px; height: 28px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; }
-        
-        .notification-toggle { display: flex; justify-content: space-between; align-items: center; background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 10px 12px; margin-bottom: 20px; font-size: 13px; }
-        .toggle-switch { width: 40px; height: 22px; background: #238636; border-radius: 11px; position: relative; cursor: pointer; }
-        .toggle-switch::after { content: ''; position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: 0.2s; }
-        
-        .tk-connect-btn { background: #0088cc; color: #fff; width: 100%; padding: 13px; border-radius: 12px; border: none; font-size: 14px; font-weight: bold; cursor: pointer; }
-
-        /* Cards & UI Elements */
-        .card { background: #121824; border: 1px solid #212d42; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
-        .mine-header { text-align: center; margin-bottom: 15px; }
-        .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; }
-        .claim-btn { background: linear-gradient(135deg, #f0b90b 0%, #ff9800 100%); color: #000; width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        /* Profile & Other Styles */
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .verified-badge {
+            background-color: #238636;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .action-btn {
+            background-color: #f0b90b;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
         /* Bottom Navigation Bar */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background-color: #0b0f19; border-top: 1px solid #212d42; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
-        .nav-item.active { color: #f0b90b; }
-        .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background-color: #0b0f19;
+            border-top: 1px solid #212d42;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: #8b949e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .nav-item.active {
+            color: #f0b90b;
+        }
+        .nav-item span.icon {
+            font-size: 18px;
+            margin-bottom: 3px;
+        }
     </style>
 </head>
 <body>
 
     <div class="app-bg"></div>
 
-    <!-- Passcode Screen (ဗီဒီယို အပိုင်း 00:04) -->
-    <div id="passcode-screen">
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">Enter passcode</div>
-        <div class="passcode-dots">
-            <div class="dot" id="dot-0"></div>
-            <div class="dot" id="dot-1"></div>
-            <div class="dot" id="dot-2"></div>
-            <div class="dot" id="dot-3"></div>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="logo-box">
+            <div class="logo-inner">
+                <span>GRM</span>
+            </div>
         </div>
-        <div class="passcode-grid">
-            <button class="num-btn" onclick="pressNum(1)">1</button>
-            <button class="num-btn" onclick="pressNum(2)">2</button>
-            <button class="num-btn" onclick="pressNum(3)">3</button>
-            <button class="num-btn" onclick="pressNum(4)">4</button>
-            <button class="num-btn" onclick="pressNum(5)">5</button>
-            <button class="num-btn" onclick="pressNum(6)">6</button>
-            <button class="num-btn" onclick="pressNum(7)">7</button>
-            <button class="num-btn" onclick="pressNum(8)">8</button>
-            <button class="num-btn" onclick="pressNum(9)">9</button>
-            <div></div>
-            <button class="num-btn" onclick="pressNum(0)">0</button>
-            <div></div>
-        </div>
+        <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
-    <!-- Step 1: Connect Modal (ဗီဒီယို အပိုင်း 00:01) -->
-    <div id="wallet-modal" class="modal-overlay">
-        <div class="wallet-modal-content">
-            <div class="modal-header">
-                <span>Connect your TON wallet</span>
-                <button class="modal-close" onclick="closeModal('wallet-modal')">✕</button>
-            </div>
-            
-            <!-- Loading view inside modal (ဗီဒီယို 00:01 - 00:02) -->
-            <div id="modal-loading-view" class="ton-connect-loading">
-                <div class="spinner"></div>
-                <div style="font-size: 13px; color: #8b949e; margin-bottom: 15px;">Continue in Tonkeeper...</div>
-            </div>
-
-            <!-- Select App view (ဗီဒီယို 00:02 - 00:03) -->
-            <div id="modal-select-app-view" style="display: none;">
-                <div style="font-size: 13px; color: #8b949e; margin-bottom: 10px; text-align: center;">Select app</div>
-                <div class="select-app-grid">
-                    <div class="select-app-option" onclick="openPasscodeScreen()">
-                        <div class="app-icon-circle">💎</div>
-                        <span>Tonkeeper</span>
-                    </div>
-                    <div class="select-app-option" onclick="openPasscodeScreen()">
-                        <div class="app-icon-circle" style="background: #238636;">💎</div>
-                        <span>Tonkeeper</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Step 2: Tonkeeper Final Approval Screen (ဗီဒီယို 00:07 - 00:09) -->
-    <div id="tonkeeper-approval-modal" class="modal-overlay">
-        <div class="wallet-modal-content">
-            <div class="modal-header">
-                <span>Tonkeeper</span>
-                <button class="modal-close" onclick="closeModal('tonkeeper-approval-modal')">✕</button>
-            </div>
-            <div class="tk-approval-box">
-                <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px;">
-                    <div class="tk-ring">💎</div>
-                    <span style="font-size: 20px;">➔</span>
-                    <div style="width: 50px; height: 50px; background: #f0b90b; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #000;">M</div>
-                </div>
-                
-                <div class="tk-title">Connect to playmonsterland.com</div>
-                <div class="tk-desc">Monsterland is requesting access to your wallet address:</div>
-                
-                <div class="account-box">
-                    <div class="acc-left">
-                        <div class="acc-key">🔑</div>
-                        <div>
-                            <div style="font-size: 13px; font-weight: bold;">Rampage528</div>
-                            <div style="font-size: 11px; color: #00f0ff;">UQBV...zssX</div>
-                        </div>
-                    </div>
-                    <span style="color: #238636; font-size: 14px;">✔</span>
-                </div>
-
-                <div class="notification-toggle">
-                    <span>Allow Notifications</span>
-                    <div class="toggle-switch"></div>
-                </div>
-
-                <button class="tk-connect-btn" onclick="finalizeConnection()">Connect wallet</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Container -->
+    <!-- Main App Container -->
     <div class="main-container">
+
+        <!-- 1. MINE TAB -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
-                <div class="user-info">
-                    <span class="lvl-badge">Lv.15</span>
-                    <span>Shadow 🛡️</span>
-                </div>
-                
-                <div class="wallet-container">
-                    <div id="wallet-unconnected">
-                        <button class="connect-wallet-btn" onclick="startTonConnectFlow()">💎 Connect Wallet</button>
-                    </div>
-                    <div id="wallet-connected" style="display: none;">
-                        <button class="wallet-address-btn" onclick="toggleWalletMenu()">
-                            <span id="wallet-text">UQBV...zssX</span> ▾
-                        </button>
-                        <div id="wallet-dropdown" class="wallet-dropdown">
-                            <button class="dropdown-item" onclick="copyAddress()">📋 Copy address</button>
-                            <button class="dropdown-item disconnect" onclick="disconnectWallet()">🔌 Disconnect</button>
-                        </div>
-                    </div>
-                </div>
+                <span>Shadow 🛡️</span>
+                <span>UQBV...zs</span>
             </div>
+            <div class="mine-header">
+                <div class="asset-title">ASSETS</div>
+                <div class="asset-amount">10,486.5742 GRM</div>
+            </div>
+            <div class="card" style="text-align: center;">
+                <p style="color: #8b949e; font-size: 13px;">HOLDING WALLET: 9,618.027 GRM</p>
+                <p style="color: #8b949e; font-size: 13px; margin-top: 5px;">POOL WALLET: 868.5468 GRM</p>
+                <div style="color: #2ea043; font-size: 20px; font-weight: bold; margin-top: 10px;">+0.0253 GRM</div>
+            </div>
+            <div class="coin-box">
+                <div class="coin-inner-text">GRM</div>
+            </div>
+            <button class="claim-btn" onclick="alert('Successfully Claimed GRM!')">CLAIM</button>
+        </div>
 
-            <div class="card mine-header">
-                <div style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">ALL-TIME EARNINGS</div>
-                <div class="asset-amount">2.83M LUMIS</div>
-                <button class="claim-btn">INVITE TO EARN LUMIS</button>
+        <!-- 2. TASKS TAB -->
+        <div id="tab-tasks" class="tab-content">
+            <div class="top-bar">
+                <span>Tasks & Channel Joins</span>
+            </div>
+            <div class="card profile-row">
+                <div>
+                    <strong>Join Official Telegram Channel</strong>
+                    <p style="font-size: 12px; color: #8b949e;">Earn +5 GRM</p>
+                </div>
+                <button class="action-btn" onclick="alert('Redirecting to Channel...')">Join</button>
+            </div>
+            <div class="card profile-row">
+                <div>
+                    <strong>YouTube Like & Comment</strong>
+                    <p style="font-size: 12px; color: #8b949e;">Earn +1 GRM</p>
+                </div>
+                <button class="action-btn" onclick="alert('Task opened!')">Start</button>
+            </div>
+            <div class="card profile-row">
+                <div>
+                    <strong>X (Twitter) Retweet</strong>
+                    <p style="font-size: 12px; color: #8b949e;">Earn +1 GRM</p>
+                </div>
+                <button class="action-btn" onclick="alert('Task opened!')">Start</button>
             </div>
         </div>
+
+        <!-- 3. MINERS TAB (Store with Unique Level Cards & Locks) -->
+        <div id="tab-miners" class="tab-content">
+            <div class="top-bar">
+                <span>Miner Store</span>
+            </div>
+            
+            <div class="miners-grid">
+                <!-- Level 185 (Active) -->
+                <div class="miner-card active-border">
+                    <div class="lvl-text">Lvl 185</div>
+                    <div class="miner-price-box" style="color: #2ea043;">7.72$</div>
+                    <div class="miner-speed">Speed 5.46 TH/s</div>
+                    <button class="status-badge badge-active">ACTIVE</button>
+                </div>
+
+                <!-- Level 186 (Need Unlock) -->
+                <div class="miner-card unlock-border">
+                    <div class="lvl-text">Lvl 186</div>
+                    <div class="miner-price-box" style="color: #2ea043;">7.91$</div>
+                    <div class="miner-speed">Speed 5.56 TH/s</div>
+                    <button class="status-badge badge-need" onclick="alert('Unlocking Miner...')">NEED 10,695 GRM</button>
+                    <div class="unlock-subtext">$0.15 left to unlock</div>
+                </div>
+
+                <!-- Level 187 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 187</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.12$</div>
+                    <div class="miner-speed">Speed 5.66 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
+                </div>
+
+                <!-- Level 188 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 188</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.33$</div>
+                    <div class="miner-speed">Speed 5.78 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
+                </div>
+
+                <!-- Level 189 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 189</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.54$</div>
+                    <div class="miner-speed">Speed 5.88 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
+                </div>
+
+                <!-- Level 190 (Locked) -->
+                <div class="miner-card">
+                    <div class="lvl-text">Lvl 190</div>
+                    <div class="miner-price-box" style="color: #2ea043;">8.76$</div>
+                    <div class="miner-speed">Speed 5.98 TH/s</div>
+                    <div class="lock-icon">🔒</div>
+                    <button class="status-badge badge-locked">Locked</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. FRIENDS TAB -->
+        <div id="tab-friends" class="tab-content">
+            <div class="top-bar">
+                <span>Friends & Referrals</span>
+            </div>
+            <div class="card" style="text-align: center; padding: 25px;">
+                <h3 style="color: #f0b90b; margin-bottom: 10px;">Invite Friends!</h3>
+                <p style="color: #8b949e; font-size: 13px; margin-bottom: 20px;">Get 10% bonus from your friends' GRM mining speed.</p>
+                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="alert('Referral link copied!')">Copy Invite Link</button>
+            </div>
+        </div>
+
+        <!-- 5. PROFILE TAB -->
+        <div id="tab-profile" class="tab-content">
+            <div class="top-bar">
+                <span>Profile</span>
+                <button class="close-btn">✕ Close</button>
+            </div>
+            <div class="card profile-row">
+                <div>User ID</div>
+                <div style="color: #8b949e;">... ✔️</div>
+            </div>
+            <div class="card profile-row">
+                <div>
+                    <div>Account Verification</div>
+                    <div style="font-size: 11px; color: #8b949e;">Verified ✔️</div>
+                </div>
+                <div class="verified-badge">Verified</div>
+            </div>
+            <div class="card">
+                <div style="font-size: 12px; color: #8b949e;">Assets</div>
+                <div style="font-size: 16px; font-weight: bold; color: #f0b90b; margin-top: 4px;">9,958.2175 GRM <span style="color: #2ea043; font-size: 13px;">≈ 7.38$</span></div>
+            </div>
+            <div class="card">
+                <div style="font-size: 12px; color: #8b949e;">Holding Wallet</div>
+                <div style="font-size: 15px; font-weight: bold; margin-top: 4px;">8,618.027 GRM</div>
+            </div>
+            <div class="card profile-row">
+                <div>
+                    <div style="font-size: 12px; color: #8b949e;">Pool Wallet</div>
+                    <div style="font-size: 13px;">Withdrawable balance</div>
+                </div>
+                <div style="color: #2ea043; font-weight: bold;">1,340.1901 GRM</div>
+            </div>
+            <div class="card profile-row">
+                <div>
+                    <strong>Withdraw</strong>
+                    <div style="font-size: 11px; color: #8b949e;">Transfer Pool to Wallet</div>
+                </div>
+                <button class="action-btn" onclick="alert('Withdraw requested!')">Withdraw</button>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Bottom Nav -->
+    <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
-        <button class="nav-item active"><span class="icon">⛏️</span><span>Mine</span></button>
+        <button class="nav-item" onclick="switchTab('mine', this)">
+            <span class="icon">⛏️</span>
+            <span>Mine</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('tasks', this)">
+            <span class="icon">📋</span>
+            <span>Tasks</span>
+        </button>
+        <button class="nav-item active" onclick="switchTab('miners', this)">
+            <span class="icon">⚡</span>
+            <span>Miners</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('friends', this)">
+            <span class="icon">👥</span>
+            <span>Friends</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('profile', this)">
+            <span class="icon">👤</span>
+            <span>Profile</span>
+        </button>
     </div>
 
     <script>
-        let enteredPasscode = "";
-
-        function startTonConnectFlow() {
-            document.getElementById('wallet-modal').classList.add('active');
-            document.getElementById('modal-loading-view').style.display = 'block';
-            document.getElementById('modal-select-app-view').style.display = 'none';
-
-            // ဗီဒီယိုထဲကလို Loading ခဏပြပြီး Select App ပေါ်လာအောင် လုပ်ခြင်း
+        // Splash screen handler
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            const mainApp = document.querySelector('.main-container');
+            splash.style.opacity = '0';
             setTimeout(() => {
-                document.getElementById('modal-loading-view').style.display = 'none';
-                document.getElementById('modal-select-app-view').style.display = 'block';
-            }, 1500);
-        }
+                splash.style.display = 'none';
+                mainApp.style.display = 'block';
+            }, 500);
+        }, 1500);
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        function openPasscodeScreen() {
-            closeModal('wallet-modal');
-            enteredPasscode = "";
-            updatePasscodeDots();
-            document.getElementById('passcode-screen').style.display = 'flex';
-        }
-
-        function pressNum(num) {
-            if (enteredPasscode.length < 4) {
-                enteredPasscode += num;
-                updatePasscodeDots();
-            }
-            if (enteredPasscode.length === 4) {
-                setTimeout(() => {
-                    document.getElementById('passcode-screen').style.display = 'none';
-                    document.getElementById('tonkeeper-approval-modal').classList.add('active');
-                }, 300);
-            }
-        }
-
-        function updatePasscodeDots() {
-            for (let i = 0; i < 4; i++) {
-                const dot = document.getElementById('dot-' + i);
-                if (i < enteredPasscode.length) {
-                    dot.classList.add('filled');
-                } else {
-                    dot.classList.remove('filled');
-                }
-            }
-        }
-
-        function finalizeConnection() {
-            closeModal('tonkeeper-approval-modal');
-            document.getElementById('wallet-unconnected').style.display = 'none';
-            document.getElementById('wallet-connected').style.display = 'block';
-        }
-
-        function toggleWalletMenu() {
-            document.getElementById('wallet-dropdown').classList.toggle('show');
-        }
-
-        function copyAddress() {
-            navigator.clipboard.writeText("UQBV...zssX");
-            alert('Address copied to clipboard!');
-            toggleWalletMenu();
-        }
-
-        function disconnectWallet() {
-            document.getElementById('wallet-connected').style.display = 'none';
-            document.getElementById('wallet-unconnected').style.display = 'block';
-            toggleWalletMenu();
+        // Tab Switching Function
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove('active');
+            });
+            
+            document.getElementById('tab-' + tabName).classList.add('active');
+            element.classList.add('active');
         }
     </script>
 </body>
