@@ -9,7 +9,6 @@ bot.command("start", async (ctx) => {
     const userId = ctx.from.id;
     const username = ctx.from.username || "";
 
-    // 1. Check user in Supabase
     const { data: existingUser } = await supabase
       .from("users")
       .select("*")
@@ -18,40 +17,36 @@ bot.command("start", async (ctx) => {
 
     if (!existingUser) {
       await supabase.from("users").insert([
-        {
-          id: userId,
-          username: username,
-          balance: 50,
-          verified: false
-        }
+        { id: userId, username: username, balance: 50, verified: false }
       ]);
     }
 
-    // 2. Welcome UI & Buttons
+    // ပုံထဲပါသည့်အတိုင်း ခလုတ်နာမည်များကို ထည့်သွင်းခြင်း
     const keyboard = new InlineKeyboard()
-      .web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
+      .web_app("🚀 Start ATF Mining", "https://grm-trading-bot.vercel.app/")
       .row()
       .url("🌐 Community", "https://t.me/AI_TRADING_FOREX");
 
-    const photoUrl = "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1000&auto=format&fit=crop";
-
+    // ပုံထဲပါသည့်အတိုင်း စာသားအတိအကျ
     const captionText = 
-      `👋 *Welcome to TRADING_GRAM!*\n\n` +
-      `⛏ Mine tokens directly to your Pool Wallet.\n` +
+      `👋 Welcome to ATF Miner!\n\n` +
+      `⛏ Mine ATF tokens directly to your Pool Wallet.\n` +
       `⚡ Tap to boost mining speed!\n` +
-      `👤 Your ID: \`${userId}\`\n\n` +
+      `🔗 Connect your TON wallet.\n` +
+      `💰 Hold ATF to upgrade your miner level!\n\n` +
       `Click below to start.`;
+
+    // ပုံပါလင့်ခ် (သို့မဟုတ် သင်အသုံးပြုလိုသော ပုံလင့်ခ်)
+    const photoUrl = "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1000&auto=format&fit=crop";
 
     await ctx.replyWithPhoto(photoUrl, {
       caption: captionText,
-      parse_mode: "Markdown",
       reply_markup: keyboard
     });
-
   } catch (error) {
-    console.error("Start error:", error);
-    await ctx.reply("Welcome to TRADING_GRAM! Tap below to start mining.", {
-      reply_markup: new InlineKeyboard().web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
+    console.error("Error:", error);
+    await ctx.reply("👋 Welcome to ATF Miner!\n\nClick below to start.", {
+      reply_markup: new InlineKeyboard().web_app("🚀 Start ATF Mining", "https://grm-trading-bot.vercel.app/")
     });
   }
 });
@@ -61,9 +56,9 @@ export default async function handler(req, res) {
     try {
       await bot.handleUpdate(req.body);
     } catch (err) {
-      console.error("Webhook error:", err);
+      console.error("Handler error:", err);
     }
     return res.status(200).json({ ok: true });
   }
-  return res.status(200).send("Bot is running!");
+  return res.status(200).send("Bot is active!");
 }
