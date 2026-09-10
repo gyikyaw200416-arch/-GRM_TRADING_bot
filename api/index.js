@@ -12,19 +12,15 @@ bot.command("start", async (ctx) => {
   const user = ctx.from;
 
   try {
-    const { error } = await supabase
+    await supabase
       .from("telegram_users")
       .upsert({
         id: user.id,
         username: user.username || "",
         first_name: user.first_name || "",
       });
-
-    if (error) {
-      console.error("Supabase Error:", error);
-    }
   } catch (err) {
-    console.error("Database connection error:", err);
+    console.error("Database error:", err);
   }
 
   const photoUrl = "https://picsum.photos/800/400";
@@ -49,14 +45,13 @@ Click below to start.`;
   });
 });
 
-// Vercel Serverless Function အတွက် Handler အသစ်
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
       await bot.handleUpdate(req.body);
       return res.status(200).json({ ok: true });
     } catch (err) {
-      console.error("Bot error:", err);
+      console.error("Bot update error:", err);
       return res.status(500).json({ error: "Failed to process update" });
     }
   }
