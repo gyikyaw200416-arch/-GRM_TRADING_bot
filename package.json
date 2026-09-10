@@ -1,0 +1,12 @@
+{
+  "name": "grm-trading-bot",
+  "version": "1.0.0",
+  "description": "Telegram Bot with GrammY",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "grammy": "^1.21.1"
+  }
+}
