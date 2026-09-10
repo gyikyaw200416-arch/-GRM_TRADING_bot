@@ -41,10 +41,11 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
       await bot.handleUpdate(req.body);
+      return res.status(200).json({ ok: true });
     } catch (err) {
       console.error("Webhook handle error:", err);
+      return res.status(500).json({ error: err.message });
     }
-    return res.status(200).json({ ok: true });
   }
   return res.status(200).send("TRADING_GRAM Bot is active and running!");
 }
