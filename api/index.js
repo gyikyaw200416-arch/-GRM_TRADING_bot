@@ -2,6 +2,13 @@ import { Bot, InlineKeyboard } from "grammy";
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
+// Optional: Helper handler to catch photo file IDs if needed
+bot.on("message:photo", async (ctx) => {
+  const photo = ctx.message.photo;
+  const fileId = photo[photo.length - 1].file_id;
+  await ctx.reply(`File ID: ${fileId}`);
+});
+
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
     .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // Replace with your actual Web App URL
@@ -10,14 +17,14 @@ bot.command("start", async (ctx) => {
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
-    "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+    "⛏️ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
     "⚡ *Tap to boost mining speed!*\n" +
     "🔗 *Connect your TON wallet.*\n" +
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
   try {
-    // GitHub Raw URL အစား ပုံသေပေါက်ပေါ်စေမည့် jsdelivr CDN လင့်ခ်ကို သုံးထားသည်
+    // jsdelivr CDN လင့်ခ်ဖြင့် ပုံပြသခြင်း
     await ctx.replyWithPhoto(
       "https://cdn.jsdelivr.net/gh/gyikyaw/-GRM_TRADING_bot@main/IMG_20260910_112246_587.jpg",
       {
