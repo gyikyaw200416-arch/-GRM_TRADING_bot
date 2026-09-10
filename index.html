@@ -3,352 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRM Mining Core</title>
+    <title>Monsterland Mining</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
-            background-color: #05070b;
-            color: #ffffff;
-            overflow: hidden;
-        }
-        .app-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, #1a233a 0%, #05070b 100%);
-            z-index: -1;
-        }
-
-        /* Splash Screen */
-        #splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #05070b;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.6s ease;
-        }
-        .logo-box {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #f0b90b 0%, #ff5722 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 35px rgba(240, 185, 11, 0.6);
-            margin-bottom: 30px;
-        }
-        .logo-inner {
-            width: 138px;
-            height: 138px;
-            border-radius: 50%;
-            background-color: #0b0f19;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .logo-box span {
-            background: linear-gradient(135deg, #f0b90b, #ff9800);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: 2px;
-        }
-        .loading-text {
-            color: #f0b90b;
-            font-size: 16px;
-            font-weight: 600;
-            background: rgba(240, 185, 11, 0.1);
-            padding: 12px 30px;
-            border-radius: 30px;
-            border: 1px solid rgba(240, 185, 11, 0.4);
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { width: 100%; height: 100%; background-color: #0b0f19; color: #ffffff; overflow: hidden; }
+        .app-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #16223b 0%, #0b0f19 100%); z-index: -1; }
 
         /* Main Container */
-        .main-container {
-            display: none;
-            width: 100%;
-            height: calc(100% - 65px);
-            overflow-y: auto;
-            padding: 15px;
-            padding-bottom: 80px;
-        }
+        .main-container { width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         /* Top Bar */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 15px;
-            font-weight: bold;
-            position: relative;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            background: #121824;
-            padding: 5px 10px;
-            border-radius: 8px;
-            border: 1px solid #212d42;
-        }
-        .lvl-badge {
-            background: #212d42;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            color: #f0b90b;
-        }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; }
+        .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: #121824; padding: 5px 10px; border-radius: 8px; border: 1px solid #212d42; }
+        .lvl-badge { background: #d4af37; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
 
-        /* Wallet Buttons */
+        /* Wallet Button */
         .wallet-container { position: relative; }
-        .connect-wallet-btn {
-            background: #0088cc;
-            color: #fff;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .wallet-address-btn {
-            background: #121824;
-            color: #00f0ff;
-            border: 1px solid #00f0ff;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .connect-wallet-btn { background: #0088cc; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 0 10px rgba(0, 136, 204, 0.4); }
+        .wallet-address-btn { background: #121824; color: #00f0ff; border: 1px solid #00f0ff; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
         /* Wallet Dropdown Menu */
-        .wallet-dropdown {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 38px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            width: 150px;
-            z-index: 100;
-            overflow: hidden;
-        }
+        .wallet-dropdown { display: none; position: absolute; right: 0; top: 38px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); width: 150px; z-index: 100; overflow: hidden; }
         .wallet-dropdown.show { display: block; }
-        .dropdown-item {
-            padding: 10px 12px;
-            font-size: 12px;
-            color: #fff;
-            cursor: pointer;
-            background: none;
-            width: 100%;
-            text-align: left;
-            border: none;
-            border-bottom: 1px solid #212d42;
-        }
+        .dropdown-item { padding: 10px 12px; font-size: 12px; color: #fff; cursor: pointer; background: none; width: 100%; text-align: left; border: none; border-bottom: 1px solid #212d42; }
         .dropdown-item:hover { background: #212d42; }
         .dropdown-item.disconnect { color: #ff5722; }
 
-        /* Modals */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 2000;
-            justify-content: center;
-            align-items: flex-end;
-        }
+        /* Modals Overlay */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; justify-content: center; align-items: flex-end; }
         .modal-overlay.active { display: flex; }
-        .wallet-modal-content {
-            background: #121824;
-            width: 100%;
-            max-width: 450px;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            padding: 20px;
-            border-top: 1px solid #30363d;
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            color: #8b949e;
-            font-size: 18px;
-            cursor: pointer;
-        }
-        .tg-wallet-btn {
-            background: #0088cc;
-            color: #fff;
-            width: 100%;
-            padding: 12px;
-            border-radius: 12px;
-            border: none;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-        .other-apps-title { font-size: 12px; color: #8b949e; margin-bottom: 10px; }
-        .wallet-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            text-align: center;
-        }
-        .wallet-option {
-            background: #1a233a;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 10px 5px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            font-size: 11px;
-            color: #fff;
-        }
-        .wallet-option:hover { border-color: #0088cc; }
-        .wallet-icon {
-            width: 32px;
-            height: 32px;
-            background: #00f0ff;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: #000;
-        }
+        
+        /* Modal Content */
+        .wallet-modal-content { background: #121824; width: 100%; max-width: 450px; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; border-top: 1px solid #30363d; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 16px; font-weight: bold; }
+        .modal-close { background: none; border: none; color: #8b949e; font-size: 18px; cursor: pointer; }
+        
+        /* Spinner & Loading States inside Modal */
+        .ton-connect-loading { text-align: center; padding: 20px 0; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 136, 204, 0.2); border-top: 4px solid #0088cc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .select-app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .select-app-option { background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: #fff; }
+        .select-app-option:hover { border-color: #0088cc; }
+        .app-icon-circle { width: 36px; height: 36px; background: #0088cc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; }
 
-        /* Tonkeeper Approval Screen */
-        .tonkeeper-connect-box { text-align: center; padding: 10px 0; }
-        .tk-logo-ring {
-            width: 60px; height: 60px; background: #0088cc; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            margin: 0 auto 15px auto; font-size: 24px; box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
-        }
-        .tk-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
-        .tk-desc { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.4; }
-        .tk-account-selector {
-            background: #1a233a; border: 1px solid #30363d; border-radius: 12px;
-            padding: 12px; display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; cursor: pointer;
-        }
-        .tk-acc-left { display: flex; align-items: center; gap: 10px; text-align: left; }
-        .tk-key-icon {
-            width: 30px; height: 30px; background: #222; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; font-size: 14px;
-        }
-        .tk-acc-name { font-size: 13px; font-weight: bold; }
-        .tk-acc-addr { font-size: 11px; color: #8b949e; }
-        .tk-connect-action-btn {
-            background: #0088cc; color: #fff; width: 100%; padding: 14px;
-            border-radius: 12px; border: none; font-size: 15px; font-weight: bold; cursor: pointer;
-        }
+        /* Passcode Screen (Video style) */
+        #passcode-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0f19; z-index: 3000; flex-direction: column; justify-content: center; align-items: center; }
+        .passcode-dots { display: flex; gap: 15px; margin: 25px 0; }
+        .dot { width: 14px; height: 14px; border: 2px solid #58a6ff; border-radius: 50%; background: transparent; transition: 0.2s; }
+        .dot.filled { background: #58a6ff; }
+        .passcode-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 15px; text-align: center; }
+        .num-btn { background: #161b22; border: 1px solid #30363d; color: #fff; font-size: 24px; height: 60px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 0 auto; width: 60px; }
+        .num-btn:active { background: #30363d; }
 
-        /* Cards Style */
-        .card {
-            background: #121824;
-            border: 1px solid #212d42;
-            border-radius: 14px;
-            padding: 15px;
-            margin-bottom: 12px;
-        }
+        /* Tonkeeper Approval Screen (Video style 00:07 - 00:09) */
+        .tk-approval-box { text-align: center; padding: 10px 0; }
+        .tk-ring { width: 50px; height: 50px; background: #0088cc; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 10px auto; font-size: 22px; }
+        .tk-project-logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #f0b90b; }
+        .tk-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .tk-desc { font-size: 12px; color: #8b949e; margin-bottom: 15px; line-height: 1.4; }
+        
+        .account-box { background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .acc-left { display: flex; align-items: center; gap: 10px; text-align: left; }
+        .acc-key { width: 28px; height: 28px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; }
+        
+        .notification-toggle { display: flex; justify-content: space-between; align-items: center; background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 10px 12px; margin-bottom: 20px; font-size: 13px; }
+        .toggle-switch { width: 40px; height: 22px; background: #238636; border-radius: 11px; position: relative; cursor: pointer; }
+        .toggle-switch::after { content: ''; position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: 0.2s; }
+        
+        .tk-connect-btn { background: #0088cc; color: #fff; width: 100%; padding: 13px; border-radius: 12px; border: none; font-size: 14px; font-weight: bold; cursor: pointer; }
+
+        /* Cards & UI Elements */
+        .card { background: #121824; border: 1px solid #212d42; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
         .mine-header { text-align: center; margin-bottom: 15px; }
-        .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
-        .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
-        .wallet-info-row { display: flex; justify-content: space-around; text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 8px; }
-        .mining-rate { text-align: center; color: #00f0ff; font-size: 20px; font-weight: bold; margin: 10px 0; }
-        .coin-box {
-            width: 150px; height: 150px; margin: 15px auto;
-            background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
-            border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); border: 4px solid #ffe873;
-        }
-        .coin-inner-text { font-size: 30px; font-weight: 900; color: #111; }
-        .claim-btn {
-            background: linear-gradient(135deg, #f0b90b 0%, #ff9800 100%);
-            color: #000; width: 100%; padding: 14px; border: none; border-radius: 12px;
-            font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(240, 185, 11, 0.4); margin-top: 10px;
-        }
-
-        /* Miners Grid */
-        .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .miner-card { background: #0f141f; border: 1px solid #212d42; border-radius: 12px; padding: 12px; position: relative; }
-        .miner-card.active-border { border: 1px solid #f0b90b; }
-        .miner-card.unlock-border { border: 1px solid #2ea043; }
-        .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
-        .miner-price-box { font-size: 18px; font-weight: bold; color: #2ea043; margin-bottom: 4px; }
-        .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; }
-        .status-badge { width: 100%; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; text-align: center; border: none; cursor: pointer; }
-        .badge-active { background-color: #238636; color: #fff; }
-        .badge-need { background-color: #f0b90b; color: #000; }
-        .badge-locked { background-color: #1a233a; color: #8b949e; }
-        .unlock-subtext { font-size: 9px; color: #2ea043; text-align: center; margin-top: 4px; }
-        .lock-icon { text-align: center; font-size: 16px; margin: 4px 0; }
-
-        /* Profile & Common */
-        .profile-row { display: flex; justify-content: space-between; align-items: center; }
-        .verified-badge { background-color: #238636; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .action-btn { background-color: #f0b90b; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; }
+        .claim-btn { background: linear-gradient(135deg, #f0b90b 0%, #ff9800 100%); color: #000; width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; }
 
         /* Bottom Navigation Bar */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
-            background-color: #0b0f19; border-top: 1px solid #212d42;
-            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
-        }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background-color: #0b0f19; border-top: 1px solid #212d42; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #f0b90b; }
         .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
@@ -358,92 +95,112 @@
 
     <div class="app-bg"></div>
 
-    <!-- Splash Screen -->
-    <div id="splash-screen">
-        <div class="logo-box">
-            <div class="logo-inner">
-                <span>GRM</span>
-            </div>
+    <!-- Passcode Screen (ဗီဒီယို အပိုင်း 00:04) -->
+    <div id="passcode-screen">
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">Enter passcode</div>
+        <div class="passcode-dots">
+            <div class="dot" id="dot-0"></div>
+            <div class="dot" id="dot-1"></div>
+            <div class="dot" id="dot-2"></div>
+            <div class="dot" id="dot-3"></div>
         </div>
-        <div class="loading-text">Loading GRM Miner...</div>
+        <div class="passcode-grid">
+            <button class="num-btn" onclick="pressNum(1)">1</button>
+            <button class="num-btn" onclick="pressNum(2)">2</button>
+            <button class="num-btn" onclick="pressNum(3)">3</button>
+            <button class="num-btn" onclick="pressNum(4)">4</button>
+            <button class="num-btn" onclick="pressNum(5)">5</button>
+            <button class="num-btn" onclick="pressNum(6)">6</button>
+            <button class="num-btn" onclick="pressNum(7)">7</button>
+            <button class="num-btn" onclick="pressNum(8)">8</button>
+            <button class="num-btn" onclick="pressNum(9)">9</button>
+            <div></div>
+            <button class="num-btn" onclick="pressNum(0)">0</button>
+            <div></div>
+        </div>
     </div>
 
-    <!-- Wallet Selection Modal -->
+    <!-- Step 1: Connect Modal (ဗီဒီယို အပိုင်း 00:01) -->
     <div id="wallet-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
                 <span>Connect your TON wallet</span>
                 <button class="modal-close" onclick="closeModal('wallet-modal')">✕</button>
             </div>
-            <button class="tg-wallet-btn" onclick="selectWallet('Telegram Wallet', 'UQTR...8wQz')">
-                <span>🧊</span> Connect Wallet in Telegram
-            </button>
-            <div class="other-apps-title">Choose other application</div>
-            <div class="wallet-grid">
-                <div class="wallet-option" onclick="openTonkeeperApproval()">
-                    <div class="wallet-icon" style="background:#0088cc;">T</div>
-                    <span>Tonkeeper</span>
-                </div>
-                <div class="wallet-option" onclick="selectWallet('Gram Wallet', 'UQGR...7mno')">
-                    <div class="wallet-icon" style="background:#f0b90b;">G</div>
-                    <span>Gram Wallet</span>
-                </div>
-                <div class="wallet-option" onclick="selectWallet('My Wallet', 'UQMY...3abc')">
-                    <div class="wallet-icon" style="background:#2ea043;">M</div>
-                    <span>My Wallet</span>
-                </div>
-                <div class="wallet-option" onclick="selectWallet('Web Wallet', 'UQAL...5def')">
-                    <div class="wallet-icon" style="background:#ff5722;">🌐</div>
-                    <span>View all</span>
+            
+            <!-- Loading view inside modal (ဗီဒီယို 00:01 - 00:02) -->
+            <div id="modal-loading-view" class="ton-connect-loading">
+                <div class="spinner"></div>
+                <div style="font-size: 13px; color: #8b949e; margin-bottom: 15px;">Continue in Tonkeeper...</div>
+            </div>
+
+            <!-- Select App view (ဗီဒီယို 00:02 - 00:03) -->
+            <div id="modal-select-app-view" style="display: none;">
+                <div style="font-size: 13px; color: #8b949e; margin-bottom: 10px; text-align: center;">Select app</div>
+                <div class="select-app-grid">
+                    <div class="select-app-option" onclick="openPasscodeScreen()">
+                        <div class="app-icon-circle">💎</div>
+                        <span>Tonkeeper</span>
+                    </div>
+                    <div class="select-app-option" onclick="openPasscodeScreen()">
+                        <div class="app-icon-circle" style="background: #238636;">💎</div>
+                        <span>Tonkeeper</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tonkeeper Approval Screen -->
+    <!-- Step 2: Tonkeeper Final Approval Screen (ဗီဒီယို 00:07 - 00:09) -->
     <div id="tonkeeper-approval-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
                 <span>Tonkeeper</span>
                 <button class="modal-close" onclick="closeModal('tonkeeper-approval-modal')">✕</button>
             </div>
-            <div class="tonkeeper-connect-box">
-                <div class="tk-logo-ring">💎</div>
-                <div class="tk-title">Connect to GRM</div>
-                <div class="tk-desc">GRM is requesting access to your wallet address:</div>
+            <div class="tk-approval-box">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div class="tk-ring">💎</div>
+                    <span style="font-size: 20px;">➔</span>
+                    <div style="width: 50px; height: 50px; background: #f0b90b; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #000;">M</div>
+                </div>
                 
-                <div class="tk-account-selector" onclick="cycleAddress()">
-                    <div class="tk-acc-left">
-                        <div class="tk-key-icon">🔑</div>
+                <div class="tk-title">Connect to playmonsterland.com</div>
+                <div class="tk-desc">Monsterland is requesting access to your wallet address:</div>
+                
+                <div class="account-box">
+                    <div class="acc-left">
+                        <div class="acc-key">🔑</div>
                         <div>
-                            <div class="tk-acc-name">Rampage528</div>
-                            <div class="tk-acc-addr" id="selected-tk-addr">UQBV...zssX</div>
+                            <div style="font-size: 13px; font-weight: bold;">Rampage528</div>
+                            <div style="font-size: 11px; color: #00f0ff;">UQBV...zssX</div>
                         </div>
                     </div>
-                    <span style="color: #00f0ff; font-size: 14px;">⇄</span>
+                    <span style="color: #238636; font-size: 14px;">✔</span>
                 </div>
 
-                <button class="tk-connect-action-btn" onclick="confirmTonkeeperConnect()">Connect wallet</button>
+                <div class="notification-toggle">
+                    <span>Allow Notifications</span>
+                    <div class="toggle-switch"></div>
+                </div>
+
+                <button class="tk-connect-btn" onclick="finalizeConnection()">Connect wallet</button>
             </div>
         </div>
     </div>
 
-    <!-- Main App Container -->
+    <!-- Main Container -->
     <div class="main-container">
-
-        <!-- MINE TAB -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
-                    <span class="lvl-badge">Lvl 1</span>
-                    <span>Sky ⛏️</span>
-                    <span style="font-size: 10px; color: #8b949e;">IDLE</span>
+                    <span class="lvl-badge">Lv.15</span>
+                    <span>Shadow 🛡️</span>
                 </div>
                 
-                <!-- Wallet Area -->
                 <div class="wallet-container">
                     <div id="wallet-unconnected">
-                        <button class="connect-wallet-btn" onclick="openWalletModal()">💎 Connect Wallet</button>
+                        <button class="connect-wallet-btn" onclick="startTonConnectFlow()">💎 Connect Wallet</button>
                     </div>
                     <div id="wallet-connected" style="display: none;">
                         <button class="wallet-address-btn" onclick="toggleWalletMenu()">
@@ -457,159 +214,82 @@
                 </div>
             </div>
 
-            <div style="font-size: 10px; color: #2ea043; margin-bottom: 10px;">0.07$ left to Lvl UP</div>
-
-            <div class="mine-header">
-                <div class="asset-title">ASSETS</div>
-                <div class="asset-amount">0.0000 GRM</div>
-            </div>
-
-            <div class="wallet-info-row">
-                <span>HOLDING WALLET: 0 GRM</span>
-                <span>POOL WALLET: 0.0000 GRM</span>
-            </div>
-
-            <div class="mining-rate">+0.0000</div>
-
-            <div class="coin-box">
-                <div class="coin-inner-text">GRM</div>
-            </div>
-            <button class="claim-btn" onclick="alert('START / CLAIM GRM!')">START</button>
-        </div>
-
-        <!-- TASKS TAB -->
-        <div id="tab-tasks" class="tab-content">
-            <div class="top-bar"><span>Tasks & Channel Joins</span></div>
-            <div class="card profile-row">
-                <div>
-                    <strong>Join Official Telegram Channel</strong>
-                    <p style="font-size: 12px; color: #8b949e;">Earn +5 GRM</p>
-                </div>
-                <button class="action-btn" onclick="alert('Joined successfully!')">Join</button>
+            <div class="card mine-header">
+                <div style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">ALL-TIME EARNINGS</div>
+                <div class="asset-amount">2.83M LUMIS</div>
+                <button class="claim-btn">INVITE TO EARN LUMIS</button>
             </div>
         </div>
-
-        <!-- MINERS TAB -->
-        <div id="tab-miners" class="tab-content">
-            <div class="top-bar"><span>Miner Store</span></div>
-            <div class="miners-grid">
-                <div class="miner-card active-border">
-                    <div class="lvl-text">Lvl 185</div>
-                    <div class="miner-price-box">7.72$</div>
-                    <div class="miner-speed">Speed 5.46 TH/s</div>
-                    <button class="status-badge badge-active">ACTIVE</button>
-                </div>
-                <div class="miner-card unlock-border">
-                    <div class="lvl-text">Lvl 186</div>
-                    <div class="miner-price-box">7.91$</div>
-                    <div class="miner-speed">Speed 5.56 TH/s</div>
-                    <button class="status-badge badge-need">NEED 10,695 GRM</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- FRIENDS TAB -->
-        <div id="tab-friends" class="tab-content">
-            <div class="top-bar"><span>Friends & Referrals</span></div>
-            <div class="card" style="text-align: center; padding: 25px;">
-                <h3 style="color: #f0b90b; margin-bottom: 10px;">Invite Friends!</h3>
-                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="alert('Link copied!')">Copy Invite Link</button>
-            </div>
-        </div>
-
-        <!-- PROFILE TAB -->
-        <div id="tab-profile" class="tab-content">
-            <div class="top-bar">
-                <span>Profile</span>
-                <button class="action-btn" style="background:none; color:#fff;" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
-            </div>
-            <div class="card profile-row">
-                <div>Account Status</div>
-                <div class="verified-badge">Verified ✔️</div>
-            </div>
-        </div>
-
     </div>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- Bottom Nav -->
     <div class="bottom-nav">
-        <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">⛏️</span><span>Mine</span></button>
-        <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
-        <button class="nav-item" onclick="switchTab('miners', this)"><span class="icon">⚡</span><span>Miners</span></button>
-        <button class="nav-item" onclick="switchTab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
-        <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
+        <button class="nav-item active"><span class="icon">⛏️</span><span>Mine</span></button>
     </div>
 
     <script>
-        // Splash screen handler
-        setTimeout(() => {
-            const splash = document.getElementById('splash-screen');
-            const mainApp = document.querySelector('.main-container');
-            splash.style.opacity = '0';
-            setTimeout(() => {
-                splash.style.display = 'none';
-                mainApp.style.display = 'block';
-            }, 500);
-        }, 1200);
+        let enteredPasscode = "";
 
-        // Tab Switching
-        function switchTab(tabName, element) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-            element.classList.add('active');
-        }
-
-        // Wallet & Tonkeeper Logic (100% Offline / VPN-free)
-        let addresses = ['UQBV...zssX', 'UQAK...99pL', 'UQ77...11aB'];
-        let currentAddrIndex = 0;
-        let activeWalletAddress = addresses[0];
-
-        function openWalletModal() {
+        function startTonConnectFlow() {
             document.getElementById('wallet-modal').classList.add('active');
+            document.getElementById('modal-loading-view').style.display = 'block';
+            document.getElementById('modal-select-app-view').style.display = 'none';
+
+            // ဗီဒီယိုထဲကလို Loading ခဏပြပြီး Select App ပေါ်လာအောင် လုပ်ခြင်း
+            setTimeout(() => {
+                document.getElementById('modal-loading-view').style.display = 'none';
+                document.getElementById('modal-select-app-view').style.display = 'block';
+            }, 1500);
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
         }
 
-        function openTonkeeperApproval() {
+        function openPasscodeScreen() {
             closeModal('wallet-modal');
-            document.getElementById('tonkeeper-approval-modal').classList.add('active');
+            enteredPasscode = "";
+            updatePasscodeDots();
+            document.getElementById('passcode-screen').style.display = 'flex';
         }
 
-        function cycleAddress() {
-            currentAddrIndex = (currentAddrIndex + 1) % addresses.length;
-            activeWalletAddress = addresses[currentAddrIndex];
-            document.getElementById('selected-tk-addr').innerText = activeWalletAddress;
+        function pressNum(num) {
+            if (enteredPasscode.length < 4) {
+                enteredPasscode += num;
+                updatePasscodeDots();
+            }
+            if (enteredPasscode.length === 4) {
+                setTimeout(() => {
+                    document.getElementById('passcode-screen').style.display = 'none';
+                    document.getElementById('tonkeeper-approval-modal').classList.add('active');
+                }, 300);
+            }
         }
 
-        function selectWallet(walletName, address) {
-            activeWalletAddress = address;
-            finalizeConnection();
-        }
-
-        function confirmTonkeeperConnect() {
-            finalizeConnection();
+        function updatePasscodeDots() {
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (i < enteredPasscode.length) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            }
         }
 
         function finalizeConnection() {
-            closeModal('wallet-modal');
             closeModal('tonkeeper-approval-modal');
-            
-            document.getElementById('wallet-text').innerText = activeWalletAddress;
             document.getElementById('wallet-unconnected').style.display = 'none';
             document.getElementById('wallet-connected').style.display = 'block';
         }
 
         function toggleWalletMenu() {
-            const dropdown = document.getElementById('wallet-dropdown');
-            dropdown.classList.toggle('show');
+            document.getElementById('wallet-dropdown').classList.toggle('show');
         }
 
         function copyAddress() {
-            navigator.clipboard.writeText(activeWalletAddress);
-            alert('Address copied to clipboard: ' + activeWalletAddress);
+            navigator.clipboard.writeText("UQBV...zssX");
+            alert('Address copied to clipboard!');
             toggleWalletMenu();
         }
 
@@ -617,13 +297,6 @@
             document.getElementById('wallet-connected').style.display = 'none';
             document.getElementById('wallet-unconnected').style.display = 'block';
             toggleWalletMenu();
-        }
-
-        window.onclick = function(event) {
-            if (!event.target.matches('.wallet-address-btn') && !event.target.closest('.wallet-address-btn')) {
-                const dropdown = document.getElementById('wallet-dropdown');
-                if (dropdown && dropdown.classList.contains('show')) dropdown.classList.remove('show');
-            }
         }
     </script>
 </body>
