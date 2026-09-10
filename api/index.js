@@ -21,32 +21,18 @@ bot.command("start", async (ctx) => {
       ]);
     }
 
-    // ပုံထဲပါသည့်အတိုင်း ခလုတ်နာမည်များကို ထည့်သွင်းခြင်း
     const keyboard = new InlineKeyboard()
-      .web_app("🚀 Start ATF Mining", "https://grm-trading-bot.vercel.app/")
-      .row()
-      .url("🌐 Community", "https://t.me/AI_TRADING_FOREX");
+      .web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/");
 
-    // ပုံထဲပါသည့်အတိုင်း စာသားအတိအကျ
-    const captionText = 
-      `👋 Welcome to ATF Miner!\n\n` +
-      `⛏ Mine ATF tokens directly to your Pool Wallet.\n` +
-      `⚡ Tap to boost mining speed!\n` +
-      `🔗 Connect your TON wallet.\n` +
-      `💰 Hold ATF to upgrade your miner level!\n\n` +
-      `Click below to start.`;
-
-    // ပုံပါလင့်ခ် (သို့မဟုတ် သင်အသုံးပြုလိုသော ပုံလင့်ခ်)
-    const photoUrl = "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1000&auto=format&fit=crop";
-
-    await ctx.replyWithPhoto(photoUrl, {
-      caption: captionText,
+    await ctx.replyWithPhoto("https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1000&auto=format&fit=crop", {
+      caption: `👋 *Welcome to TRADING_GRAM!*\n\n⛏ Tap below to start mining.\n👤 Your ID: \`${userId}\``,
+      parse_mode: "Markdown",
       reply_markup: keyboard
     });
   } catch (error) {
-    console.error("Error:", error);
-    await ctx.reply("👋 Welcome to ATF Miner!\n\nClick below to start.", {
-      reply_markup: new InlineKeyboard().web_app("🚀 Start ATF Mining", "https://grm-trading-bot.vercel.app/")
+    console.error("Start error:", error);
+    await ctx.reply("Welcome! Click below to start mining.", {
+      reply_markup: new InlineKeyboard().web_app("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
     });
   }
 });
@@ -56,9 +42,9 @@ export default async function handler(req, res) {
     try {
       await bot.handleUpdate(req.body);
     } catch (err) {
-      console.error("Handler error:", err);
+      console.error("Webhook handle error:", err);
     }
     return res.status(200).json({ ok: true });
   }
-  return res.status(200).send("Bot is active!");
+  return res.status(200).send("TRADING_GRAM Bot is active and running!");
 }
