@@ -6,7 +6,7 @@ bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
     .webApp("🚀 Start Mining", "https://your-mining-website-url.com") // ကိုယ့် Web App လင့်ခ်ထည့်ရန်
     .row()
-    .url("🌐 Community", "https://t.me/your_channel"); // လိုချင်သော ချန်နယ်လင့်ခ်ထည့်ရန်
+    .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // တောင်းဆိုထားသော Discord Community လင့်ခ်
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
@@ -17,6 +17,7 @@ bot.command("start", async (ctx) => {
     "Click below to start.";
 
   try {
+    // GitHub ကနေ ပုံကို Raw လင့်ခ်ဖြင့် တိုက်ရိုက်ဆွဲယူရန်
     await ctx.replyWithPhoto(
       "https://raw.githubusercontent.com/gyikyaw/GRM_TRADING_bot/main/IMG_20260910_112246_587.jpg",
       {
