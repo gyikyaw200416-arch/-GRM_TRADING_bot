@@ -1,0 +1,4 @@
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://raw.githubusercontent.com/gyikyaw200416-arch/grm-trading-bot/main/tonconnect-manifest.json',
+    buttonRootId: 'ton-connect-button'
+});
