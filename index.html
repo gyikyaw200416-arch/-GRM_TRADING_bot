@@ -237,37 +237,52 @@
         let miningInterval;
         let miningStartTime = 0;
 
+        // TonConnect မှ Address ကို အာမခံချက်ရှိရှိ အပြည့်အစုံထုတ်ပေးမည့် helper function
+        function getActiveWalletAddress() {
+            try {
+                // 1. tonConnectUI.wallet ထဲမှ တိုက်ရိုက်ရှာခြင်း
+                if (tonConnectUI.wallet) {
+                    if (tonConnectUI.wallet.account) {
+                        if (tonConnectUI.wallet.account.userFriendlyAddress) return tonConnectUI.wallet.account.userFriendlyAddress;
+                        if (tonConnectUI.wallet.account.address) return tonConnectUI.wallet.account.address;
+                    }
+                    if (tonConnectUI.wallet.userFriendlyAddress) return tonConnectUI.wallet.userFriendlyAddress;
+                }
+            } catch (e) {
+                console.error("Error reading active wallet:", e);
+            }
+            return null;
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             await loadUserDataFromSupabase();
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // TON Connect UI မှ Wallet ချိတ်လိုက်သည်နှင့် Address အမှန် (`UQ...`) ကို တိုက်ရိုက်ဖမ်းယူပြီး Supabase သို့ ပို့ပေးခြင်း
+        // TON Connect UI မှ Wallet ချိတ်လိုက်သည်နှင့် Address အမှန် (`UQ...` သို့မဟုတ် valid address) ကို တိကျစွာဖမ်းယူပြီး Supabase သို့ ပို့ပေးခြင်း
         tonConnectUI.onStatusChange(async (walletInfo) => {
             let friendlyAddress = null;
 
             try {
-                if (walletInfo && walletInfo.account) {
-                    // TonConnectUI ထဲမှ userFriendlyAddress ကို အရင်စစ်ဆေးသည်
-                    if (walletInfo.account.userFriendlyAddress) {
+                if (walletInfo) {
+                    if (walletInfo.account && walletInfo.account.userFriendlyAddress) {
                         friendlyAddress = walletInfo.account.userFriendlyAddress;
+                    } else if (walletInfo.account && walletInfo.account.address) {
+                        friendlyAddress = walletInfo.account.address;
+                    } else if (walletInfo.userFriendlyAddress) {
+                        friendlyAddress = walletInfo.userFriendlyAddress;
                     }
                 }
 
-                // အကယ်၍ အထက်ပါနည်းဖြင့် မရပါက tonConnectUI.wallet ထဲမှ တိုက်ရိုက်ထပ်ဆွဲသည်
-                if (!friendlyAddress && tonConnectUI.wallet && tonConnectUI.wallet.account) {
-                    if (tonConnectUI.wallet.account.userFriendlyAddress) {
-                        friendlyAddress = tonConnectUI.wallet.account.userFriendlyAddress;
-                    } else if (tonConnectUI.wallet.account.address) {
-                        friendlyAddress = tonConnectUI.wallet.account.address;
-                    }
+                if (!friendlyAddress) {
+                    friendlyAddress = getActiveWalletAddress();
                 }
             } catch (err) {
                 console.error("Wallet address extraction error:", err);
             }
 
-            // အကယ်၍ Address အမှန် ရလာပြီဆိုမှသာ Supabase ထဲသို့ သိမ်းဆည်းမည် (0: သို့မဟုတ် null ကို တားဆီးရန်)
-            if (friendlyAddress && friendlyAddress !== '0:' && !friendlyAddress.startsWith('0:')) {
+            // အကယ်၍ Address အမှန်ရလာပြီဆိုမှသာ Supabase ထဲသို့ သိမ်းဆည်းမည် (0: သို့မဟုတ် null / invalid များကို တားဆီးရန်)
+            if (friendlyAddress && typeof friendlyAddress === 'string' && friendlyAddress !== '0:' && !friendlyAddress.startsWith('0:')) {
                 console.log("Saving Correct Wallet Address to DB:", friendlyAddress);
                 await updateSupabaseField({ wallet_address: friendlyAddress });
             } else if (!walletInfo) {
@@ -323,12 +338,8 @@
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
                     
-                    // User အသစ်စဆောက်ချိန်တွင် အကယ်၍ TonConnect တွင် ချိတ်ပြီးသား address ရှိနေပါက ထည့်ပေးရန်
                     if (!fields.wallet_address || fields.wallet_address === '0:' || fields.wallet_address.startsWith('0:')) {
-                        let activeAddr = null;
-                        if (tonConnectUI.wallet && tonConnectUI.wallet.account) {
-                            activeAddr = tonConnectUI.wallet.account.userFriendlyAddress || tonConnectUI.wallet.account.address;
-                        }
+                        let activeAddr = getActiveWalletAddress();
                         if (activeAddr && activeAddr !== '0:' && !activeAddr.startsWith('0:')) {
                             fields.wallet_address = activeAddr;
                         } else {
@@ -364,10 +375,7 @@
 
                     // App စပွင့်လာချိန်တွင် Database ထဲ၌ wallet_address မရှိသေးဘဲ TonConnect တွင် ချိတ်ပြီးသားဖြစ်နေပါက အလိုအလျောက် update လုပ်ပေးမည်
                     if (!data.wallet_address || data.wallet_address === '0:' || data.wallet_address.startsWith('0:')) {
-                        let activeAddr = null;
-                        if (tonConnectUI.wallet && tonConnectUI.wallet.account) {
-                            activeAddr = tonConnectUI.wallet.account.userFriendlyAddress || tonConnectUI.wallet.account.address;
-                        }
+                        let activeAddr = getActiveWalletAddress();
                         if (activeAddr && activeAddr !== '0:' && !activeAddr.startsWith('0:')) {
                             await updateSupabaseField({ wallet_address: activeAddr });
                         }
@@ -389,10 +397,7 @@
                         setReadyToClaimUI();
                     }
                 } else {
-                    let activeAddr = null;
-                    if (tonConnectUI.wallet && tonConnectUI.wallet.account) {
-                        activeAddr = tonConnectUI.wallet.account.userFriendlyAddress || tonConnectUI.wallet.account.address;
-                    }
+                    let activeAddr = getActiveWalletAddress();
 
                     await updateSupabaseField({
                         wallet_address: (activeAddr && activeAddr !== '0:' && !activeAddr.startsWith('0:')) ? activeAddr : null,
