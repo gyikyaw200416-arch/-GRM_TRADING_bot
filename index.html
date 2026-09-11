@@ -162,7 +162,7 @@
             border: 1px solid #30363d;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            width: 160px;
+            width: 170px;
             z-index: 100;
             overflow: hidden;
         }
@@ -177,9 +177,6 @@
             text-align: left;
             border: none;
             border-bottom: 1px solid #212d42;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
         .dropdown-item:hover { background: #212d42; }
         .dropdown-item.disconnect { color: #ff5722; }
@@ -345,7 +342,6 @@
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
-    <!-- Wallet Connect Modal -->
     <div id="wallet-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
@@ -378,7 +374,6 @@
         </div>
     </div>
 
-    <!-- Tonkeeper Approval Modal -->
     <div id="tonkeeper-approval-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
@@ -395,7 +390,7 @@
                         <div class="tk-key-icon">🔑</div>
                         <div>
                             <div class="tk-acc-name">Rampage528</div>
-                            <div class="tk-acc-addr" id="selected-tk-addr">UQA4-m...TonkeeperAutoX</div>
+                            <div class="tk-acc-addr" id="selected-tk-addr">UQBV9...TonkeeperAutoX</div>
                         </div>
                     </div>
                     <span style="color: #238636; font-size: 14px;">✔</span>
@@ -411,7 +406,6 @@
         </div>
     </div>
 
-    <!-- Main Container -->
     <div class="main-container">
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
@@ -421,18 +415,17 @@
                     <span style="font-size: 10px; color: #00f0ff;" id="mining-status-badge">IDLE</span>
                 </div>
                 
-                <!-- Wallet Button Section (Dynamic) -->
                 <div class="wallet-container">
                     <div id="wallet-unconnected">
                         <button class="connect-wallet-btn" onclick="openWalletModalFlow()">💎 Connect Wallet</button>
                     </div>
                     <div id="wallet-connected" style="display: none;">
                         <button class="wallet-address-btn" onclick="toggleWalletMenu()">
-                            <span id="wallet-text">UQA4-m...</span> ▾
+                            <span id="wallet-text">UQBV...zssX</span> ▾
                         </button>
                         <div id="wallet-dropdown" class="wallet-dropdown">
+                            <button class="dropdown-item" onclick="openWalletModalFlow()">🔄 Change Wallet</button>
                             <button class="dropdown-item" onclick="copyAddress()">📋 Copy address</button>
-                            <button class="dropdown-item" onclick="openWalletModalFlow()">🔄 Change wallet</button>
                             <button class="dropdown-item disconnect" onclick="disconnectWallet()">🔌 Disconnect</button>
                         </div>
                     </div>
@@ -510,54 +503,54 @@
 
     </div>
 
-    <!-- Bottom Navigation -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">⛏️</span><span>Mine</span></button>
         <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
         <button class="nav-item" onclick="switchTab('miners', this)"><span class="icon">⚡</span><span>Miners</span></button>
-        <button class="nav-item" onclick="switch`Tab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
+        <button class="nav-item" onclick="switchTab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
         <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
     </div>
 
     <script>
-        // ⚠️ အောက်ပါနေရာများတွင် သင်၏ Supabase Project ၏ URL နှင့် Anon Key ကို ထည့်ပါ
-        const SUPABASE_URL = 'https://YOUR_ACTUAL_PROJECT_ID.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'YOUR_ACTUAL_SUPABASE_ANON_KEY';
+        // အရေးကြီးသည် - သင့် Supabase Project ၏ URL နှင့် Anon Key ကို ဤနေရာတွင် အမှန်တကယ် ထည့်ပေးပါ
+        const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'your-anon-key-here';
         
         let _supabase = null;
         try {
-            if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('YOUR_ACTUAL_PROJECT_ID')) {
+            if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('your-project-id')) {
                 _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            } else {
-                console.warn("Supabase URL is not configured properly!");
             }
         } catch (e) {
-            console.warn("Supabase init error:", e);
+            console.warn("Supabase init notice:", e);
         }
 
-        // Persistent User ID စနစ် (Local Storage ဖြင့် အမြဲတမ်း မှတ်ထားမည်)
         let currentUserId = localStorage.getItem('grm_user_id');
         if (!currentUserId) {
             currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
-        // Page Load ဖြစ်ချိန်တွင် LocalStorage ထဲ Wallet ရှိမရှိ စစ်ဆေးပြီး UI ပေါ်တင်ပေးခြင်း
-        let activeWalletAddress = localStorage.getItem('grm_wallet_address') || '';
-
+        // App ပွင့်လာလျှင် Supabase ထဲတွင် သိမ်းထားပြီးသား Address ရှိမရှိ စစ်ဆေးပြီး UI ကို အရှင် (Real-time) ပြန်ပြပေးခြင်း
         window.addEventListener('DOMContentLoaded', async () => {
             setTimeout(hideSplashScreen, 1000);
-            
-            // App စဖွင့်ချင်း Wallet ချိတ်ထားပြီးသားရှိရင် UI မှာ ပြပေးမယ်
-            if (activeWalletAddress) {
-                updateWalletUI(true);
-            } else if (_supabase) {
-                // Database ထဲမှာ အရင်က သိမ်းထားတာ ရှိမရှိ စစ်မယ်
-                await fetchWalletFromSupabase();
+            if (_supabase) {
+                try {
+                    const { data, error } = await _supabase
+                        .from('wallets')
+                        .select('wallet_address')
+                        .eq('user_id', currentUserId)
+                        .single();
+                    
+                    if (data && data.wallet_address) {
+                        activeWalletAddress = data.wallet_address;
+                        updateWalletUI(true);
+                    }
+                } catch (err) {
+                    console.log("No existing wallet found in session.");
+                }
             }
         });
-
-        setTimeout(hideSplashScreen, 2000);
 
         function hideSplashScreen() {
             const splash = document.getElementById('splash-screen');
@@ -570,6 +563,7 @@
                 }, 400);
             }
         }
+        setTimeout(hideSplashScreen, 2000);
 
         function switchTab(tabName, element) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -578,6 +572,8 @@
             if (targetTab) targetTab.classList.add('active');
             if (element) element.classList.add('active');
         }
+
+        let activeWalletAddress = '';
 
         function openWalletModalFlow() {
             toggleWalletMenu(); // Dropdown ပိတ်ရန်
@@ -602,13 +598,13 @@
             if (tkModal) tkModal.classList.add('active');
         }
 
-        // Supabase သို့ Wallet Address သိမ်းဆည်းခြင်း (Upsert)
         async function saveAddressToSupabase(address) {
             if (!_supabase) {
-                console.warn("Supabase client is not initialized. Address saved locally only.");
+                alert("သတိပေးချက် - Supabase URL နှင့် Anon Key ကို ထည့်သွင်းထားခြင်း မရှိသေးပါ။");
                 return;
             }
             try {
+                // Upsert လုပ်ခြင်းဖြင့် user_id တူလျှင် အသစ်ဖြင့် အစားထိုးမည် (Change/Update လုပ်နိုင်ရန်)
                 const { error } = await _supabase
                     .from('wallets')
                     .upsert([
@@ -617,35 +613,15 @@
                 
                 if (error) {
                     console.error('Supabase Save Error:', error.message);
+                    alert('Database သို့ သိမ်းဆည်းရာတွင် အမှားအယွင်းရှိ နေပါသည်: ' + error.message);
                 } else {
-                    console.log('Wallet successfully synced to Supabase:', address);
+                    console.log('Wallet saved/updated successfully in Supabase:', address);
                 }
             } catch (err) {
-                console.error('Network or database connection error:', err);
+                console.error('Connection error:', err);
             }
         }
 
-        // Supabase မှ Wallet Address ကို ထုတ်ယူခြင်း
-        async function fetchWalletFromSupabase() {
-            if (!_supabase) return;
-            try {
-                const { data, error } = await _supabase
-                    .from('wallets')
-                    .select('wallet_address')
-                    .eq('user_id', currentUserId)
-                    .single();
-                
-                if (data && data.wallet_address) {
-                    activeWalletAddress = data.wallet_address;
-                    localStorage.setItem('grm_wallet_address', activeWalletAddress);
-                    updateWalletUI(true);
-                }
-            } catch (err) {
-                console.log('No existing wallet found in Supabase for this user.');
-            }
-        }
-
-        // Supabase မှ Wallet Address ကို ဖျက်ခြင်း (Disconnect လုပ်ချိန်)
         async function removeAddressFromSupabase() {
             if (!_supabase) return;
             try {
@@ -654,13 +630,12 @@
                     .delete()
                     .eq('user_id', currentUserId);
             } catch (err) {
-                console.error('Delete error:', err);
+                console.error('Connection error:', err);
             }
         }
 
         async function confirmTonkeeperConnect() {
-            activeWalletAddress = "UQA4-m...TonkeeperAutoX";
-            localStorage.setItem('grm_wallet_address', activeWalletAddress);
+            activeWalletAddress = "UQBV9...TonkeeperAutoX";
             await saveAddressToSupabase(activeWalletAddress);
             finalizeConnection();
         }
@@ -670,19 +645,13 @@
             if (!manualInputElem) return;
             const manualInput = manualInputElem.value.trim();
             if(!manualInput) {
-                alert('ကျေးဇူးပြု၍ Wallet Address ကို ထည့်သွင်းပေးပါ');
+                alert('ကျေးဇူးပြု၍ Wallet Address ကို အမှန်တကယ် ထည့်သွင်းပေးပါ');
                 return;
             }
             activeWalletAddress = manualInput;
-            localStorage.setItem('grm_wallet_address', activeWalletAddress);
             await saveAddressToSupabase(activeWalletAddress);
             finalizeConnection();
-        }
-
-        function finalizeConnection() {
-            closeModal('wallet-modal');
-            closeModal('tonkeeper-approval-modal');
-            updateWalletUI(true);
+            manualInputElem.value = '';
         }
 
         function updateWalletUI(isConnected) {
@@ -691,13 +660,20 @@
             const walletConnected = document.getElementById('wallet-connected');
 
             if (isConnected && activeWalletAddress) {
-                if (walletText) walletText.innerText = activeWalletAddress.substring(0, 6) + '...';
+                let shortAddr = activeWalletAddress.length > 10 ? activeWalletAddress.substring(0, 6) + '...' : activeWalletAddress;
+                if (walletText) walletText.innerText = shortAddr;
                 if (walletUnconnected) walletUnconnected.style.display = 'none';
                 if (walletConnected) walletConnected.style.display = 'block';
             } else {
                 if (walletConnected) walletConnected.style.display = 'none';
                 if (walletUnconnected) walletUnconnected.style.display = 'block';
             }
+        }
+
+        function finalizeConnection() {
+            closeModal('wallet-modal');
+            closeModal('tonkeeper-approval-modal');
+            updateWalletUI(true);
         }
 
         function toggleWalletMenu() {
@@ -707,14 +683,13 @@
 
         function copyAddress() {
             navigator.clipboard.writeText(activeWalletAddress);
-            alert('Address copied: ' + activeWalletAddress);
+            alert('Address copied to clipboard: ' + activeWalletAddress);
             toggleWalletMenu();
         }
 
         async function disconnectWallet() {
             await removeAddressFromSupabase();
             activeWalletAddress = '';
-            localStorage.removeItem('grm_wallet_address');
             updateWalletUI(false);
             toggleWalletMenu();
             alert('Wallet disconnected successfully.');
@@ -752,7 +727,7 @@
                         btn.innerText = "CLAIM GRM";
                         btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
                         btn.style.color = "#fff";
-                        if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
+                        if (statusBadge) statusBadge.innerText = " READY TO CLAIM";
                         if (coinBox) coinBox.classList.remove('mining-anim');
                     }
                 }, 1000);
