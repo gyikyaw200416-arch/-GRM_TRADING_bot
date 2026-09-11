@@ -128,7 +128,7 @@
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <div class="mining-rate" id="mining-rate-display">+0.0000</div>
+            <div class="mining-rate" id="mining-rate-display">00:00:00</div>
 
             <div class="coin-box" id="coin-box-elem">
                 <div class="coin-inner-text">GRM</div>
@@ -232,29 +232,34 @@
         });
 
         let currentBalance = 0.0000;
-        let minedAmount = 0.0000;
+        let minedAmount = 0.3000; // ၆ နာရီပြည့်လျှင် ရမည့် ဆုကြေးပမာဏ (လိုအပ်သလို ပြင်နိုင်သည်)
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
+        let miningDurationHours = 6; // ၆ နာရီ သတ်မှတ်ချက်
+        let miningDurationMs = miningDurationHours * 60 * 60 * 1000; // မီလီစက္ကန့်ပြောင်း
 
-        // Raw address ကို UQ/EQ address အဖြစ် သေချာပြောင်းပေးမည့် function အသزးပြုခြင်း
+        function formatTimeRemaining(ms) {
+            let totalSeconds = Math.floor(ms / 1000);
+            let hours = Math.floor(totalSeconds / 3600);
+            let minutes = Math.floor((totalSeconds % 3600) / 60);
+            let seconds = totalSeconds % 60;
+            return String(hours).padStart(2, '0') + ":" + 
+                   String(minutes).padStart(2, '0') + ":" + 
+                   String(seconds).padStart(2, '0');
+        }
+
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
-            
             try {
-                // 1. userFriendlyAddress ပါပြီးသားဆိုရင် ယူမယ်
                 if (walletObj.account && walletObj.account.userFriendlyAddress) {
                     return walletObj.account.userFriendlyAddress;
                 }
                 if (walletObj.userFriendlyAddress) {
                     return walletObj.userFriendlyAddress;
                 }
-                
-                // 2. address သို့မဟုတ် account.address (Raw format 0:...) ကို ယူမယ်
                 let rawAddr = (walletObj.account && walletObj.account.address) ? walletObj.account.address : walletObj.address;
-                
                 if (rawAddr) {
-                    // TON Connect UI ရဲ့ built-in helper ဖြင့် UQ/EQ ပုံစံသို့ ပြောင်းလဲခြင်း
                     if (typeof TON_CONNECT_UI !== 'undefined' && TON_CONNECT_UI.toUserFriendlyAddress) {
                         let isTestnet = false;
                         if (walletObj.account && walletObj.account.chain && walletObj.account.chain.toString() === '-3') {
@@ -289,10 +294,8 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Wallet ချိတ်လိုက်သည်နှင့် Address ကို Supabase ထဲသို့ တိုက်ရိုက် အတိအကျ ပို့ပေးမည်
         tonConnectUI.onStatusChange(async (walletInfo) => {
             let addressToSave = null;
-
             try {
                 if (walletInfo) {
                     addressToSave = extractUserFriendlyAddress(walletInfo);
@@ -305,7 +308,6 @@
             }
 
             if (addressToSave) {
-                console.log("Saving Address to Supabase:", addressToSave);
                 await updateSupabaseField({ wallet_address: addressToSave });
             } else {
                 await updateSupabaseField({ wallet_address: null });
@@ -344,7 +346,6 @@
                     .maybeSingle();
 
                 if (existing) {
-                    // အကယ်၍ DB ထဲမှာ wallet_address အဟောင်းရှိပြီး အသစ်က null ဖြစ်နေရင် အဟောင်းကို မပျက်စေရန် ထိန်းပေးသည်
                     if (fields.wallet_address === null && existing.wallet_address) {
                         delete fields.wallet_address;
                     }
@@ -386,13 +387,11 @@
 
                 if (data) {
                     currentBalance = parseFloat(data.balance) || 0;
-                    minedAmount = parseFloat(data.mined_amount) || 0;
                     miningStartTime = parseInt(data.mining_start_time) || 0;
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
-                    // App စပွင့်လာချိန်မှာ Wallet ချိတ်ပြီးသားဖြစ်ပေမယ့် Supabase မှာ address မရှိသေးရင် အလိုအလျောက် ထည့်ပေးမည်
                     if (!data.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
                         if (activeAddr) {
@@ -401,18 +400,15 @@
                     }
 
                     if (data.mining_state === 'mining' && miningStartTime > 0) {
-                        const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
-                        const calculatedMined = elapsedSeconds * 0.0015;
-
-                        if (calculatedMined >= 0.0500) {
-                            minedAmount = 0.0500;
+                        const elapsed = Date.now() - miningStartTime;
+                        
+                        if (elapsed >= miningDurationMs) {
                             setReadyToClaimUI();
+                            await updateSupabaseField({ mining_state: 'ready' });
                         } else {
-                            minedAmount = calculatedMined;
-                            resumeMiningUI();
+                            resumeMiningUI(miningStartTime);
                         }
                     } else if (data.mining_state === 'ready') {
-                        minedAmount = 0.0500;
                         setReadyToClaimUI();
                     }
                 } else {
@@ -434,11 +430,11 @@
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
 
             if (!isMining && btn.innerText === "START") {
                 isMining = true;
                 miningStartTime = Date.now();
+                
                 btn.innerText = "MINING IN PROGRESS...";
                 btn.style.background = "#212d42";
                 btn.style.color = "#00f0ff";
@@ -448,32 +444,25 @@
                 }
                 if (coinBox) coinBox.classList.add('mining-anim');
 
-                minedAmount = 0.0000;
-                updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime, mined_amount: 0 });
+                updateSupabaseField({ 
+                    mining_state: 'mining', 
+                    mining_start_time: miningStartTime 
+                });
 
-                miningInterval = setInterval(() => {
-                    minedAmount += 0.0015;
-                    if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
-                    
-                    if (minedAmount >= 0.0500) {
-                        clearInterval(miningInterval);
-                        setReadyToClaimUI();
-                        updateSupabaseField({ mining_state: 'ready', mined_amount: minedAmount });
-                    }
-                }, 1000);
+                startMiningCountdown(miningStartTime);
 
-            } else if (btn.innerText === "CLAIM GRM" || minedAmount >= 0.0500) {
+            } else if (btn.innerText === "CLAIM GRM") {
                 currentBalance += minedAmount;
+                
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
+                const rateDisplay = document.getElementById('mining-rate-display');
 
                 if (assetBalance) assetBalance.innerText = currentBalance.toFixed(4) + " GRM";
                 if (holdingWalletText) holdingWalletText.innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
+                if (rateDisplay) rateDisplay.innerText = "00:00:00";
                 
-                minedAmount = 0.0000;
-                if (rateDisplay) rateDisplay.innerText = "+0.0000";
                 isMining = false;
-                
                 btn.innerText = "START";
                 btn.style.background = "linear-gradient(135deg, #f0b90b 0%, #ff9800 100%)";
                 btn.style.color = "#000";
@@ -484,19 +473,40 @@
 
                 updateSupabaseField({
                     balance: currentBalance,
-                    mined_amount: 0,
+                    mined_amount: minedAmount,
                     mining_state: 'idle',
                     mining_start_time: 0
                 });
             }
         }
 
-        function resumeMiningUI() {
+        function startMiningCountdown(startTime) {
+            const rateDisplay = document.getElementById('mining-rate-display');
+            
+            if (miningInterval) clearInterval(miningInterval);
+
+            miningInterval = setInterval(() => {
+                const now = Date.now();
+                const elapsed = now - startTime;
+                const remaining = miningDurationMs - elapsed;
+
+                if (remaining <= 0) {
+                    clearInterval(miningInterval);
+                    setReadyToClaimUI();
+                    updateSupabaseField({ mining_state: 'ready' });
+                } else {
+                    if (rateDisplay) {
+                        rateDisplay.innerText = formatTimeRemaining(remaining);
+                    }
+                }
+            }, 1000);
+        }
+
+        function resumeMiningUI(startTime) {
             isMining = true;
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
 
             btn.innerText = "MINING IN PROGRESS...";
             btn.style.background = "#212d42";
@@ -506,18 +516,8 @@
                 statusBadge.style.color = "#2ea043";
             }
             if (coinBox) coinBox.classList.add('mining-anim');
-            if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
 
-            miningInterval = setInterval(() => {
-                minedAmount += 0.0015;
-                if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
-                
-                if (minedAmount >= 0.0500) {
-                    clearInterval(miningInterval);
-                    setReadyToClaimUI();
-                    updateSupabaseField({ mining_state: 'ready', mined_amount: minedAmount });
-                }
-            }, 1000);
+            startMiningCountdown(startTime);
         }
 
         function setReadyToClaimUI() {
@@ -532,7 +532,7 @@
             btn.style.color = "#fff";
             if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
             if (coinBox) coinBox.classList.remove('mining-anim');
-            if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
+            if (rateDisplay) rateDisplay.innerText = "00:00:00 (Ready!)";
         }
     </script>
 </body>
