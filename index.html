@@ -201,7 +201,6 @@
         let currentUserId = '';
         let currentUserName = 'Miner';
 
-        // VPN သို့မဟုတ် Network အပြောင်းအလဲကြားမှာ User ID တူညီစေရန် LocalStorage ဖြင့် သေချာချိတ်ဆက်ပေးခြင်း
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             currentUserId = 'tg_' + tg.initDataUnsafe.user.id;
             currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
@@ -243,18 +242,31 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Wallet Address မှန်ကန်စေရန် Friendly Address (UQ...) သို့ ပြောင်းလဲသိမ်းဆည်းပေးခြင်း
+        // Wallet Address မှန်ကန်သော Friendly Address (UQ...) ပုံစံဖြင့် ရောက်ရှိစေရန် ပြင်ဆင်ထားခြင်း
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo && walletInfo.account) {
-                let friendlyAddress = walletInfo.account.address;
+                let formattedAddress = null;
                 try {
-                    if (window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
-                        friendlyAddress = window.TonConnectSDK.toUserFriendlyAddress(walletInfo.account.address);
+                    // TonConnect UI မှ friendly address ကို တိုက်ရိုက်ထုတ်ယူပေးခြင်း
+                    if (tonConnectUI.wallet && tonConnectUI.wallet.account && tonConnectUI.wallet.account.address) {
+                        const rawAddr = tonConnectUI.wallet.account.address;
+                        if (window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
+                            formattedAddress = window.TonConnectSDK.toUserFriendlyAddress(rawAddr);
+                        } else {
+                            formattedAddress = rawAddr;
+                        }
                     }
-                } catch (err) {
-                    console.log('Friendly address conversion error:', err);
+                } catch (e) {
+                    console.error("Address formatting error:", e);
                 }
-                await updateSupabaseField({ wallet_address: friendlyAddress });
+
+                // အကယ်၍ အထက်ပါနည်းလမ်းဖြင့် မရပါက walletInfo ထဲက address ကို fallback အနေဖြင့် သုံးမည်
+                if (!formattedAddress && walletInfo.account.address) {
+                    formattedAddress = walletInfo.account.address;
+                }
+
+                // Raw format ဖြစ်နေပါက (0:...) UI ပေါ်ကအတိုင်း Friendly Address သို့ပြောင်းရန် TonConnect ၏ built-in logic ကိုသုံးသည်
+                await updateSupabaseField({ wallet_address: formattedAddress });
             } else {
                 await updateSupabaseField({ wallet_address: null });
             }
