@@ -4,18 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
-    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- TON Connect UI SDK -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #05070b; color: #ffffff; overflow: hidden; }
         .app-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a233a 0%, #05070b 100%); z-index: -1; }
-
-        /* Splash Screen */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #05070b; display: flex; flex-direction: column;
@@ -30,18 +25,12 @@
         .logo-inner { width: 138px; height: 138px; border-radius: 50%; background-color: #0b0f19; display: flex; justify-content: center; align-items: center; }
         .logo-box span { background: linear-gradient(135deg, #f0b90b, #ff9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #f0b90b; font-size: 16px; font-weight: 600; background: rgba(240, 185, 11, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(240, 185, 11, 0.4); }
-
-        /* Main Container */
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-
-        /* Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
         .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: #121824; padding: 5px 10px; border-radius: 8px; border: 1px solid #212d42; }
         .lvl-badge { background: #212d42; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #f0b90b; }
-        #ton-connect-button { display: flex; align-items: center; }
-
         .card { background: #121824; border: 1px solid #212d42; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
         .mine-header { text-align: center; margin-bottom: 15px; }
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
@@ -53,7 +42,6 @@
             background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); border: 4px solid #ffe873;
-            transition: transform 0.1s ease;
         }
         .coin-box.mining-anim { animation: pulseCoin 1.5s infinite; }
         @keyframes pulseCoin {
@@ -68,22 +56,6 @@
             font-size: 16px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 15px rgba(240, 185, 11, 0.4); margin-top: 10px;
         }
-
-        .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .miner-card { background: #0f141f; border: 1px solid #212d42; border-radius: 12px; padding: 12px; position: relative; }
-        .miner-card.active-border { border: 1px solid #f0b90b; }
-        .miner-card.unlock-border { border: 1px solid #2ea043; }
-        .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
-        .miner-price-box { font-size: 18px; font-weight: bold; color: #2ea043; margin-bottom: 4px; }
-        .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; }
-        .status-badge { width: 100%; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; text-align: center; border: none; cursor: pointer; }
-        .badge-active { background-color: #238636; color: #fff; }
-        .badge-need { background-color: #f0b90b; color: #000; }
-
-        .profile-row { display: flex; justify-content: space-between; align-items: center; }
-        .verified-badge { background-color: #238636; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .action-btn { background-color: #f0b90b; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: #0b0f19; border-top: 1px solid #212d42;
@@ -97,11 +69,8 @@
 <body>
 
     <div class="app-bg"></div>
-
     <div id="splash-screen">
-        <div class="logo-box">
-            <div class="logo-inner"><span>GRM</span></div>
-        </div>
+        <div class="logo-box"><div class="logo-inner"><span>GRM</span></div></div>
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
@@ -117,81 +86,22 @@
             </div>
 
             <div style="font-size: 10px; color: #2ea043; margin-bottom: 10px;">0.07$ left to Lvl UP</div>
-
             <div class="mine-header">
                 <div class="asset-title">ASSETS</div>
                 <div class="asset-amount" id="asset-balance">0.0000 GRM</div>
             </div>
-
             <div class="wallet-info-row">
                 <span id="holding-wallet-text">HOLDING WALLET: 0 GRM</span>
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
-
             <div class="mining-rate" id="mining-rate-display">+0.0000</div>
-
-            <div class="coin-box" id="coin-box-elem">
-                <div class="coin-inner-text">GRM</div>
-            </div>
-            
+            <div class="coin-box" id="coin-box-elem"><div class="coin-inner-text">GRM</div></div>
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">START</button>
-        </div>
-
-        <div id="tab-tasks" class="tab-content">
-            <div class="top-bar"><span>Tasks & Channel Joins</span></div>
-            <div class="card profile-row">
-                <div>
-                    <strong>Join Official Telegram Channel</strong>
-                    <p style="font-size: 12px; color: #8b949e;">Earn +5 GRM</p>
-                </div>
-                <button class="action-btn" onclick="alert('Joined successfully!')">Join</button>
-            </div>
-        </div>
-
-        <div id="tab-miners" class="tab-content">
-            <div class="top-bar"><span>Miner Store</span></div>
-            <div class="miners-grid">
-                <div class="miner-card active-border">
-                    <div class="lvl-text">Lvl 185</div>
-                    <div class="miner-price-box">7.72$</div>
-                    <div class="miner-speed">Speed 5.46 TH/s</div>
-                    <button class="status-badge badge-active">ACTIVE</button>
-                </div>
-                <div class="miner-card unlock-border">
-                    <div class="lvl-text">Lvl 186</div>
-                    <div class="miner-price-box">7.91$</div>
-                    <div class="miner-speed">Speed 5.56 TH/s</div>
-                    <button class="status-badge badge-need">NEED 10,695 GRM</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-friends" class="tab-content">
-            <div class="top-bar"><span>Friends & Referrals</span></div>
-            <div class="card" style="text-align: center; padding: 25px;">
-                <h3 style="color: #f0b90b; margin-bottom: 10px;">Invite Friends!</h3>
-                <button class="action-btn" style="width: 100%; padding: 12px;" onclick="alert('Link copied!')">Copy Invite Link</button>
-            </div>
-        </div>
-
-        <div id="tab-profile" class="tab-content">
-            <div class="top-bar">
-                <span>Profile</span>
-                <button class="action-btn" style="background:none; color:#fff;" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
-            </div>
-            <div class="card profile-row">
-                <div>Account Status</div>
-                <div class="verified-badge">Verified ✔️</div>
-            </div>
         </div>
     </div>
 
     <div class="bottom-nav">
-        <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">⛏️</span><span>Mine</span></button>
-        <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
-        <button class="nav-item" onclick="switchTab('miners', this)"><span class="icon">⚡</span><span>Miners</span></button>
-        <button class="nav-item" onclick="switchTab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
-        <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
+        <button class="nav-item active"><span class="icon">⛏️</span><span>Mine</span></button>
     </div>
 
     <script>
@@ -202,29 +112,18 @@
         let currentUserName = 'Miner';
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-            currentUserId = 'tg_' + tg.initDataUnsafe.user.id;
+            currentUserId = String(tg.initDataUnsafe.user.id); // Text အဖြစ်သေချာပြောင်းရန်
             currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
-            localStorage.setItem('grm_saved_user_id', currentUserId);
-            localStorage.setItem('grm_saved_username', currentUserName);
         } else {
-            currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
-            currentUserName = localStorage.getItem('grm_saved_username') || 'Miner';
+            currentUserId = localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
             localStorage.setItem('grm_user_id', currentUserId);
         }
-
         document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
-        let _supabase = null;
-        try {
-            if (typeof supabase !== 'undefined') {
-                _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch (e) {
-            console.warn("Supabase init error:", e);
-        }
+        let _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/tonconnect-manifest.json',
@@ -238,123 +137,31 @@
         let miningStartTime = 0;
 
         window.addEventListener('DOMContentLoaded', async () => {
-            await loadUserDataFromSupabase();
-            setTimeout(hideSplashScreen, 1000);
+            await initUserData();
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if(splash) { splash.style.opacity = '0'; setTimeout(() => splash.style.display = 'none', 400); }
+                document.querySelector('.main-container').style.display = 'block';
+            }, 800);
         });
 
-        // Helper function: TonConnectUI ထဲကနေ active ဖြစ်နေတဲ့ wallet ရဲ့ UQ Address အမှန်ကို တိုက်ရိုက်ဆွဲထုတ်ပေးရန်
-        function getActiveFriendlyAddress() {
+        function getRealWalletAddress() {
             try {
                 if (tonConnectUI && tonConnectUI.wallet && tonConnectUI.wallet.account) {
-                    if (tonConnectUI.wallet.account.userFriendlyAddress) {
-                        return tonConnectUI.wallet.account.userFriendlyAddress;
-                    }
-                    if (tonConnectUI.wallet.account.address && !tonConnectUI.wallet.account.address.startsWith('0:')) {
-                        return tonConnectUI.wallet.account.address;
-                    }
+                    return tonConnectUI.wallet.account.userFriendlyAddress || tonConnectUI.wallet.account.address;
                 }
             } catch (e) {
-                console.error("Error reading active wallet:", e);
+                console.error(e);
             }
             return null;
         }
 
-        // Wallet အခြေအနေပြောင်းလဲသည့်အခါ (သို့) အသစ်ချိတ်ဆက်သည့်အခါ အမြဲတမ်း အမှန်ပေါ်စေရန်
-        tonConnectUI.onStatusChange(async (walletInfo) => {
-            let friendlyAddress = null;
-
-            if (walletInfo && walletInfo.account) {
-                if (walletInfo.account.userFriendlyAddress) {
-                    friendlyAddress = walletInfo.account.userFriendlyAddress;
-                }
-            }
-
-            // အကယ်၍ အထက်ပါနည်းဖြင့် မရသေးရင် tonConnectUI.wallet ထဲကနေ တိုက်ရိုက်ထပ်ဆွဲမည်
-            if (!friendlyAddress || friendlyAddress === '0:' || friendlyAddress.startsWith('0:')) {
-                friendlyAddress = getActiveFriendlyAddress();
-            }
-
-            // အကယ်၍ Address အမှန် (UQ သို့မဟုတ် EQ) ဖြစ်နေမှသာ Supabase Table ထဲသို့ အသစ်ပြောင်းလဲ သိမ်းဆည်းမည်
-            if (friendlyAddress && friendlyAddress !== '0:' && !friendlyAddress.startsWith('0:')) {
-                console.log("Updating Database with Real Wallet Address:", friendlyAddress);
-                await updateSupabaseField({ wallet_address: friendlyAddress });
-            } else if (!walletInfo) {
-                // Wallet ဖြုတ်လိုက်မှသာ NULL ဖြစ်သွားစေရန်
-                await updateSupabaseField({ wallet_address: null });
-            }
-        });
-
-        function hideSplashScreen() {
-            const splash = document.getElementById('splash-screen');
-            const mainApp = document.querySelector('.main-container');
-            if (splash && splash.style.display !== 'none') {
-                splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                    if (mainApp) mainApp.style.display = 'block';
-                }, 400);
-            }
-        }
-
-        function switchTab(tabName, element) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            const targetTab = document.getElementById('tab-' + tabName);
-            if (targetTab) targetTab.classList.add('active');
-            if (element) element.classList.add('active');
-        }
-
-        async function updateSupabaseField(fields) {
-            if (!_supabase) return;
+        async function initUserData() {
             try {
-                fields.updated_at = new Date().toISOString();
+                let walletAddr = getRealWalletAddress();
                 
-                const { data: existing } = await _supabase
-                    .from('grm_users')
-                    .select('user_id, wallet_address')
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
-
-                if (existing) {
-                    // အကယ်၍ database ထဲမှာ wallet_address က အမှန်ရှိပြီးသားဖြစ်ပြီး လာပြင်မယ့် fields ထဲက address က အလွတ် သို့မဟုတ် 0: ဖြစ်နေရင် address ကို မတိုက်မိအောင် ဖယ်ထုတ်ပေးမည်
-                    if (!fields.wallet_address || fields.wallet_address === '0:' || fields.wallet_address.startsWith('0:')) {
-                        delete fields.wallet_address;
-                    }
-
-                    await _supabase
-                        .from('grm_users')
-                        .update(fields)
-                        .eq('user_id', currentUserId);
-                } else {
-                    fields.user_id = currentUserId;
-                    fields.username = currentUserName;
-                    fields.balance = currentBalance;
-                    fields.mined_amount = minedAmount;
-                    fields.mining_state = 'idle';
-
-                    // user အသစ် ဆောက်တဲ့အခါ wallet_address က 0: သို့မဟုတ် null ဖြစ်နေရင် UQ address ကို အစမ်းထည့်ပေးရန် ကြိုးစားမည်
-                    if (!fields.wallet_address || fields.wallet_address === '0:' || fields.wallet_address.startsWith('0:')) {
-                        const currentActiveAddr = getActiveFriendlyAddress();
-                        if (currentActiveAddr) {
-                            fields.wallet_address = currentActiveAddr;
-                        } else {
-                            delete fields.wallet_address; // မပါရင် null သို့ default ဖြစ်သွားစေရန်
-                        }
-                    }
-                    
-                    await _supabase
-                        .from('grm_users')
-                        .insert([fields]);
-                }
-            } catch (err) {
-                console.error('Supabase update general error:', err);
-            }
-        }
-
-        async function loadUserDataFromSupabase() {
-            if (!_supabase) return;
-            try {
-                const { data } = await _supabase
+                // Database ထဲမှာ ဒီ user ရှိမရှိ စစ်မည်
+                let { data, error } = await _supabase
                     .from('grm_users')
                     .select('*')
                     .eq('user_id', currentUserId)
@@ -363,54 +170,56 @@
                 if (data) {
                     currentBalance = parseFloat(data.balance) || 0;
                     minedAmount = parseFloat(data.mined_amount) || 0;
-                    miningStartTime = parseInt(data.mining_start_time) || 0;
-
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
-                    // App စပွင့်လာချိန်မှာ UI က wallet ချိတ်ပြီးသားဖြစ်နေရင် Database ထဲက address က null ဖြစ်နေရင်တောင် အလိုအလျောက် update လုပ်ပေးရန်
-                    if (!data.wallet_address || data.wallet_address === '0:' || data.wallet_address.startsWith('0:')) {
-                        const activeAddr = getActiveFriendlyAddress();
-                        if (activeAddr) {
-                            await updateSupabaseField({ wallet_address: activeAddr });
-                        }
-                    }
-
-                    if (data.mining_state === 'mining' && miningStartTime > 0) {
-                        const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
-                        const calculatedMined = elapsedSeconds * 0.0015;
-
-                        if (calculatedMined >= 0.0500) {
-                            minedAmount = 0.0500;
-                            setReadyToClaimUI();
-                        } else {
-                            minedAmount = calculatedMined;
-                            resumeMiningUI();
-                        }
-                    } else if (data.mining_state === 'ready') {
-                        minedAmount = 0.0500;
-                        setReadyToClaimUI();
+                    // အကယ်၍ UI မှာ wallet ချိတ်ထားပြီး DB ထဲမှာ address မရှိသေးရင် အတင်းထည့်မည်
+                    if ((!data.wallet_address || data.wallet_address.startsWith('0:')) && walletAddr && !walletAddr.startsWith('0:')) {
+                        await _supabase.from('grm_users').update({ wallet_address: walletAddr }).eq('user_id', currentUserId);
                     }
                 } else {
-                    const activeAddr = getActiveFriendlyAddress();
-                    await updateSupabaseField({
-                        wallet_address: activeAddr || null,
+                    // User အသစ်ဆိုလျှင် အသစ်ထည့်မည်
+                    let initialData = {
+                        user_id: currentUserId,
+                        username: currentUserName,
                         balance: 0,
                         mined_amount: 0,
                         mining_state: 'idle',
                         mining_start_time: 0
-                    });
+                    };
+                    if (walletAddr && !walletAddr.startsWith('0:')) {
+                        initialData.wallet_address = walletAddr;
+                    }
+                    await _supabase.from('grm_users').insert([initialData]);
                 }
             } catch (err) {
-                console.error('Load user data exception:', err);
+                console.error("Init Error:", err);
             }
         }
+
+        // Wallet ချိတ်လိုက်သည်နှင့် Table ထဲသို့ တန်းရောက်စေရန်
+        tonConnectUI.onStatusChange(async (walletInfo) => {
+            let addr = null;
+            if (walletInfo && walletInfo.account) {
+                addr = walletInfo.account.userFriendlyAddress || walletInfo.account.address;
+            }
+            if (!addr) {
+                addr = getRealWalletAddress();
+            }
+
+            if (addr && !addr.startsWith('0:')) {
+                console.log("Saving Wallet to Supabase:", addr);
+                await _supabase
+                    .from('grm_users')
+                    .update({ wallet_address: addr, updated_at: new Date().toISOString() })
+                    .eq('user_id', currentUserId);
+            }
+        });
 
         function handleMiningAction() {
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
 
             if (!isMining && btn.innerText === "START") {
                 isMining = true;
@@ -418,97 +227,42 @@
                 btn.innerText = "MINING IN PROGRESS...";
                 btn.style.background = "#212d42";
                 btn.style.color = "#00f0ff";
-                if (statusBadge) {
-                    statusBadge.innerText = "MINING";
-                    statusBadge.style.color = "#2ea043";
-                }
-                if (coinBox) coinBox.classList.add('mining-anim');
+                statusBadge.innerText = "MINING";
+                statusBadge.style.color = "#2ea043";
+                coinBox.classList.add('mining-anim');
 
                 minedAmount = 0.0000;
-                updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime, mined_amount: 0 });
+                _supabase.from('grm_users').update({ mining_state: 'mining', mining_start_time: miningStartTime }).eq('user_id', currentUserId);
 
                 miningInterval = setInterval(() => {
                     minedAmount += 0.0015;
-                    if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
+                    document.getElementById('mining-rate-display').innerText = "+" + minedAmount.toFixed(4);
                     
                     if (minedAmount >= 0.0500) {
                         clearInterval(miningInterval);
-                        setReadyToClaimUI();
-                        updateSupabaseField({ mining_state: 'ready', mined_amount: minedAmount });
+                        btn.innerText = "CLAIM GRM";
+                        btn.style.background = "#2ea043";
+                        btn.style.color = "#fff";
+                        statusBadge.innerText = "READY";
+                        coinBox.classList.remove('mining-anim');
+                        isMining = false;
+                        _supabase.from('grm_users').update({ mining_state: 'ready', mined_amount: minedAmount }).eq('user_id', currentUserId);
                     }
                 }, 1000);
-
-            } else if (btn.innerText === "CLAIM GRM" || minedAmount >= 0.0500) {
+            } else if (btn.innerText === "CLAIM GRM") {
                 currentBalance += minedAmount;
-                const assetBalance = document.getElementById('asset-balance');
-                const holdingWalletText = document.getElementById('holding-wallet-text');
-
-                if (assetBalance) assetBalance.innerText = currentBalance.toFixed(4) + " GRM";
-                if (holdingWalletText) holdingWalletText.innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
-                
+                document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
+                document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
                 minedAmount = 0.0000;
-                if (rateDisplay) rateDisplay.innerText = "+0.0000";
-                isMining = false;
+                document.getElementById('mining-rate-display').innerText = "+0.0000";
                 
                 btn.innerText = "START";
                 btn.style.background = "linear-gradient(135deg, #f0b90b 0%, #ff9800 100%)";
                 btn.style.color = "#000";
-                if (statusBadge) {
-                    statusBadge.innerText = "IDLE";
-                    statusBadge.style.color = "#00f0ff";
-                }
+                statusBadge.innerText = "IDLE";
 
-                updateSupabaseField({
-                    balance: currentBalance,
-                    mined_amount: 0,
-                    mining_state: 'idle',
-                    mining_start_time: 0
-                });
+                _supabase.from('grm_users').update({ balance: currentBalance, mined_amount: 0, mining_state: 'idle', mining_start_time: 0 }).eq('user_id', currentUserId);
             }
-        }
-
-        function resumeMiningUI() {
-            isMining = true;
-            const btn = document.getElementById('mining-action-btn');
-            const statusBadge = document.getElementById('mining-status-badge');
-            const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
-
-            btn.innerText = "MINING IN PROGRESS...";
-            btn.style.background = "#212d42";
-            btn.style.color = "#00f0ff";
-            if (statusBadge) {
-                statusBadge.innerText = "MINING";
-                statusBadge.style.color = "#2ea043";
-            }
-            if (coinBox) coinBox.classList.add('mining-anim');
-            if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
-
-            miningInterval = setInterval(() => {
-                minedAmount += 0.0015;
-                if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
-                
-                if (minedAmount >= 0.0500) {
-                    clearInterval(miningInterval);
-                    setReadyToClaimUI();
-                    updateSupabaseField({ mining_state: 'ready', mined_amount: minedAmount });
-                }
-            }, 1000);
-        }
-
-        function setReadyToClaimUI() {
-            isMining = false;
-            const btn = document.getElementById('mining-action-btn');
-            const statusBadge = document.getElementById('mining-status-badge');
-            const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
-
-            btn.innerText = "CLAIM GRM";
-            btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
-            btn.style.color = "#fff";
-            if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
-            if (coinBox) coinBox.classList.remove('mining-anim');
-            if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
         }
     </script>
 </body>
