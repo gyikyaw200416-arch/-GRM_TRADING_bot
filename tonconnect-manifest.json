@@ -1,4 +1,5 @@
-const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-    manifestUrl: 'https://raw.githubusercontent.com/gyikyaw200416-arch/grm-trading-bot/main/tonconnect-manifest.json',
-    buttonRootId: 'ton-connect-button'
-});
+{
+  "url": "https://grm-trading-bot.vercel.app",
+  "name": "GRM Mining Core",
+  "iconUrl": "https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/icon.png"
+}
