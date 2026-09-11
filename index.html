@@ -43,16 +43,16 @@
         #ton-connect-button { display: flex; align-items: center; }
 
         .card { background: #121824; border: 1px solid #212d42; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
-        .mine-header { text-align: center; margin-bottom: 15px; }
+        .mine-header { text-align: center; margin-bottom: 10px; }
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
-        .wallet-info-row { display: flex; justify-content: space-around; text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 8px; }
+        .wallet-info-row { display: flex; justify-content: space-around; text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 15px; }
         
-        /* Countdown Timer Display */
-        .mining-countdown { text-align: center; color: #00f0ff; font-size: 22px; font-weight: bold; margin: 10px 0; letter-spacing: 2px; }
-        
+        /* Countdown Timer Display Above Coin */
+        .mining-timer-display { text-align: center; color: #00f0ff; font-size: 22px; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
+
         .coin-box {
-            width: 150px; height: 150px; margin: 15px auto;
+            width: 150px; height: 150px; margin: 10px auto 15px auto;
             background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); border: 4px solid #ffe873;
@@ -132,8 +132,8 @@
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <!-- Countdown Timer Display in place of mining rate -->
-            <div class="mining-countdown" id="mining-rate-display">06:00:00</div>
+            <!-- Countdown Timer Display Added Above Coin -->
+            <div class="mining-timer-display" id="mining-timer-display">00:00:00</div>
 
             <div class="coin-box" id="coin-box-elem">
                 <div class="coin-inner-text">GRM</div>
@@ -186,7 +186,7 @@
             </div>
             <div class="card profile-row">
                 <div>Account Status</div>
-                <div class="verified-badge" id="profile-verified-badge">Unverified ❌</div>
+                <div class="verified-badge" id="account-status-badge">Unverified ❌</div>
             </div>
         </div>
     </div>
@@ -220,7 +220,7 @@
         document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNz0sImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
         let _supabase = null;
         try {
@@ -241,7 +241,7 @@
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
-        const TOTAL_MINING_SECONDS = 6 * 3600; // 6 hours total duration
+        const TOTAL_MINING_DURATION = 6 * 60 * 60; // Example: 6 hours total mining session duration in seconds
 
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
@@ -393,18 +393,14 @@
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
-                    // Handle verification badge state based on Supabase admin toggle
-                    const verifiedBadge = document.getElementById('profile-verified-badge');
+                    // Handle Verification Status UI from DB (controlled by admin)
+                    const accountStatusBadge = document.getElementById('account-status-badge');
                     if (data.is_verified) {
-                        if (verifiedBadge) {
-                            verifiedBadge.innerText = "Verified ✔️";
-                            verifiedBadge.classList.add('is-verified');
-                        }
+                        accountStatusBadge.innerText = "Verified ✔️";
+                        accountStatusBadge.classList.add('is-verified');
                     } else {
-                        if (verifiedBadge) {
-                            verifiedBadge.innerText = "Unverified ❌";
-                            verifiedBadge.classList.remove('is-verified');
-                        }
+                        accountStatusBadge.innerText = "Unverified ❌";
+                        accountStatusBadge.classList.remove('is-verified');
                     }
 
                     if (!data.wallet_address) {
@@ -416,13 +412,14 @@
 
                     if (data.mining_state === 'mining' && miningStartTime > 0) {
                         const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
-                        const remainingSeconds = TOTAL_MINING_SECONDS - elapsedSeconds;
+                        const calculatedMined = elapsedSeconds * 0.0015;
 
-                        if (remainingSeconds <= 0) {
+                        if (calculatedMined >= 0.0500 || elapsedSeconds >= TOTAL_MINING_DURATION) {
                             minedAmount = 0.0500;
                             setReadyToClaimUI();
                         } else {
-                            resumeMiningUI(remainingSeconds);
+                            minedAmount = calculatedMined;
+                            resumeMiningUI();
                         }
                     } else if (data.mining_state === 'ready') {
                         minedAmount = 0.0500;
@@ -438,26 +435,26 @@
                         mining_start_time: 0,
                         is_verified: false
                     });
+                    document.getElementById('account-status-badge').innerText = "Unverified ❌";
+                    document.getElementById('account-status-badge').classList.remove('is-verified');
                 }
             } catch (err) {
                 console.error('Load user data exception:', err);
             }
         }
 
-        function formatTimeHMS(totalSeconds) {
+        function formatTimer(totalSeconds) {
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-            return String(hours).padStart(2, '0') + ":" + 
-                   String(minutes).padStart(2, '0') + ":" + 
-                   String(seconds).padStart(2, '0');
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
         function handleMiningAction() {
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
+            const timerDisplay = document.getElementById('mining-timer-display');
 
             if (!isMining && btn.innerText === "START") {
                 isMining = true;
@@ -471,24 +468,27 @@
                 }
                 if (coinBox) coinBox.classList.add('mining-anim');
 
-                minedAmount = 0.0500; // Reward upon completion
-                updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime, mined_amount: minedAmount });
+                minedAmount = 0.0000;
+                updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime, mined_amount: 0 });
 
-                let remainingSeconds = TOTAL_MINING_SECONDS;
-                if (rateDisplay) rateDisplay.innerText = formatTimeHMS(remainingSeconds);
+                let remainingSeconds = TOTAL_MINING_DURATION;
+                if (timerDisplay) timerDisplay.innerText = formatTimer(remainingSeconds);
 
                 miningInterval = setInterval(() => {
-                    remainingSeconds--;
-                    if (rateDisplay) rateDisplay.innerText = formatTimeHMS(remainingSeconds);
+                    const elapsedSecs = Math.floor((Date.now() - miningStartTime) / 1000);
+                    remainingSeconds = Math.max(0, TOTAL_MINING_DURATION - elapsedSecs);
+                    minedAmount += 0.0015;
                     
-                    if (remainingSeconds <= 0) {
+                    if (timerDisplay) timerDisplay.innerText = formatTimer(remainingSeconds);
+                    
+                    if (minedAmount >= 0.0500 || remainingSeconds <= 0) {
                         clearInterval(miningInterval);
                         setReadyToClaimUI();
                         updateSupabaseField({ mining_state: 'ready', mined_amount: minedAmount });
                     }
                 }, 1000);
 
-            } else if (btn.innerText === "CLAIM GRM") {
+            } else if (btn.innerText === "CLAIM GRM" || minedAmount >= 0.0500) {
                 currentBalance += minedAmount;
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
@@ -497,7 +497,7 @@
                 if (holdingWalletText) holdingWalletText.innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
                 
                 minedAmount = 0.0000;
-                if (rateDisplay) rateDisplay.innerText = "06:00:00";
+                if (timerDisplay) timerDisplay.innerText = "00:00:00";
                 isMining = false;
                 
                 btn.innerText = "START";
@@ -517,12 +517,12 @@
             }
         }
 
-        function resumeMiningUI(remainingSeconds) {
+        function resumeMiningUI() {
             isMining = true;
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
+            const timerDisplay = document.getElementById('mining-timer-display');
 
             btn.innerText = "MINING IN PROGRESS...";
             btn.style.background = "#212d42";
@@ -532,13 +532,19 @@
                 statusBadge.style.color = "#2ea043";
             }
             if (coinBox) coinBox.classList.add('mining-anim');
-            if (rateDisplay) rateDisplay.innerText = formatTimeHMS(remainingSeconds);
+
+            const elapsedSecs = Math.floor((Date.now() - miningStartTime) / 1000);
+            let remainingSeconds = Math.max(0, TOTAL_MINING_DURATION - elapsedSecs);
+            if (timerDisplay) timerDisplay.innerText = formatTimer(remainingSeconds);
 
             miningInterval = setInterval(() => {
-                remainingSeconds--;
-                if (rateDisplay) rateDisplay.innerText = formatTimeHMS(remainingSeconds);
+                const currentElapsed = Math.floor((Date.now() - miningStartTime) / 1000);
+                remainingSeconds = Math.max(0, TOTAL_MINING_DURATION - currentElapsed);
+                minedAmount += 0.0015;
                 
-                if (remainingSeconds <= 0) {
+                if (timerDisplay) timerDisplay.innerText = formatTimer(remainingSeconds);
+                
+                if (minedAmount >= 0.0500 || remainingSeconds <= 0) {
                     clearInterval(miningInterval);
                     setReadyToClaimUI();
                     updateSupabaseField({ mining_state: 'ready', mined_amount: minedAmount });
@@ -551,14 +557,14 @@
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
-            const rateDisplay = document.getElementById('mining-rate-display');
+            const timerDisplay = document.getElementById('mining-timer-display');
 
             btn.innerText = "CLAIM GRM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
             btn.style.color = "#fff";
             if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
             if (coinBox) coinBox.classList.remove('mining-anim');
-            if (rateDisplay) rateDisplay.innerText = "00:00:00";
+            if (timerDisplay) timerDisplay.innerText = "00:00:00";
         }
     </script>
 </body>
