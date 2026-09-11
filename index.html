@@ -533,19 +533,20 @@
     </div>
 
     <script>
-        // Supabase Safe Initialization (Error ကင်းစေရန် စစ်ဆေးပေးခြင်း)
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        // 👇👇 သင့်ရဲ့ Supabase Project URL နဲ့ Anon API Key ကို ဤနေရာတွင် အစားထိုးထည့်ပါ 👇👇
+        const SUPABASE_URL = 'https://xxxxxxxxx.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJh...ထည့်ရန်...';
+        
         let _supabase = null;
         try {
-            if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+            if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http')) {
                 _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         } catch (e) {
             console.warn("Supabase init notice:", e);
         }
 
-        // Splash screen handler (သေချာပျောက်ကွယ်ပြီး Main App ပေါ်လာစေရန်)
+        // Splash screen handler
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
@@ -594,21 +595,23 @@
             if (tkModal) tkModal.classList.add('active');
         }
 
-        // Supabase Save Function
+        // Supabase Save Function with Error Alert checking
         async function saveAddressToSupabase(address) {
             if (!_supabase) {
-                console.log("Supabase not configured, skipping cloud save.");
+                console.log("Supabase not configured!");
+                alert("Supabase URL / Key မထည့်ရသေးပါ သို့မဟုတ် ချိတ်ဆက်မှုမရပါ။");
                 return;
             }
             try {
                 const { data, error } = await _supabase
                     .from('wallets')
-                    .insert([{ wallet_address: address, created_at: new Date() }]);
+                    .insert([{ wallet_address: address }]);
                 
                 if (error) {
                     console.error('Supabase Error:', error.message);
+                    alert('Database Error: ' + error.message);
                 } else {
-                    console.log('Address saved to Supabase successfully:', address);
+                    console.log('Address saved successfully:', address);
                 }
             } catch (err) {
                 console.error('Network or Database connection error:', err);
@@ -679,7 +682,6 @@
             const rateDisplay = document.getElementById('mining-rate-display');
 
             if (!isMining) {
-                // START MINING
                 isMining = true;
                 btn.innerText = "MINING IN PROGRESS...";
                 btn.style.background = "#212d42";
@@ -692,10 +694,10 @@
 
                 minedAmount = 0.0000;
                 miningInterval = setInterval(() => {
-                    minedAmount += 0.0015; // တိုးသွားမည့်နှုန်း
+                    minedAmount += 0.0015;
                     if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
                     
-                    if (minedAmount >= 0.0500) { // နှုန်းပြည့်သွားလျှင် Claim လုပ်ရန်ပြောင်းမည်
+                    if (minedAmount >= 0.0500) {
                         clearInterval(miningInterval);
                         btn.innerText = "CLAIM GRM";
                         btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
@@ -706,7 +708,6 @@
                 }, 1000);
 
             } else if (minedAmount >= 0.0500 || btn.innerText === "CLAIM GRM") {
-                // CLAIM GRM
                 currentBalance += minedAmount;
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
