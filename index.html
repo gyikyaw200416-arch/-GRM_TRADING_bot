@@ -181,7 +181,7 @@
             </div>
             <div class="card profile-row">
                 <div>Account Status</div>
-                <div class="verified-badge">Verified ✔️</div>
+                <div id="account-status-badge" class="verified-badge">Verified ✔️</div>
             </div>
         </div>
     </div>
@@ -211,7 +211,6 @@
 
         document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
 
-        // ✅ Provided Supabase Configuration
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
@@ -234,17 +233,33 @@
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
+        let isVerified = true;
 
         window.addEventListener('DOMContentLoaded', async () => {
             await loadUserDataFromSupabase();
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Wallet Connection Listener
+        // Wallet Connection Listener (Friendly Address ကိုပြောင်းယူရန်)
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo && walletInfo.account) {
-                const rawAddress = walletInfo.account.address;
-                await updateSupabaseField({ wallet_address: rawAddress });
+                // Tonkeeper သုံးတဲ့ UQ... ပုံစံ Friendly Address ကို တွက်ထုတ်ပေးခြင်း
+                let friendlyAddress = walletInfo.account.address;
+                try {
+                    if (window.TonConnectUI && typeof tonConnectUI.wallet !== 'undefined' && tonConnectUI.account) {
+                        friendlyAddress = tonConnectUI.account.friendlyAddress || walletInfo.account.address;
+                    }
+                    // Address format ပြောင်းလဲခြင်း (UQ... ပုံစံပေါ်စေရန်)
+                    if (walletInfo.account.chain === "-239" || walletInfo.account.address) {
+                        const rawAdd = walletInfo.account.address;
+                        // Ton Connect SDK v2 က address property ထဲမှာ user-friendly format ကို ပေးလေ့ရှိပါတယ်
+                        friendlyAddress = walletInfo.account.friendlyAddress || rawAdd;
+                    }
+                } catch(err) {
+                    console.log("Address format error:", err);
+                }
+                
+                await updateSupabaseField({ wallet_address: friendlyAddress });
             } else {
                 await updateSupabaseField({ wallet_address: null });
             }
@@ -292,6 +307,7 @@
                     fields.balance = currentBalance;
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
+                    fields.is_verified = true;
                     
                     await _supabase
                         .from('grm_users')
@@ -315,6 +331,19 @@
                     currentBalance = parseFloat(data.balance) || 0;
                     minedAmount = parseFloat(data.mined_amount) || 0;
                     miningStartTime = parseInt(data.mining_start_time) || 0;
+                    isVerified = data.is_verified !== false; // false ဖြစ်မှ unverify ဖြစ်မည်
+
+                    // Profile ထဲက Verified Status ပြောင်းရန်
+                    const badgeElem = document.getElementById('account-status-badge');
+                    if (badgeElem) {
+                        if (isVerified) {
+                            badgeElem.innerText = "Verified ✔️";
+                            badgeElem.style.backgroundColor = "#238636";
+                        } else {
+                            badgeElem.innerText = "Unverified ❌";
+                            badgeElem.style.backgroundColor = "#da3633";
+                        }
+                    }
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
@@ -339,7 +368,8 @@
                         balance: 0,
                         mined_amount: 0,
                         mining_state: 'idle',
-                        mining_start_time: 0
+                        mining_start_time: 0,
+                        is_verified: true
                     });
                 }
             } catch (err) {
@@ -348,6 +378,12 @@
         }
 
         function handleMiningAction() {
+            // Unverify ဖြစ်နေရင် ငွေထုတ်မပေးရန် စစ်ဆေးခြင်း
+            if (!isVerified) {
+                alert("Your account is Unverified! You cannot claim or withdraw funds.");
+                return;
+            }
+
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
@@ -380,6 +416,11 @@
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM GRM" || minedAmount >= 0.0500) {
+                if (!isVerified) {
+                    alert("Your account is Unverified! Action denied.");
+                    return;
+                }
+
                 currentBalance += minedAmount;
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
