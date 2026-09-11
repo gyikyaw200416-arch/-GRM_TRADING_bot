@@ -162,7 +162,7 @@
             border: 1px solid #30363d;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            width: 160px;
+            width: 150px;
             z-index: 100;
             overflow: hidden;
         }
@@ -512,7 +512,7 @@
     </div>
 
     <script>
-        // ⚠️ သင့်ပရောဂျက်၏ တကယ့် Supabase URL နှင့် Anon Key ကို ဤနေရာတွင် အစားထိုးထည့်ပါ
+        // သင့်ပရောဂျက်၏ Supabase URL နှင့် Anon Key ကို ထည့်ပါ
         const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
         const SUPABASE_ANON_KEY = 'your-anon-key-here';
         
@@ -531,30 +531,14 @@
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
-        let activeWalletAddress = '';
+        // App စဖွင့်ချိန်မှာ Supabase ကနေ အရင်ချိတ်ထားတဲ့ Address ရှိမရှိ စစ်ဆေးပြီး ပြန်ဖော်ပြပေးခြင်း (Check existing wallet on load)
+        window.addEventListener('DOMContentLoaded', async () => {
+            setTimeout(hideSplashScreen, 1000);
+            await loadUserWalletFromSupabase();
+        });
 
-        // App စဖွင့်သည်နှင့် Supabase မှ လက်ရှိ User ၏ Wallet Address ကို Live ဆွဲထုတ်စစ်ဆေးခြင်း
-        async function fetchWalletFromSupabase() {
-            if (!_supabase) return;
-            try {
-                const { data, error } = await _supabase
-                    .from('wallets')
-                    .select('wallet_address')
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
+        setTimeout(hideSplashScreen, 2000);
 
-                if (!error && data && data.wallet_address) {
-                    activeWalletAddress = data.wallet_address;
-                    updateWalletUI(true);
-                } else {
-                    updateWalletUI(false);
-                }
-            } catch (err) {
-                console.error('Fetch wallet error:', err);
-            }
-        }
-
-        // Safe Splash Screen Remover
         function hideSplashScreen() {
             const splash = document.getElementById('splash-screen');
             const mainApp = document.querySelector('.main-container');
@@ -567,13 +551,6 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            await fetchWalletFromSupabase(); // Database မှ Address အရင်စစ်မည်
-            setTimeout(hideSplashScreen, 1000);
-        });
-
-        setTimeout(hideSplashScreen, 2000);
-
         function switchTab(tabName, element) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -582,8 +559,13 @@
             if (element) element.classList.add('active');
         }
 
+        let activeWalletAddress = '';
+
         function openWalletModalFlow() {
-            toggleWalletMenu(); // Menu ပွင့်နေရင် ပိတ်မည်
+            // Dropdown ပိတ်ရန်
+            const dropdown = document.getElementById('wallet-dropdown');
+            if (dropdown) dropdown.classList.remove('show');
+
             document.getElementById('wallet-modal').classList.add('active');
             document.getElementById('modal-loading-view').style.display = 'block';
             document.getElementById('modal-select-app-view').style.display = 'none';
@@ -591,7 +573,7 @@
             setTimeout(() => {
                 document.getElementById('modal-loading-view').style.display = 'none';
                 document.getElementById('modal-select-app-view').style.display = 'block';
-            }, 800);
+            }, 1000);
         }
 
         function closeModal(modalId) {
@@ -605,27 +587,65 @@
             if (tkModal) tkModal.classList.add('active');
         }
 
-        // Supabase သို့ Address အသစ်သိမ်းဆည်းခြင်း (သို့မဟုတ် အဟောင်းကို အစားထိုးခြင်း - Upsert)
+        // Supabase ထဲက Data ကို အသစ်လဲခြင်း (သို့) အသစ်ထည့်ခြင်း (Safe Logic with Select & Update/Insert)
         async function saveAddressToSupabase(address) {
             if (!_supabase) {
                 console.warn("Supabase not connected. Skipping DB save.");
                 return;
             }
             try {
-                const { error } = await _supabase
+                // ၁။ ဒီ user_id နဲ့ Data ရှိပြီးသားလား အရင်စစ်မယ်
+                const { data: existingData, error: fetchError } = await _supabase
                     .from('wallets')
-                    .upsert([
-                        { user_id: currentUserId, wallet_address: address, updated_at: new Date() }
-                    ], { onConflict: 'user_id' });
-                
-                if (error) {
-                    console.error('Supabase Save Error:', error.message);
-                    alert('Database သို့ ချိတ်ဆက်ရာတွင် အမှားအယွင်းရှိနေပါသည်: ' + error.message);
+                    .select('*')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
+                if (fetchError) {
+                    console.error('Fetch Error:', fetchError.message);
+                }
+
+                if (existingData) {
+                    // ရှိပြီးသားဆိုရင် Address အသစ်နဲ့ Update လုပ်မယ်
+                    const { error: updateError } = await _supabase
+                        .from('wallets')
+                        .update({ wallet_address: address, updated_at: new Date() })
+                        .eq('user_id', currentUserId);
+
+                    if (updateError) console.error('Update Error:', updateError.message);
+                    else console.log('Wallet updated successfully:', address);
                 } else {
-                    console.log('Wallet saved/updated successfully in Supabase:', address);
+                    // မရှိသေးရင် အသစ်ထည့်မယ် (Insert)
+                    const { error: insertError } = await _supabase
+                        .from('wallets')
+                        .insert([
+                            { user_id: currentUserId, wallet_address: address, updated_at: new Date() }
+                        ]);
+
+                    if (insertError) console.error('Insert Error:', insertError.message);
+                    else console.log('Wallet inserted successfully:', address);
                 }
             } catch (err) {
                 console.error('Connection error:', err);
+            }
+        }
+
+        // Supabase ကနေ Address ကို ဆွဲထုတ်ပြသရန်
+        async function loadUserWalletFromSupabase() {
+            if (!_supabase) return;
+            try {
+                const { data, error } = await _supabase
+                    .from('wallets')
+                    .select('wallet_address')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
+                if (!error && data && data.wallet_address) {
+                    activeWalletAddress = data.wallet_address;
+                    finalizeConnection();
+                }
+            } catch (err) {
+                console.error('Load wallet error:', err);
             }
         }
 
@@ -663,23 +683,14 @@
         function finalizeConnection() {
             closeModal('wallet-modal');
             closeModal('tonkeeper-approval-modal');
-            updateWalletUI(true);
-        }
-
-        // UI ကို အရှင် (Live) ပြောင်းလဲပေးသည့် Function
-        function updateWalletUI(isConnected) {
+            
             const walletText = document.getElementById('wallet-text');
             const walletUnconnected = document.getElementById('wallet-unconnected');
             const walletConnected = document.getElementById('wallet-connected');
 
-            if (isConnected && activeWalletAddress) {
-                if (walletText) walletText.innerText = activeWalletAddress.substring(0, 6) + '...';
-                if (walletUnconnected) walletUnconnected.style.display = 'none';
-                if (walletConnected) walletConnected.style.display = 'block';
-            } else {
-                if (walletUnconnected) walletUnconnected.style.display = 'block';
-                if (walletConnected) walletConnected.style.display = 'none';
-            }
+            if (walletText) walletText.innerText = activeWalletAddress.substring(0, 6) + '...';
+            if (walletUnconnected) walletUnconnected.style.display = 'none';
+            if (walletConnected) walletConnected.style.display = 'block';
         }
 
         function toggleWalletMenu() {
@@ -696,7 +707,11 @@
         async function disconnectWallet() {
             await removeAddressFromSupabase();
             activeWalletAddress = '';
-            updateWalletUI(false);
+            
+            const walletConnected = document.getElementById('wallet-connected');
+            const walletUnconnected = document.getElementById('wallet-unconnected');
+            if (walletConnected) walletConnected.style.display = 'none';
+            if (walletUnconnected) walletUnconnected.style.display = 'block';
             toggleWalletMenu();
             alert('Wallet disconnected successfully.');
         }
