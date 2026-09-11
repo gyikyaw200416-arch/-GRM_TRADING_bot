@@ -533,28 +533,40 @@
     </div>
 
     <script>
-        // Supabase Configuration
+        // Supabase Safe Initialization (Error ကင်းစေရန် စစ်ဆေးပေးခြင်း)
         const SUPABASE_URL = 'YOUR_SUPABASE_URL';
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let _supabase = null;
+        try {
+            if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+                _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.warn("Supabase init notice:", e);
+        }
 
-        // Splash screen handler
-        setTimeout(() => {
-            const splash = document.getElementById('splash-screen');
-            const mainApp = document.querySelector('.main-container');
-            splash.style.opacity = '0';
+        // Splash screen handler (သေချာပျောက်ကွယ်ပြီး Main App ပေါ်လာစေရန်)
+        window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
-                splash.style.display = 'none';
-                mainApp.style.display = 'block';
-            }, 500);
-        }, 1200);
+                const splash = document.getElementById('splash-screen');
+                const mainApp = document.querySelector('.main-container');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                        if (mainApp) mainApp.style.display = 'block';
+                    }, 500);
+                }
+            }, 1200);
+        });
 
         // Tab Switching
         function switchTab(tabName, element) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-            element.classList.add('active');
+            const targetTab = document.getElementById('tab-' + tabName);
+            if (targetTab) targetTab.classList.add('active');
+            if (element) element.classList.add('active');
         }
 
         // Wallet & Tonkeeper Flow 
@@ -572,16 +584,22 @@
         }
 
         function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.remove('active');
         }
 
         function openTonkeeperApproval() {
             closeModal('wallet-modal');
-            document.getElementById('tonkeeper-approval-modal').classList.add('active');
+            const tkModal = document.getElementById('tonkeeper-approval-modal');
+            if (tkModal) tkModal.classList.add('active');
         }
 
         // Supabase Save Function
         async function saveAddressToSupabase(address) {
+            if (!_supabase) {
+                console.log("Supabase not configured, skipping cloud save.");
+                return;
+            }
             try {
                 const { data, error } = await _supabase
                     .from('wallets')
@@ -604,7 +622,9 @@
         }
 
         async function saveManualAddressToSupabase() {
-            const manualInput = document.getElementById('manual-wallet-input').value.trim();
+            const manualInputElem = document.getElementById('manual-wallet-input');
+            if (!manualInputElem) return;
+            const manualInput = manualInputElem.value.trim();
             if(!manualInput) {
                 alert('ကျေးဇူးပြု၍ Wallet Address ကို အမှန်တကယ် ထည့်သွင်းပေးပါ');
                 return;
@@ -618,14 +638,18 @@
             closeModal('wallet-modal');
             closeModal('tonkeeper-approval-modal');
             
-            document.getElementById('wallet-text').innerText = activeWalletAddress.substring(0, 6) + '...';
-            document.getElementById('wallet-unconnected').style.display = 'none';
-            document.getElementById('wallet-connected').style.display = 'block';
+            const walletText = document.getElementById('wallet-text');
+            const walletUnconnected = document.getElementById('wallet-unconnected');
+            const walletConnected = document.getElementById('wallet-connected');
+
+            if (walletText) walletText.innerText = activeWalletAddress.substring(0, 6) + '...';
+            if (walletUnconnected) walletUnconnected.style.display = 'none';
+            if (walletConnected) walletConnected.style.display = 'block';
         }
 
         function toggleWalletMenu() {
             const dropdown = document.getElementById('wallet-dropdown');
-            dropdown.classList.toggle('show');
+            if (dropdown) dropdown.classList.toggle('show');
         }
 
         function copyAddress() {
@@ -635,8 +659,10 @@
         }
 
         function disconnectWallet() {
-            document.getElementById('wallet-connected').style.display = 'none';
-            document.getElementById('wallet-unconnected').style.display = 'block';
+            const walletConnected = document.getElementById('wallet-connected');
+            const walletUnconnected = document.getElementById('wallet-unconnected');
+            if (walletConnected) walletConnected.style.display = 'none';
+            if (walletUnconnected) walletUnconnected.style.display = 'block';
             toggleWalletMenu();
         }
 
@@ -658,40 +684,47 @@
                 btn.innerText = "MINING IN PROGRESS...";
                 btn.style.background = "#212d42";
                 btn.style.color = "#00f0ff";
-                statusBadge.innerText = "MINING";
-                statusBadge.style.color = "#2ea043";
-                coinBox.classList.add('mining-anim');
+                if (statusBadge) {
+                    statusBadge.innerText = "MINING";
+                    statusBadge.style.color = "#2ea043";
+                }
+                if (coinBox) coinBox.classList.add('mining-anim');
 
                 minedAmount = 0.0000;
                 miningInterval = setInterval(() => {
                     minedAmount += 0.0015; // တိုးသွားမည့်နှုန်း
-                    rateDisplay.innerText = "+" + minedAmount.toFixed(4);
+                    if (rateDisplay) rateDisplay.innerText = "+" + minedAmount.toFixed(4);
                     
                     if (minedAmount >= 0.0500) { // နှုန်းပြည့်သွားလျှင် Claim လုပ်ရန်ပြောင်းမည်
                         clearInterval(miningInterval);
                         btn.innerText = "CLAIM GRM";
                         btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
                         btn.style.color = "#fff";
-                        statusBadge.innerText = " READY TO CLAIM";
-                        coinBox.classList.remove('mining-anim');
+                        if (statusBadge) statusBadge.innerText = " READY TO CLAIM";
+                        if (coinBox) coinBox.classList.remove('mining-anim');
                     }
                 }, 1000);
 
             } else if (minedAmount >= 0.0500 || btn.innerText === "CLAIM GRM") {
                 // CLAIM GRM
                 currentBalance += minedAmount;
-                document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
-                document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
+                const assetBalance = document.getElementById('asset-balance');
+                const holdingWalletText = document.getElementById('holding-wallet-text');
+
+                if (assetBalance) assetBalance.innerText = currentBalance.toFixed(4) + " GRM";
+                if (holdingWalletText) holdingWalletText.innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
                 
                 minedAmount = 0.0000;
-                rateDisplay.innerText = "+0.0000";
+                if (rateDisplay) rateDisplay.innerText = "+0.0000";
                 isMining = false;
                 
                 btn.innerText = "START";
                 btn.style.background = "linear-gradient(135deg, #f0b90b 0%, #ff9800 100%)";
                 btn.style.color = "#000";
-                statusBadge.innerText = "IDLE";
-                statusBadge.style.color = "#00f0ff";
+                if (statusBadge) {
+                    statusBadge.innerText = "IDLE";
+                    statusBadge.style.color = "#00f0ff";
+                }
             }
         }
 
