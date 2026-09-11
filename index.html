@@ -225,7 +225,7 @@
             cursor: pointer;
         }
 
-        /* TonConnect Loading & Select App View (Tonkeeper တစ်မျိုးတည်းသာ) */
+        /* TonConnect Loading & Select App View */
         .ton-connect-loading { text-align: center; padding: 25px 0; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 136, 204, 0.2); border-top: 4px solid #0088cc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -292,6 +292,15 @@
             background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); border: 4px solid #ffe873;
+            transition: transform 0.1s ease;
+        }
+        .coin-box.mining-anim {
+            animation: pulseCoin 1.5s infinite;
+        }
+        @keyframes pulseCoin {
+            0% { transform: scale(1); box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(240, 185, 11, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); }
         }
         .coin-inner-text { font-size: 30px; font-weight: 900; color: #111; }
         .claim-btn {
@@ -343,7 +352,7 @@
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
-    <!-- Wallet Selection Modal (Tonkeeper တစ်မျိုးတည်းသာပြသရန်) -->
+    <!-- Wallet Selection Modal -->
     <div id="wallet-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
@@ -351,13 +360,11 @@
                 <button class="modal-close" onclick="closeModal('wallet-modal')">✕</button>
             </div>
             
-            <!-- Loading view -->
             <div id="modal-loading-view" class="ton-connect-loading">
                 <div class="spinner"></div>
                 <div style="font-size: 13px; color: #8b949e; margin-bottom: 5px;">Connecting to Tonkeeper...</div>
             </div>
 
-            <!-- Select App view (Tonkeeper သီးသန့် နှင့် Manual Address ထည့်ရန်) -->
             <div id="modal-select-app-view" style="display: none;">
                 <div class="select-app-grid">
                     <div class="select-app-option" onclick="openTonkeeperApproval()">
@@ -369,7 +376,6 @@
                     </div>
                 </div>
 
-                <!-- User Address ကို လက်ဖြင့် ရေးထည့်၍ Supabase ထဲသို့ ပို့ရန် Input Box -->
                 <div class="address-input-box">
                     <div style="font-size: 12px; color: #8b949e;">Or paste wallet address manually:</div>
                     <input type="text" id="manual-wallet-input" placeholder="UQBV... or EQ...">
@@ -421,7 +427,7 @@
                 <div class="user-info">
                     <span class="lvl-badge">Lvl 1</span>
                     <span>Sky ⛏️</span>
-                    <span style="font-size: 10px; color: #8b949e;">IDLE</span>
+                    <span style="font-size: 10px; color: #00f0ff;" id="mining-status-badge">IDLE</span>
                 </div>
                 
                 <!-- Wallet Area -->
@@ -445,20 +451,22 @@
 
             <div class="mine-header">
                 <div class="asset-title">ASSETS</div>
-                <div class="asset-amount">0.0000 GRM</div>
+                <div class="asset-amount" id="asset-balance">0.0000 GRM</div>
             </div>
 
             <div class="wallet-info-row">
-                <span>HOLDING WALLET: 0 GRM</span>
+                <span id="holding-wallet-text">HOLDING WALLET: 0 GRM</span>
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <div class="mining-rate">+0.0000</div>
+            <div class="mining-rate" id="mining-rate-display">+0.0000</div>
 
-            <div class="coin-box">
+            <div class="coin-box" id="coin-box-elem">
                 <div class="coin-inner-text">GRM</div>
             </div>
-            <button class="claim-btn" onclick="alert('START / CLAIM GRM!')">START</button>
+            
+            <!-- Mining Control Button (Start / Claim) -->
+            <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">START</button>
         </div>
 
         <!-- TASKS TAB -->
@@ -525,7 +533,7 @@
     </div>
 
     <script>
-        // Supabase Configuration (သင့်ရဲ့ Project အချက်အလက်များကို ဤနေရာတွင် ထည့်ပါ)
+        // Supabase Configuration
         const SUPABASE_URL = 'YOUR_SUPABASE_URL';
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -557,7 +565,6 @@
             document.getElementById('modal-loading-view').style.display = 'block';
             document.getElementById('modal-select-app-view').style.display = 'none';
 
-            // Loading ခဏပြပြီး Tonkeeper ရွေးချယ်စရာ ပေါ်လာစေခြင်း
             setTimeout(() => {
                 document.getElementById('modal-loading-view').style.display = 'none';
                 document.getElementById('modal-select-app-view').style.display = 'block';
@@ -573,11 +580,11 @@
             document.getElementById('tonkeeper-approval-modal').classList.add('active');
         }
 
-        // Supabase Database Table ထဲသို့ Wallet Address ထည့်သွင်းပေးသည့် လုပ်ဆောင်ချက်
+        // Supabase Save Function
         async function saveAddressToSupabase(address) {
             try {
                 const { data, error } = await _supabase
-                    .from('wallets') // Supabase ရှိ table အမည် (ဥပမာ: wallets)
+                    .from('wallets')
                     .insert([{ wallet_address: address, created_at: new Date() }]);
                 
                 if (error) {
@@ -590,14 +597,12 @@
             }
         }
 
-        // Tonkeeper Auto Connect ဖြင့် ချိတ်ဆက်သောအခါ
         async function confirmTonkeeperConnect() {
             activeWalletAddress = "UQBV9...TonkeeperAutoX";
             await saveAddressToSupabase(activeWalletAddress);
             finalizeConnection();
         }
 
-        // လက်ဖြင့် ရေးထည့်၍ ချိတ်ဆက်သောအခါ
         async function saveManualAddressToSupabase() {
             const manualInput = document.getElementById('manual-wallet-input').value.trim();
             if(!manualInput) {
@@ -633,6 +638,61 @@
             document.getElementById('wallet-connected').style.display = 'none';
             document.getElementById('wallet-unconnected').style.display = 'block';
             toggleWalletMenu();
+        }
+
+        // --- Mining Logic ---
+        let isMining = false;
+        let currentBalance = 0.0000;
+        let minedAmount = 0.0000;
+        let miningInterval;
+
+        function handleMiningAction() {
+            const btn = document.getElementById('mining-action-btn');
+            const statusBadge = document.getElementById('mining-status-badge');
+            const coinBox = document.getElementById('coin-box-elem');
+            const rateDisplay = document.getElementById('mining-rate-display');
+
+            if (!isMining) {
+                // START MINING
+                isMining = true;
+                btn.innerText = "MINING IN PROGRESS...";
+                btn.style.background = "#212d42";
+                btn.style.color = "#00f0ff";
+                statusBadge.innerText = "MINING";
+                statusBadge.style.color = "#2ea043";
+                coinBox.classList.add('mining-anim');
+
+                minedAmount = 0.0000;
+                miningInterval = setInterval(() => {
+                    minedAmount += 0.0015; // တိုးသွားမည့်နှုန်း
+                    rateDisplay.innerText = "+" + minedAmount.toFixed(4);
+                    
+                    if (minedAmount >= 0.0500) { // နှုန်းပြည့်သွားလျှင် Claim လုပ်ရန်ပြောင်းမည်
+                        clearInterval(miningInterval);
+                        btn.innerText = "CLAIM GRM";
+                        btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
+                        btn.style.color = "#fff";
+                        statusBadge.innerText = " READY TO CLAIM";
+                        coinBox.classList.remove('mining-anim');
+                    }
+                }, 1000);
+
+            } else if (minedAmount >= 0.0500 || btn.innerText === "CLAIM GRM") {
+                // CLAIM GRM
+                currentBalance += minedAmount;
+                document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
+                document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
+                
+                minedAmount = 0.0000;
+                rateDisplay.innerText = "+0.0000";
+                isMining = false;
+                
+                btn.innerText = "START";
+                btn.style.background = "linear-gradient(135deg, #f0b90b 0%, #ff9800 100%)";
+                btn.style.color = "#000";
+                statusBadge.innerText = "IDLE";
+                statusBadge.style.color = "#00f0ff";
+            }
         }
 
         window.onclick = function(event) {
