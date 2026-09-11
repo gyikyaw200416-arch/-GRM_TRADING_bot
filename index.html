@@ -311,7 +311,7 @@
 
         document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
 
-        // Supabase Setup (ကိုယ့်ရဲ့ Project URL နဲ့ Anon Key ထည့်ရန်)
+        // ကိုယ့်ရဲ့ Supabase Project URL နဲ့ Anon Key ကို ဒီမှာ ထည့်ပေးပါ
         const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
         const SUPABASE_ANON_KEY = 'your-anon-key-here';
         
@@ -415,7 +415,7 @@
                     // Handle background offline mining time or active state
                     if (data.mining_state === 'mining' && miningStartTime > 0) {
                         const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
-                        const calculatedMined = elapsedSeconds * 0.0015; // 0.0015 per second
+                        const calculatedMined = elapsedSeconds * 0.0015;
 
                         if (calculatedMined >= 0.0500) {
                             minedAmount = 0.0500;
@@ -429,7 +429,6 @@
                         setReadyToClaimUI();
                     }
                 } else {
-                    // Create initial user row if not exists
                     await updateSupabaseField({
                         balance: 0,
                         mined_amount: 0,
