@@ -242,33 +242,27 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // UI ပေါ်ကအတိုင်း အမှန်တကယ်ပေါ်နေသော UQ Address (Friendly Address) ကို တိုက်ရိုက်ဖမ်းယူသိမ်းဆည်းပေးခြင်း
+        // 0:xxx ပုံစံ raw address အစား UQ... ပုံစံ Friendly Address အမှန်ကို တိုက်ရိုက်ဆွဲယူသိမ်းဆည်းပေးခြင်း
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo && walletInfo.account) {
                 let friendlyAddress = null;
 
                 try {
-                    // TonConnectUI wallet object ထဲက userFriendlyAddress ကို ဦးစားပေးယူသည်
-                    if (tonConnectUI.wallet && tonConnectUI.wallet.account) {
+                    // TonConnect UI ရဲ့ userFriendlyAddress ကို အရင်ဆုံး တိုက်ရိုက်ယူမည်
+                    if (walletInfo.account.userFriendlyAddress) {
+                        friendlyAddress = walletInfo.account.userFriendlyAddress;
+                    } else if (tonConnectUI.wallet && tonConnectUI.wallet.account && tonConnectUI.wallet.account.userFriendlyAddress) {
                         friendlyAddress = tonConnectUI.wallet.account.userFriendlyAddress;
+                    } else if (walletInfo.account.address && !walletInfo.account.address.startsWith('0:')) {
+                        friendlyAddress = walletInfo.account.address;
                     }
-                    
-                    // အကယ်၍ မပါလာပါက SDK ရဲ့ toUserFriendlyAddress function ဖြင့် raw address ကိုပြောင်းမည်
-                    if (!friendlyAddress && walletInfo.account.address) {
-                        const rawAddr = walletInfo.account.address;
-                        if (window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
-                            friendlyAddress = window.TonConnectSDK.toUserFriendlyAddress(rawAddr);
-                        } else {
-                            friendlyAddress = rawAddr;
-                        }
+
+                    // အကယ်၍ အထက်ပါနည်းများဖြင့် မရဘဲ raw address (0:...) သက်သက်ဖြစ်နေပါက TonConnectSDK ဖြင့် ပြောင်းမည်
+                    if (!friendlyAddress && walletInfo.account.address && window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
+                        friendlyAddress = window.TonConnectSDK.toUserFriendlyAddress(walletInfo.account.address);
                     }
                 } catch (err) {
                     console.error("Friendly address extraction error:", err);
-                }
-
-                // UI ပေါ်က UQ... ပုံစံအတိုင်း သေချာထွက်လာစေရန် fallback အနေဖြင့် tonConnectUI.wallet.account.userFriendlyAddress ကို သုံးပေးသည်
-                if (!friendlyAddress && tonConnectUI.wallet) {
-                    friendlyAddress = tonConnectUI.wallet.account.userFriendlyAddress;
                 }
 
                 console.log("Saving Correct Friendly Wallet Address to DB:", friendlyAddress);
