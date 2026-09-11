@@ -237,30 +237,24 @@
         let miningInterval;
         let miningStartTime = 0;
 
-        // TonConnect wallet object ထဲမှ အမှန်ကန်ဆုံး user-friendly address ကို ရှာထုတ်ပေးမည့် Function
+        // TonConnect wallet object ထဲမှ address အမှန်ကို သေချာဆွဲထုတ်ပေးမည့် function
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
             
-            // 1. account အောက်ရှိ userFriendlyAddress ကို ဦးစားပေးစစ်ဆေးခြင်း
+            // 1. userFriendlyAddress ရှိမရှိ စစ်ဆေးခြင်း
             if (walletObj.account && walletObj.account.userFriendlyAddress) {
                 return walletObj.account.userFriendlyAddress;
             }
-            // 2. root အောက်ရှိ userFriendlyAddress ကို စစ်ဆေးခြင်း
             if (walletObj.userFriendlyAddress) {
                 return walletObj.userFriendlyAddress;
             }
-            // 3. raw address သို့မဟုတ် အခြား address ပုံစံပါလာပါက ၎င်းကို tonConnectUI.account ผ่านပြီး friendly format သို့ ပြောင်းရန် သို့မဟုတ် တိုက်ရိုက်ယူခြင်း
+            
+            // 2. account.address ရှိပါက ၎င်းကို ယူမည်
             if (walletObj.account && walletObj.account.address) {
-                let addr = walletObj.account.address;
-                // အကယ်၍ raw format (0:...) ဖြစ်နေပါက touncachable address (UQ... / EQ...) သို့ ပြောင်းရန် tonConnectUI ၏ built-in function ကို သုံးနိုင်သည်
-                try {
-                    if (tonConnectUI && typeof tonConnectUI.toUserFriendlyAddress === 'function') {
-                        return tonConnectUI.toUserFriendlyAddress(addr);
-                    }
-                } catch(err) {}
-                if (addr && addr !== '0:' && !addr.startsWith('0:')) {
-                    return addr;
-                }
+                return walletObj.account.address;
+            }
+            if (walletObj.address) {
+                return walletObj.address;
             }
             return null;
         }
@@ -268,10 +262,7 @@
         function getActiveWalletAddress() {
             try {
                 if (tonConnectUI && tonConnectUI.wallet) {
-                    let addr = extractUserFriendlyAddress(tonConnectUI.wallet);
-                    if (addr && addr !== '0:' && !addr.startsWith('0:')) {
-                        return addr;
-                    }
+                    return extractUserFriendlyAddress(tonConnectUI.wallet);
                 }
             } catch (e) {
                 console.error("Error reading active wallet:", e);
@@ -284,26 +275,25 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Wallet ချိတ်လိုက်ခြင်း သို့မဟုတ် ပြောင်းလဲခြင်းရှိတိုင်း Address အမှန်ကို သေချာစစ်ဆေးပြီး Supabase သို့ သိမ်းမည်
+        // Wallet ချိတ်လိုက်သည်နှင့် Address ကို Supabase ထဲသို့ တိုက်ရိုက် အတိအကျ ပို့ပေးမည်
         tonConnectUI.onStatusChange(async (walletInfo) => {
-            let friendlyAddress = null;
+            let addressToSave = null;
 
             try {
                 if (walletInfo) {
-                    friendlyAddress = extractUserFriendlyAddress(walletInfo);
+                    addressToSave = extractUserFriendlyAddress(walletInfo);
                 }
-                if (!friendlyAddress || friendlyAddress === '0:' || friendlyAddress.startsWith('0:')) {
-                    friendlyAddress = getActiveWalletAddress();
+                if (!addressToSave) {
+                    addressToSave = getActiveWalletAddress();
                 }
             } catch (err) {
-                console.error("Wallet address extraction error:", err);
+                console.error("Wallet status change error:", err);
             }
 
-            // မှန်ကန်သော Address အစစ် (UQ... / EQ...) ဖြစ်မှသာ Database သို့ ပို့မည် (`0:` သို့မဟုတ် `NULL` ကို တားဆီးသည်)
-            if (friendlyAddress && typeof friendlyAddress === 'string' && friendlyAddress !== '0:' && !friendlyAddress.startsWith('0:')) {
-                console.log("Saving Valid Wallet Address to DB:", friendlyAddress);
-                await updateSupabaseField({ wallet_address: friendlyAddress });
-            } else if (!walletInfo) {
+            if (addressToSave) {
+                console.log("Saving Address to Supabase:", addressToSave);
+                await updateSupabaseField({ wallet_address: addressToSave });
+            } else {
                 await updateSupabaseField({ wallet_address: null });
             }
         });
@@ -339,12 +329,11 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // အကယ်၍ ပို့မည့် fields ထဲတွင် wallet_address ပါလာပြီး ၎င်းသည် အလွတ် (သို့) 0: ဖြစ်နေပါက ခြေရာခံမှုကို မဖျက်မိစေရန် ဖယ်ထုတ်ပေးမည်
-                if (fields.wallet_address !== undefined && (!fields.wallet_address || fields.wallet_address === '0:' || fields.wallet_address.startsWith('0:'))) {
-                    delete fields.wallet_address;
-                }
-
                 if (existing) {
+                    // အကယ်၍ DB ထဲမှာ wallet_address အဟောင်းရှိပြီး အသစ်က null ဖြစ်နေရင် အဟောင်းကို မပျက်စေရန် ထိန်းပေးသည်
+                    if (fields.wallet_address === null && existing.wallet_address) {
+                        delete fields.wallet_address;
+                    }
                     await _supabase
                         .from('grm_users')
                         .update(fields)
@@ -356,11 +345,11 @@
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
                     
-                    let activeAddr = getActiveWalletAddress();
-                    if (activeAddr && activeAddr !== '0:' && !activeAddr.startsWith('0:')) {
-                        fields.wallet_address = activeAddr;
-                    } else if (fields.wallet_address === undefined || !fields.wallet_address || fields.wallet_address === '0:' || fields.wallet_address.startsWith('0:')) {
-                        delete fields.wallet_address;
+                    if (!fields.wallet_address) {
+                        let activeAddr = getActiveWalletAddress();
+                        if (activeAddr) {
+                            fields.wallet_address = activeAddr;
+                        }
                     }
 
                     await _supabase
@@ -389,10 +378,10 @@
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
-                    // Database ထဲမှာ address မရှိသေးဘဲ TonConnect မှာ ချိတ်ပြီးသားဆိုရင် အလိုအလျောက် update လုပ်ပေးမည်
-                    if (!data.wallet_address || data.wallet_address === '0:' || data.wallet_address.startsWith('0:')) {
+                    // App စပွင့်လာချိန်မှာ Wallet ချိတ်ပြီးသားဖြစ်ပေမယ့် Supabase မှာ address မရှိသေးရင် အလိုအလျောက် ထည့်ပေးမည်
+                    if (!data.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
-                        if (activeAddr && activeAddr !== '0:' && !activeAddr.startsWith('0:')) {
+                        if (activeAddr) {
                             await updateSupabaseField({ wallet_address: activeAddr });
                         }
                     }
@@ -414,10 +403,8 @@
                     }
                 } else {
                     let activeAddr = getActiveWalletAddress();
-                    let initialWallet = (activeAddr && activeAddr !== '0:' && !activeAddr.startsWith('0:')) ? activeAddr : null;
-
                     await updateSupabaseField({
-                        wallet_address: initialWallet,
+                        wallet_address: activeAddr || null,
                         balance: 0,
                         mined_amount: 0,
                         mining_state: 'idle',
