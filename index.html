@@ -82,7 +82,6 @@
 
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
         .verified-badge { background-color: #238636; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .verified-badge.unverified { background-color: #da3633; }
         .action-btn { background-color: #f0b90b; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
         .bottom-nav {
@@ -182,7 +181,7 @@
             </div>
             <div class="card profile-row">
                 <div>Account Status</div>
-                <div class="verified-badge" id="profile-verified-badge">Verified ✔️</div>
+                <div class="verified-badge">Verified ✔️</div>
             </div>
         </div>
     </div>
@@ -199,14 +198,18 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        let currentUserId = 'user_guest';
+        let currentUserId = '';
         let currentUserName = 'Miner';
 
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        // VPN သို့မဟုတ် Network အပြောင်းအလဲကြားမှာ User ID တူညီစေရန် LocalStorage ဖြင့် သေချာချိတ်ဆက်ပေးခြင်း
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             currentUserId = 'tg_' + tg.initDataUnsafe.user.id;
             currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
+            localStorage.setItem('grm_saved_user_id', currentUserId);
+            localStorage.setItem('grm_saved_username', currentUserName);
         } else {
-            currentUserId = localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
+            currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
+            currentUserName = localStorage.getItem('grm_saved_username') || 'Miner';
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
@@ -234,26 +237,24 @@
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
-        let isVerifiedUser = true; // Default verification status
 
         window.addEventListener('DOMContentLoaded', async () => {
             await loadUserDataFromSupabase();
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Wallet Connection Listener (Friendly Address ကို ပုံမှန်အတိုင်း မှန်ကန်စွာ ယူပေးခြင်း)
+        // Wallet Address မှန်ကန်စေရန် Friendly Address (UQ...) သို့ ပြောင်းလဲသိမ်းဆည်းပေးခြင်း
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo && walletInfo.account) {
-                // TON Wallet ရဲ့ Friendly Address (UQ... ပုံစံ) ကို သေချာခေါ်ယူခြင်း
-                const friendlyAddress = walletInfo.account.friendlyAddress || 
-                                        (walletInfo.account.address ? 
-                                            new TonConnectUI.TonAddress(walletInfo.account.address).toString({urlSafe: true, bounceable: true}) 
-                                            : walletInfo.account.address);
-                
-                // အကယ်၍ library ကနေ friendlyAddress တိုက်ရိုက်မပါလာပါက TonConnect standard raw-to-friendly conversion ကိုသုံးရန် fallback အဖြစ် address ကိုယ်တိုင်သုံးသည်
-                const finalAddress = walletInfo.account.friendlyAddress || walletInfo.account.address;
-                
-                await updateSupabaseField({ wallet_address: finalAddress });
+                let friendlyAddress = walletInfo.account.address;
+                try {
+                    if (window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
+                        friendlyAddress = window.TonConnectSDK.toUserFriendlyAddress(walletInfo.account.address);
+                    }
+                } catch (err) {
+                    console.log('Friendly address conversion error:', err);
+                }
+                await updateSupabaseField({ wallet_address: friendlyAddress });
             } else {
                 await updateSupabaseField({ wallet_address: null });
             }
@@ -301,7 +302,6 @@
                     fields.balance = currentBalance;
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
-                    fields.is_verified = true;
                     
                     await _supabase
                         .from('grm_users')
@@ -325,22 +325,6 @@
                     currentBalance = parseFloat(data.balance) || 0;
                     minedAmount = parseFloat(data.mined_amount) || 0;
                     miningStartTime = parseInt(data.mining_start_time) || 0;
-                    
-                    // Verification Status စစ်ဆေးခြင်း
-                    if (data.is_verified !== undefined && data.is_verified !== null) {
-                        isVerifiedUser = data.is_verified;
-                    }
-
-                    const badgeElem = document.getElementById('profile-verified-badge');
-                    if (badgeElem) {
-                        if (isVerifiedUser) {
-                            badgeElem.innerText = "Verified ✔️";
-                            badgeElem.className = "verified-badge";
-                        } else {
-                            badgeElem.innerText = "Unverified ❌";
-                            badgeElem.className = "verified-badge unverified";
-                        }
-                    }
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
@@ -365,8 +349,7 @@
                         balance: 0,
                         mined_amount: 0,
                         mining_state: 'idle',
-                        mining_start_time: 0,
-                        is_verified: true
+                        mining_start_time: 0
                     });
                 }
             } catch (err) {
@@ -375,12 +358,6 @@
         }
 
         function handleMiningAction() {
-            // Unverify ဖြစ်နေပါက Claim သို့မဟုတ် ထုတ်ယူခွင့် မပေးရန် စစ်ဆေးခြင်း
-            if (!isVerifiedUser) {
-                alert("Your account is Unverified! You cannot claim or withdraw funds.");
-                return;
-            }
-
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
@@ -413,11 +390,6 @@
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM GRM" || minedAmount >= 0.0500) {
-                if (!isVerifiedUser) {
-                    alert("Account is unverified. Claim restricted.");
-                    return;
-                }
-
                 currentBalance += minedAmount;
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
