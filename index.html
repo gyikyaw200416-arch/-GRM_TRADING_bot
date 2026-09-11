@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
-    <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -512,7 +511,7 @@
     </div>
 
     <script>
-        // သင့်ပရောဂျက်၏ Supabase URL နှင့် Anon Key ကို ထည့်ပါ
+        // Replace with your actual Supabase URL and Anon Key
         const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
         const SUPABASE_ANON_KEY = 'your-anon-key-here';
         
@@ -531,7 +530,7 @@
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
-        // App စဖွင့်ချိန်မှာ Supabase ကနေ အရင်ချိတ်ထားတဲ့ Address ရှိမရှိ စစ်ဆေးပြီး ပြန်ဖော်ပြပေးခြင်း (Check existing wallet on load)
+        // Check existing wallet on page load
         window.addEventListener('DOMContentLoaded', async () => {
             setTimeout(hideSplashScreen, 1000);
             await loadUserWalletFromSupabase();
@@ -562,7 +561,6 @@
         let activeWalletAddress = '';
 
         function openWalletModalFlow() {
-            // Dropdown ပိတ်ရန်
             const dropdown = document.getElementById('wallet-dropdown');
             if (dropdown) dropdown.classList.remove('show');
 
@@ -587,14 +585,13 @@
             if (tkModal) tkModal.classList.add('active');
         }
 
-        // Supabase ထဲက Data ကို အသစ်လဲခြင်း (သို့) အသစ်ထည့်ခြင်း (Safe Logic with Select & Update/Insert)
+        // Save or Update wallet address in Supabase safely
         async function saveAddressToSupabase(address) {
             if (!_supabase) {
                 console.warn("Supabase not connected. Skipping DB save.");
                 return;
             }
             try {
-                // ၁။ ဒီ user_id နဲ့ Data ရှိပြီးသားလား အရင်စစ်မယ်
                 const { data: existingData, error: fetchError } = await _supabase
                     .from('wallets')
                     .select('*')
@@ -606,7 +603,6 @@
                 }
 
                 if (existingData) {
-                    // ရှိပြီးသားဆိုရင် Address အသစ်နဲ့ Update လုပ်မယ်
                     const { error: updateError } = await _supabase
                         .from('wallets')
                         .update({ wallet_address: address, updated_at: new Date() })
@@ -615,7 +611,6 @@
                     if (updateError) console.error('Update Error:', updateError.message);
                     else console.log('Wallet updated successfully:', address);
                 } else {
-                    // မရှိသေးရင် အသစ်ထည့်မယ် (Insert)
                     const { error: insertError } = await _supabase
                         .from('wallets')
                         .insert([
@@ -630,7 +625,7 @@
             }
         }
 
-        // Supabase ကနေ Address ကို ဆွဲထုတ်ပြသရန်
+        // Load wallet address from Supabase
         async function loadUserWalletFromSupabase() {
             if (!_supabase) return;
             try {
@@ -672,7 +667,7 @@
             if (!manualInputElem) return;
             const manualInput = manualInputElem.value.trim();
             if(!manualInput) {
-                alert('ကျေးဇူးပြု၍ Wallet Address ကို အမှန်တကယ် ထည့်သွင်းပေးပါ');
+                alert('Please enter a valid wallet address.');
                 return;
             }
             activeWalletAddress = manualInput;
@@ -748,7 +743,7 @@
                         btn.innerText = "CLAIM GRM";
                         btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
                         btn.style.color = "#fff";
-                        if (statusBadge) statusBadge.innerText = " READY TO CLAIM";
+                        if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
                         if (coinBox) coinBox.classList.remove('mining-anim');
                     }
                 }, 1000);
