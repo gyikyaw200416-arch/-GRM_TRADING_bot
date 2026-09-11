@@ -81,7 +81,8 @@
         .badge-need { background-color: #f0b90b; color: #000; }
 
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
-        .verified-badge { background-color: #238636; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .verified-badge { background-color: #d73a49; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .verified-badge.is-verified { background-color: #238636; }
         .action-btn { background-color: #f0b90b; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
         .bottom-nav {
@@ -128,7 +129,8 @@
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <div class="mining-rate" id="mining-rate-display">00:00:00</div>
+            <!-- Changed mining rate to show 6 hours countdown timer when active -->
+            <div class="mining-rate" id="mining-rate-display">06:00:00</div>
 
             <div class="coin-box" id="coin-box-elem">
                 <div class="coin-inner-text">GRM</div>
@@ -181,7 +183,7 @@
             </div>
             <div class="card profile-row">
                 <div>Account Status</div>
-                <div class="verified-badge">Verified ✔️</div>
+                <div class="verified-badge" id="profile-verified-badge">Unverified ❌</div>
             </div>
         </div>
     </div>
@@ -232,13 +234,13 @@
         });
 
         let currentBalance = 0.0000;
-        let minedAmount = 0.3000; // ၆ နာရီပြည့်လျှင် ရမည့် ဆုကြေးပမာဏ (လိုအပ်သလို ပြင်နိုင်သည်)
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
-        let miningDurationHours = 6; // ၆ နာရီ သတ်မှတ်ချက်
-        let miningDurationMs = miningDurationHours * 60 * 60 * 1000; // မီလီစက္ကန့်ပြောင်း
+        const miningDurationHours = 6; 
+        const miningDurationMs = miningDurationHours * 60 * 60 * 1000; 
 
+        // Format milliseconds to HH:MM:SS
         function formatTimeRemaining(ms) {
             let totalSeconds = Math.floor(ms / 1000);
             let hours = Math.floor(totalSeconds / 3600);
@@ -356,9 +358,10 @@
                 } else {
                     fields.user_id = currentUserId;
                     fields.username = currentUserName;
-                    fields.balance = currentBalance;
-                    fields.mined_amount = minedAmount;
+                    fields.balance = 0;
+                    fields.mined_amount = 0;
                     fields.mining_state = 'idle';
+                    fields.is_verified = false; // New users default to unverified
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -385,12 +388,27 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
+                const badgeElem = document.getElementById('profile-verified-badge');
+
                 if (data) {
                     currentBalance = parseFloat(data.balance) || 0;
                     miningStartTime = parseInt(data.mining_start_time) || 0;
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
+
+                    // Handle verification UI based on Supabase database field (is_verified)
+                    if (data.is_verified === true) {
+                        if (badgeElem) {
+                            badgeElem.innerText = "Verified ✔️";
+                            badgeElem.classList.add('is-verified');
+                        }
+                    } else {
+                        if (badgeElem) {
+                            badgeElem.innerText = "Unverified ❌";
+                            badgeElem.classList.remove('is-verified');
+                        }
+                    }
 
                     if (!data.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -413,12 +431,17 @@
                     }
                 } else {
                     let activeAddr = getActiveWalletAddress();
+                    if (badgeElem) {
+                        badgeElem.innerText = "Unverified ❌";
+                        badgeElem.classList.remove('is-verified');
+                    }
                     await updateSupabaseField({
                         wallet_address: activeAddr || null,
                         balance: 0,
                         mined_amount: 0,
                         mining_state: 'idle',
-                        mining_start_time: 0
+                        mining_start_time: 0,
+                        is_verified: false
                     });
                 }
             } catch (err) {
@@ -452,7 +475,8 @@
                 startMiningCountdown(miningStartTime);
 
             } else if (btn.innerText === "CLAIM GRM") {
-                currentBalance += minedAmount;
+                let rewardAmount = 0.3000; 
+                currentBalance += rewardAmount;
                 
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
@@ -460,7 +484,7 @@
 
                 if (assetBalance) assetBalance.innerText = currentBalance.toFixed(4) + " GRM";
                 if (holdingWalletText) holdingWalletText.innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
-                if (rateDisplay) rateDisplay.innerText = "00:00:00";
+                if (rateDisplay) rateDisplay.innerText = "06:00:00";
                 
                 isMining = false;
                 btn.innerText = "START";
@@ -473,7 +497,7 @@
 
                 updateSupabaseField({
                     balance: currentBalance,
-                    mined_amount: minedAmount,
+                    mined_amount: rewardAmount,
                     mining_state: 'idle',
                     mining_start_time: 0
                 });
@@ -532,7 +556,7 @@
             btn.style.color = "#fff";
             if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
             if (coinBox) coinBox.classList.remove('mining-anim');
-            if (rateDisplay) rateDisplay.innerText = "00:00:00 (Ready!)";
+            if (rateDisplay) rateDisplay.innerText = "00:00:00";
         }
     </script>
 </body>
