@@ -242,31 +242,23 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Wallet Address မှန်ကန်သော Friendly Address (UQ...) ပုံစံဖြင့် ရောက်ရှိစေရန် ပြင်ဆင်ထားခြင်း
+        // Raw address (0:...) ကို user-friendly address (UQ...) သို့ တိုက်ရိုက်ပြောင်းပေးသော logic အသစ်
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo && walletInfo.account) {
-                let formattedAddress = null;
+                let rawAddress = walletInfo.account.address;
+                let userFriendlyAddress = rawAddress;
+
                 try {
-                    // TonConnect UI မှ friendly address ကို တိုက်ရိုက်ထုတ်ယူပေးခြင်း
-                    if (tonConnectUI.wallet && tonConnectUI.wallet.account && tonConnectUI.wallet.account.address) {
-                        const rawAddr = tonConnectUI.wallet.account.address;
-                        if (window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
-                            formattedAddress = window.TonConnectSDK.toUserFriendlyAddress(rawAddr);
-                        } else {
-                            formattedAddress = rawAddr;
-                        }
+                    // TonConnectSDK ၏ toUserFriendlyAddress function ကိုသုံး၍ UQ ပုံစံပြောင်းခြင်း
+                    if (window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
+                        userFriendlyAddress = window.TonConnectSDK.toUserFriendlyAddress(rawAddress);
                     }
-                } catch (e) {
-                    console.error("Address formatting error:", e);
+                } catch (err) {
+                    console.error("To friendly address conversion error:", err);
                 }
 
-                // အကယ်၍ အထက်ပါနည်းလမ်းဖြင့် မရပါက walletInfo ထဲက address ကို fallback အနေဖြင့် သုံးမည်
-                if (!formattedAddress && walletInfo.account.address) {
-                    formattedAddress = walletInfo.account.address;
-                }
-
-                // Raw format ဖြစ်နေပါက (0:...) UI ပေါ်ကအတိုင်း Friendly Address သို့ပြောင်းရန် TonConnect ၏ built-in logic ကိုသုံးသည်
-                await updateSupabaseField({ wallet_address: formattedAddress });
+                console.log("Saving Wallet Address:", userFriendlyAddress);
+                await updateSupabaseField({ wallet_address: userFriendlyAddress });
             } else {
                 await updateSupabaseField({ wallet_address: null });
             }
