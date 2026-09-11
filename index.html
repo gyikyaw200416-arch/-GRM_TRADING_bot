@@ -11,134 +11,38 @@
     <!-- TON Connect UI SDK -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
-            background-color: #05070b;
-            color: #ffffff;
-            overflow: hidden;
-        }
-        .app-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, #1a233a 0%, #05070b 100%);
-            z-index: -1;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { width: 100%; height: 100%; background-color: #05070b; color: #ffffff; overflow: hidden; }
+        .app-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a233a 0%, #05070b 100%); z-index: -1; }
 
         /* Splash Screen */
         #splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #05070b;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.6s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #05070b; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.6s ease;
         }
         .logo-box {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
+            width: 150px; height: 150px; border-radius: 50%;
             background: linear-gradient(135deg, #f0b90b 0%, #ff5722 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 35px rgba(240, 185, 11, 0.6);
-            margin-bottom: 30px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 35px rgba(240, 185, 11, 0.6); margin-bottom: 30px;
         }
-        .logo-inner {
-            width: 138px;
-            height: 138px;
-            border-radius: 50%;
-            background-color: #0b0f19;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .logo-box span {
-            background: linear-gradient(135deg, #f0b90b, #ff9800);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: 2px;
-        }
-        .loading-text {
-            color: #f0b90b;
-            font-size: 16px;
-            font-weight: 600;
-            background: rgba(240, 185, 11, 0.1);
-            padding: 12px 30px;
-            border-radius: 30px;
-            border: 1px solid rgba(240, 185, 11, 0.4);
-        }
+        .logo-inner { width: 138px; height: 138px; border-radius: 50%; background-color: #0b0f19; display: flex; justify-content: center; align-items: center; }
+        .logo-box span { background: linear-gradient(135deg, #f0b90b, #ff9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
+        .loading-text { color: #f0b90b; font-size: 16px; font-weight: 600; background: rgba(240, 185, 11, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(240, 185, 11, 0.4); }
 
         /* Main Container */
-        .main-container {
-            display: none;
-            width: 100%;
-            height: calc(100% - 65px);
-            overflow-y: auto;
-            padding: 15px;
-            padding-bottom: 80px;
-        }
+        .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         /* Top Bar */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 15px;
-            font-weight: bold;
-            position: relative;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            background: #121824;
-            padding: 5px 10px;
-            border-radius: 8px;
-            border: 1px solid #212d42;
-        }
-        .lvl-badge {
-            background: #212d42;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            color: #f0b90b;
-        }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
+        .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: #121824; padding: 5px 10px; border-radius: 8px; border: 1px solid #212d42; }
+        .lvl-badge { background: #212d42; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #f0b90b; }
+        #ton-connect-button { display: flex; align-items: center; }
 
-        #ton-connect-button {
-            display: flex;
-            align-items: center;
-        }
-
-        .card {
-            background: #121824;
-            border: 1px solid #212d42;
-            border-radius: 14px;
-            padding: 15px;
-            margin-bottom: 12px;
-        }
+        .card { background: #121824; border: 1px solid #212d42; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
         .mine-header { text-align: center; margin-bottom: 15px; }
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
@@ -196,9 +100,7 @@
 
     <div id="splash-screen">
         <div class="logo-box">
-            <div class="logo-inner">
-                <span>GRM</span>
-            </div>
+            <div class="logo-inner"><span>GRM</span></div>
         </div>
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
@@ -211,7 +113,6 @@
                     <span id="telegram-username">Loading... ⛏️</span>
                     <span style="font-size: 10px; color: #00f0ff;" id="mining-status-badge">IDLE</span>
                 </div>
-                
                 <div id="ton-connect-button"></div>
             </div>
 
@@ -283,7 +184,6 @@
                 <div class="verified-badge">Verified ✔️</div>
             </div>
         </div>
-
     </div>
 
     <div class="bottom-nav">
@@ -311,17 +211,17 @@
 
         document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
 
-        // ကိုယ့်ရဲ့ Supabase Project URL နဲ့ Anon Key ကို ဒီမှာ ထည့်ပေးပါ
-        const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'your-anon-key-here';
+        // ✅ Provided Supabase Configuration
+        const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
         let _supabase = null;
         try {
-            if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('your-project-id')) {
+            if (typeof supabase !== 'undefined') {
                 _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         } catch (e) {
-            console.warn("Supabase init notice:", e);
+            console.warn("Supabase init error:", e);
         }
 
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -342,7 +242,7 @@
 
         // Wallet Connection Listener
         tonConnectUI.onStatusChange(async (walletInfo) => {
-            if (walletInfo) {
+            if (walletInfo && walletInfo.account) {
                 const rawAddress = walletInfo.account.address;
                 await updateSupabaseField({ wallet_address: rawAddress });
             } else {
@@ -373,7 +273,8 @@
         async function updateSupabaseField(fields) {
             if (!_supabase) return;
             try {
-                fields.updated_at = new Date();
+                fields.updated_at = new Date().toISOString();
+                
                 const { data: existing } = await _supabase
                     .from('grm_users')
                     .select('user_id')
@@ -381,17 +282,23 @@
                     .maybeSingle();
 
                 if (existing) {
-                    await _supabase.from('grm_users').update(fields).eq('user_id', currentUserId);
+                    await _supabase
+                        .from('grm_users')
+                        .update(fields)
+                        .eq('user_id', currentUserId);
                 } else {
                     fields.user_id = currentUserId;
                     fields.username = currentUserName;
                     fields.balance = currentBalance;
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
-                    await _supabase.from('grm_users').insert([fields]);
+                    
+                    await _supabase
+                        .from('grm_users')
+                        .insert([fields]);
                 }
             } catch (err) {
-                console.error('Supabase update error:', err);
+                console.error('Supabase update general error:', err);
             }
         }
 
@@ -412,7 +319,6 @@
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
-                    // Handle background offline mining time or active state
                     if (data.mining_state === 'mining' && miningStartTime > 0) {
                         const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
                         const calculatedMined = elapsedSeconds * 0.0015;
@@ -437,7 +343,7 @@
                     });
                 }
             } catch (err) {
-                console.error('Load user data error:', err);
+                console.error('Load user data exception:', err);
             }
         }
 
