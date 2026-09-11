@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
+    <!-- Supabase CDN ထည့်သွင်းခြင်း -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -222,74 +224,23 @@
             font-size: 18px;
             cursor: pointer;
         }
-        .tg-wallet-btn {
-            background: #0088cc;
-            color: #fff;
-            width: 100%;
-            padding: 12px;
-            border-radius: 12px;
-            border: none;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-        .other-apps-title { font-size: 12px; color: #8b949e; margin-bottom: 10px; }
-        .wallet-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            text-align: center;
-        }
-        .wallet-option {
-            background: #1a233a;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 10px 5px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            font-size: 11px;
-            color: #fff;
-        }
-        .wallet-option:hover { border-color: #0088cc; }
-        .wallet-icon {
-            width: 32px;
-            height: 32px;
-            background: #00f0ff;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: #000;
-        }
-
-        /* TonConnect Video-style Loading & Select App View */
+        
         .ton-connect-loading { text-align: center; padding: 25px 0; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 136, 204, 0.2); border-top: 4px solid #0088cc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .select-app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .select-app-option { background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: #fff; }
+        /* Tonkeeper တစ်မျိုးတည်းသာပြမည့် Grid */
+        .select-app-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .select-app-option { background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px; color: #fff; }
         .select-app-option:hover { border-color: #0088cc; }
         .app-icon-circle { width: 36px; height: 36px; background: #0088cc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; }
 
-        /* Passcode Screen (ဗီဒီယို 00:04) */
-        #passcode-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0f19; z-index: 3000; flex-direction: column; justify-content: center; align-items: center; }
-        .passcode-dots { display: flex; gap: 15px; margin: 25px 0; }
-        .dot { width: 14px; height: 14px; border: 2px solid #58a6ff; border-radius: 50%; background: transparent; transition: 0.2s; }
-        .dot.filled { background: #58a6ff; }
-        .passcode-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 15px; text-align: center; }
-        .num-btn { background: #161b22; border: 1px solid #30363d; color: #fff; font-size: 24px; height: 60px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 0 auto; width: 60px; }
-        .num-btn:active { background: #30363d; }
+        /* Manual Address Input Box Styling */
+        .address-input-box { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .address-input-box input { width: 100%; padding: 10px; background: #0b0f19; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 13px; }
+        .address-input-box button { background: #238636; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        /* Tonkeeper Approval Screen (ဗီဒီယို 00:07 - 00:09) */
+        /* Tonkeeper Approval Screen */
         .tonkeeper-connect-box { text-align: center; padding: 10px 0; }
         .tk-logo-ring {
             width: 50px; height: 50px; background: #0088cc; border-radius: 50%;
@@ -390,32 +341,7 @@
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
-    <!-- Passcode Screen (ဗီဒီယို 00:04) -->
-    <div id="passcode-screen">
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">Enter passcode</div>
-        <div class="passcode-dots">
-            <div class="dot" id="dot-0"></div>
-            <div class="dot" id="dot-1"></div>
-            <div class="dot" id="dot-2"></div>
-            <div class="dot" id="dot-3"></div>
-        </div>
-        <div class="passcode-grid">
-            <button class="num-btn" onclick="pressNum(1)">1</button>
-            <button class="num-btn" onclick="pressNum(2)">2</button>
-            <button class="num-btn" onclick="pressNum(3)">3</button>
-            <button class="num-btn" onclick="pressNum(4)">4</button>
-            <button class="num-btn" onclick="pressNum(5)">5</button>
-            <button class="num-btn" onclick="pressNum(6)">6</button>
-            <button class="num-btn" onclick="pressNum(7)">7</button>
-            <button class="num-btn" onclick="pressNum(8)">8</button>
-            <button class="num-btn" onclick="pressNum(9)">9</button>
-            <div></div>
-            <button class="num-btn" onclick="pressNum(0)">0</button>
-            <div></div>
-        </div>
-    </div>
-
-    <!-- Wallet Selection Modal (ဗီဒီယို 00:00 - 00:03) -->
+    <!-- Wallet Selection Modal (Tonkeeper တစ်မျိုးတည်းသာပြရန်) -->
     <div id="wallet-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
@@ -423,30 +349,35 @@
                 <button class="modal-close" onclick="closeModal('wallet-modal')">✕</button>
             </div>
             
-            <!-- Loading view inside modal (ဗီဒီယို 00:01 - 00:02) -->
             <div id="modal-loading-view" class="ton-connect-loading">
                 <div class="spinner"></div>
-                <div style="font-size: 13px; color: #8b949e; margin-bottom: 5px;">Continue in Tonkeeper...</div>
+                <div style="font-size: 13px; color: #8b949e; margin-bottom: 5px;">Connecting to Tonkeeper...</div>
             </div>
 
-            <!-- Select App view (ဗီဒီယို 00:02 - 00:03) -->
             <div id="modal-select-app-view" style="display: none;">
                 <div style="font-size: 12px; color: #8b949e; margin-bottom: 10px; text-align: center;">Select app</div>
+                
                 <div class="select-app-grid">
-                    <div class="select-app-option" onclick="openPasscodeScreen()">
+                    <div class="select-app-option" onclick="openTonkeeperApproval()">
                         <div class="app-icon-circle">💎</div>
-                        <span>Tonkeeper</span>
+                        <div>
+                            <div style="font-weight: bold;">Tonkeeper</div>
+                            <div style="font-size: 11px; color: #8b949e;">Open Tonkeeper wallet app</div>
+                        </div>
                     </div>
-                    <div class="select-app-option" onclick="openPasscodeScreen()">
-                        <div class="app-icon-circle" style="background: #f0b90b;">💎</div>
-                        <span>Tonkeeper</span>
-                    </div>
+                </div>
+
+                <!-- User Address ထည့်သွင်းရန် နေရာ -->
+                <div class="address-input-box">
+                    <div style="font-size: 12px; color: #8b949e;">Or paste your wallet address manually:</div>
+                    <input type="text" id="manual-wallet-input" placeholder="UQBV... or EQ...">
+                    <button onclick="saveManualAddressToSupabase()">Save & Connect</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tonkeeper Approval Screen (ဗီဒီယို 00:07 - 00:09) -->
+    <!-- Tonkeeper Approval Screen -->
     <div id="tonkeeper-approval-modal" class="modal-overlay">
         <div class="wallet-modal-content">
             <div class="modal-header">
@@ -462,7 +393,7 @@
                     <div class="tk-acc-left">
                         <div class="tk-key-icon">🔑</div>
                         <div>
-                            <div class="tk-acc-name">Rampage528</div>
+                            <div class="tk-acc-name">Tonkeeper User</div>
                             <div class="tk-acc-addr" id="selected-tk-addr">UQBV...zssX</div>
                         </div>
                     </div>
@@ -592,6 +523,11 @@
     </div>
 
     <script>
+        // Supabase Configuration (သင့်ရဲ့ Supabase URL နဲ့ Anon Key ကို အောက်တွင် ထည့်ပါ)
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // Splash screen handler
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
@@ -611,59 +547,61 @@
             element.classList.add('active');
         }
 
-        // Wallet & Tonkeeper Flow (Video matching)
         let activeWalletAddress = 'UQBV...zssX';
-        let enteredPasscode = "";
 
         function openWalletModalFlow() {
             document.getElementById('wallet-modal').classList.add('active');
             document.getElementById('modal-loading-view').style.display = 'block';
             document.getElementById('modal-select-app-view').style.display = 'none';
 
-            // ဗီဒီယို 00:01 - 00:02 ကဲ့သို့ Loading ခဏပြပြီးမှ Select App (ဗီဒီယို 00:02) ပေါ်လာစေခြင်း
+            // Tonkeeper တစ်မျိုးတည်းကို အလိုအလျောက်ပြသရန် Loading ခဏပြခြင်း
             setTimeout(() => {
                 document.getElementById('modal-loading-view').style.display = 'none';
                 document.getElementById('modal-select-app-view').style.display = 'block';
-            }, 1500);
+            }, 1200);
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
         }
 
-        function openPasscodeScreen() {
+        function openTonkeeperApproval() {
             closeModal('wallet-modal');
-            enteredPasscode = "";
-            updatePasscodeDots();
-            document.getElementById('passcode-screen').style.display = 'flex';
+            document.getElementById('tonkeeper-approval-modal').classList.add('active');
         }
 
-        function pressNum(num) {
-            if (enteredPasscode.length < 4) {
-                enteredPasscode += num;
-                updatePasscodeDots();
-            }
-            if (enteredPasscode.length === 4) {
-                // ဗီဒီယို 00:04 Passcode ရိုက်ပြီးတာနဲ့ Tonkeeper အတည်ပြုချက်ဘောက်စ် (ဗီဒီယို 00:07) သို့ တိုက်ရိုက်ရောက်သွားခြင်း
-                setTimeout(() => {
-                    document.getElementById('passcode-screen').style.display = 'none';
-                    document.getElementById('tonkeeper-approval-modal').classList.add('active');
-                }, 300);
-            }
-        }
+        // Supabase သို့ Address သိမ်းဆည်းရန် Function
+        async function saveAddressToSupabase(address) {
+            try {
+                const { data, error } = await _supabase
+                    .from('wallets')
+                    .insert([{ wallet_address: address }]);
 
-        function updatePasscodeDots() {
-            for (let i = 0; i < 4; i++) {
-                const dot = document.getElementById('dot-' + i);
-                if (i < enteredPasscode.length) {
-                    dot.classList.add('filled');
+                if (error) {
+                    console.error('Supabase Error:', error.message);
+                    alert('Database error: ' + error.message);
                 } else {
-                    dot.classList.remove('filled');
+                    console.log('Successfully saved to Supabase:', data);
                 }
+            } catch (err) {
+                console.error('Connection error:', err);
             }
         }
 
-        function confirmTonkeeperConnect() {
+        async function confirmTonkeeperConnect() {
+            activeWalletAddress = "UQBV9...TonkeeperAutoX";
+            await saveAddressToSupabase(activeWalletAddress);
+            finalizeConnection();
+        }
+
+        async function saveManualAddressToSupabase() {
+            const manualInput = document.getElementById('manual-wallet-input').value.trim();
+            if(!manualInput) {
+                alert('ကျေးဇူးပြု၍ Wallet Address ထည့်ပါ');
+                return;
+            }
+            activeWalletAddress = manualInput;
+            await saveAddressToSupabase(activeWalletAddress);
             finalizeConnection();
         }
 
@@ -671,7 +609,7 @@
             closeModal('wallet-modal');
             closeModal('tonkeeper-approval-modal');
             
-            document.getElementById('wallet-text').innerText = activeWalletAddress;
+            document.getElementById('wallet-text').innerText = activeWalletAddress.substring(0, 6) + '...';
             document.getElementById('wallet-unconnected').style.display = 'none';
             document.getElementById('wallet-connected').style.display = 'block';
         }
