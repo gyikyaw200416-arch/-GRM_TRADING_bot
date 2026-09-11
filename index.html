@@ -530,13 +530,18 @@
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
-        // Check existing wallet on page load
+        // Check existing wallet on page load (LocalStorage & Supabase integration)
         window.addEventListener('DOMContentLoaded', async () => {
             setTimeout(hideSplashScreen, 1000);
-            await loadUserWalletFromSupabase();
+            
+            const savedWallet = localStorage.getItem('grm_wallet_address');
+            if (savedWallet) {
+                activeWalletAddress = savedWallet;
+                finalizeConnection();
+            } else {
+                await loadUserWalletFromSupabase();
+            }
         });
-
-        setTimeout(hideSplashScreen, 2000);
 
         function hideSplashScreen() {
             const splash = document.getElementById('splash-screen');
@@ -637,6 +642,7 @@
 
                 if (!error && data && data.wallet_address) {
                     activeWalletAddress = data.wallet_address;
+                    localStorage.setItem('grm_wallet_address', activeWalletAddress);
                     finalizeConnection();
                 }
             } catch (err) {
@@ -658,6 +664,7 @@
 
         async function confirmTonkeeperConnect() {
             activeWalletAddress = "UQBV9...TonkeeperAutoX";
+            localStorage.setItem('grm_wallet_address', activeWalletAddress);
             await saveAddressToSupabase(activeWalletAddress);
             finalizeConnection();
         }
@@ -671,6 +678,7 @@
                 return;
             }
             activeWalletAddress = manualInput;
+            localStorage.setItem('grm_wallet_address', activeWalletAddress);
             await saveAddressToSupabase(activeWalletAddress);
             finalizeConnection();
         }
@@ -702,6 +710,7 @@
         async function disconnectWallet() {
             await removeAddressFromSupabase();
             activeWalletAddress = '';
+            localStorage.removeItem('grm_wallet_address');
             
             const walletConnected = document.getElementById('wallet-connected');
             const walletUnconnected = document.getElementById('wallet-unconnected');
