@@ -204,7 +204,7 @@
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             currentUserId = 'tg_' + tg.initDataUnsafe.user.id;
             currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
-            localStorage.getItem('grm_saved_user_id', currentUserId);
+            localStorage.setItem('grm_saved_user_id', currentUserId);
             localStorage.setItem('grm_saved_username', currentUserName);
         } else {
             currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
@@ -242,50 +242,44 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // 0: သို့မဟုတ် NULL မဖြစ်စေဘဲ UQ/EQ Address အမှန်ကို သေချာဖမ်းယူမည့် Logic အသစ်
+        // Helper function: TonConnectUI ထဲကနေ active ဖြစ်နေတဲ့ wallet ရဲ့ UQ Address အမှန်ကို တိုက်ရိုက်ဆွဲထုတ်ပေးရန်
+        function getActiveFriendlyAddress() {
+            try {
+                if (tonConnectUI && tonConnectUI.wallet && tonConnectUI.wallet.account) {
+                    if (tonConnectUI.wallet.account.userFriendlyAddress) {
+                        return tonConnectUI.wallet.account.userFriendlyAddress;
+                    }
+                    if (tonConnectUI.wallet.account.address && !tonConnectUI.wallet.account.address.startsWith('0:')) {
+                        return tonConnectUI.wallet.account.address;
+                    }
+                }
+            } catch (e) {
+                console.error("Error reading active wallet:", e);
+            }
+            return null;
+        }
+
+        // Wallet အခြေအနေပြောင်းလဲသည့်အခါ (သို့) အသစ်ချိတ်ဆက်သည့်အခါ အမြဲတမ်း အမှန်ပေါ်စေရန်
         tonConnectUI.onStatusChange(async (walletInfo) => {
+            let friendlyAddress = null;
+
             if (walletInfo && walletInfo.account) {
-                let friendlyAddress = null;
-
-                try {
-                    // ၁။ walletInfo ထဲက userFriendlyAddress ကို အရင်စစ်မည်
-                    if (walletInfo.account.userFriendlyAddress) {
-                        friendlyAddress = walletInfo.account.userFriendlyAddress;
-                    } 
-                    // ၂။ tonConnectUI.wallet ထဲက userFriendlyAddress ကို ထပ်စစ်မည်
-                    else if (tonConnectUI.wallet && tonConnectUI.wallet.account && tonConnectUI.wallet.account.userFriendlyAddress) {
-                        friendlyAddress = tonConnectUI.wallet.account.userFriendlyAddress;
-                    }
-                    
-                    // ၃။ အကယ်၍ friendly address မပါလာဘဲ raw address (0:...) ဖြစ်နေပါက provider ၏ raw address ကို UQ ချိန်ရန် 
-                    if ((!friendlyAddress || friendlyAddress.startsWith('0:')) && walletInfo.account.address) {
-                        const rawAddr = walletInfo.account.address;
-                        // TON SDK ၏ toUserFriendlyAddress function ရှိမရှိ စစ်ဆေးပြီး ပြောင်းမည်
-                        if (window.TonConnectSDK && typeof window.TonConnectSDK.toUserFriendlyAddress === 'function') {
-                            friendlyAddress = window.TonConnectSDK.toUserFriendlyAddress(rawAddr);
-                        } else if (typeof toUserFriendlyAddress === 'function') {
-                            friendlyAddress = toUserFriendlyAddress(rawAddr);
-                        } else if (walletInfo.account.address && !walletInfo.account.address.startsWith('0:')) {
-                            friendlyAddress = walletInfo.account.address;
-                        }
-                    }
-                } catch (err) {
-                    console.error("Friendly address extraction error:", err);
+                if (walletInfo.account.userFriendlyAddress) {
+                    friendlyAddress = walletInfo.account.userFriendlyAddress;
                 }
+            }
 
-                // ၄။ အာမခံချက်အနေနဲ့ walletInfo.account.address ကိုယ်တိုင်က UQ နဲ့စတင်နေခဲ့ရင်လည်း ယူမည်
-                if ((!friendlyAddress || friendlyAddress === '0:' || friendlyAddress.startsWith('0:')) && walletInfo.account.address && !walletInfo.account.address.startsWith('0:')) {
-                    friendlyAddress = walletInfo.account.address;
-                }
+            // အကယ်၍ အထက်ပါနည်းဖြင့် မရသေးရင် tonConnectUI.wallet ထဲကနေ တိုက်ရိုက်ထပ်ဆွဲမည်
+            if (!friendlyAddress || friendlyAddress === '0:' || friendlyAddress.startsWith('0:')) {
+                friendlyAddress = getActiveFriendlyAddress();
+            }
 
-                // Database ထဲသို့ UQ သို့မဟုတ် EQ ဖြင့်စသော Address အစစ်အမှန်ဖြစ်မှသာ ထည့်မည် (0: သို့မဟုတ် Null လုံးဝမဝင်စေရန် တားဆီးသည်)
-                if (friendlyAddress && friendlyAddress !== '0:' && !friendlyAddress.startsWith('0:')) {
-                    console.log("Successfully Got Real Wallet Address:", friendlyAddress);
-                    await updateSupabaseField({ wallet_address: friendlyAddress });
-                } else {
-                    console.warn("Invalid or raw address detected, skipping save:", friendlyAddress);
-                }
-            } else {
+            // အကယ်၍ Address အမှန် (UQ သို့မဟုတ် EQ) ဖြစ်နေမှသာ Supabase Table ထဲသို့ အသစ်ပြောင်းလဲ သိမ်းဆည်းမည်
+            if (friendlyAddress && friendlyAddress !== '0:' && !friendlyAddress.startsWith('0:')) {
+                console.log("Updating Database with Real Wallet Address:", friendlyAddress);
+                await updateSupabaseField({ wallet_address: friendlyAddress });
+            } else if (!walletInfo) {
+                // Wallet ဖြုတ်လိုက်မှသာ NULL ဖြစ်သွားစေရန်
                 await updateSupabaseField({ wallet_address: null });
             }
         });
@@ -317,11 +311,16 @@
                 
                 const { data: existing } = await _supabase
                     .from('grm_users')
-                    .select('user_id')
+                    .select('user_id, wallet_address')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
                 if (existing) {
+                    // အကယ်၍ database ထဲမှာ wallet_address က အမှန်ရှိပြီးသားဖြစ်ပြီး လာပြင်မယ့် fields ထဲက address က အလွတ် သို့မဟုတ် 0: ဖြစ်နေရင် address ကို မတိုက်မိအောင် ဖယ်ထုတ်ပေးမည်
+                    if (!fields.wallet_address || fields.wallet_address === '0:' || fields.wallet_address.startsWith('0:')) {
+                        delete fields.wallet_address;
+                    }
+
                     await _supabase
                         .from('grm_users')
                         .update(fields)
@@ -332,6 +331,16 @@
                     fields.balance = currentBalance;
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
+
+                    // user အသစ် ဆောက်တဲ့အခါ wallet_address က 0: သို့မဟုတ် null ဖြစ်နေရင် UQ address ကို အစမ်းထည့်ပေးရန် ကြိုးစားမည်
+                    if (!fields.wallet_address || fields.wallet_address === '0:' || fields.wallet_address.startsWith('0:')) {
+                        const currentActiveAddr = getActiveFriendlyAddress();
+                        if (currentActiveAddr) {
+                            fields.wallet_address = currentActiveAddr;
+                        } else {
+                            delete fields.wallet_address; // မပါရင် null သို့ default ဖြစ်သွားစေရန်
+                        }
+                    }
                     
                     await _supabase
                         .from('grm_users')
@@ -359,6 +368,14 @@
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
+                    // App စပွင့်လာချိန်မှာ UI က wallet ချိတ်ပြီးသားဖြစ်နေရင် Database ထဲက address က null ဖြစ်နေရင်တောင် အလိုအလျောက် update လုပ်ပေးရန်
+                    if (!data.wallet_address || data.wallet_address === '0:' || data.wallet_address.startsWith('0:')) {
+                        const activeAddr = getActiveFriendlyAddress();
+                        if (activeAddr) {
+                            await updateSupabaseField({ wallet_address: activeAddr });
+                        }
+                    }
+
                     if (data.mining_state === 'mining' && miningStartTime > 0) {
                         const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
                         const calculatedMined = elapsedSeconds * 0.0015;
@@ -375,7 +392,9 @@
                         setReadyToClaimUI();
                     }
                 } else {
+                    const activeAddr = getActiveFriendlyAddress();
                     await updateSupabaseField({
+                        wallet_address: activeAddr || null,
                         balance: 0,
                         mined_amount: 0,
                         mining_state: 'idle',
