@@ -219,7 +219,7 @@
         document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6InVub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
         let _supabase = null;
         try {
@@ -376,6 +376,8 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
+                const verifiedBadge = document.getElementById('profile-verified-badge');
+
                 if (data) {
                     currentBalance = parseFloat(data.balance) || 0;
                     minedAmount = parseFloat(data.mined_amount) || 0;
@@ -384,8 +386,7 @@
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
-                    // Handle verification UI status based on database is_verified column (TRUE/FALSE)
-                    const verifiedBadge = document.getElementById('profile-verified-badge');
+                    // Supabase မှ is_verified တန်ဖိုး (TRUE/FALSE) ကို စစ်ဆေးပြီး UI ပြောင်းလဲခြင်း
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
@@ -421,7 +422,6 @@
                         mining_start_time: 0,
                         is_verified: false
                     });
-                    const verifiedBadge = document.getElementById('profile-verified-badge');
                     verifiedBadge.innerText = "Unverified ❌";
                     verifiedBadge.style.backgroundColor = "#da3633";
                 }
@@ -446,7 +446,7 @@
             if (!isMining && btn.innerText === "START") {
                 isMining = true;
                 miningStartTime = Date.now();
-                btn.innerText = "MINING IN PROGRESS...";
+                btn.innerText = "MINING"; // တောင်းဆိုထားသည့်အတိုင်း MINING ဟုပြောင်းထားပါသည်
                 btn.style.background = "#212d42";
                 btn.style.color = "#00f0ff";
                 if (statusBadge) {
@@ -508,7 +508,7 @@
             const coinBox = document.getElementById('coin-box-elem');
             const timerDisplay = document.getElementById('mining-timer-display');
 
-            btn.innerText = "MINING IN PROGRESS...";
+            btn.innerText = "MINING"; // တောင်းဆိုထားသည့်အတိုင်း MINING ဟုပြောင်းထားပါသည်
             btn.style.background = "#212d42";
             btn.style.color = "#00f0ff";
             if (statusBadge) {
