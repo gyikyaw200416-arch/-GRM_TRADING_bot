@@ -237,24 +237,38 @@
         let miningInterval;
         let miningStartTime = 0;
 
-        // TonConnect wallet object ထဲမှ address အမှန်ကို သေချာဆွဲထုတ်ပေးမည့် function
+        // Raw address ကို UQ/EQ address အဖြစ် သေချာပြောင်းပေးမည့် function အသزးပြုခြင်း
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
             
-            // 1. userFriendlyAddress ရှိမရှိ စစ်ဆေးခြင်း
-            if (walletObj.account && walletObj.account.userFriendlyAddress) {
-                return walletObj.account.userFriendlyAddress;
-            }
-            if (walletObj.userFriendlyAddress) {
-                return walletObj.userFriendlyAddress;
-            }
-            
-            // 2. account.address ရှိပါက ၎င်းကို ယူမည်
-            if (walletObj.account && walletObj.account.address) {
-                return walletObj.account.address;
-            }
-            if (walletObj.address) {
-                return walletObj.address;
+            try {
+                // 1. userFriendlyAddress ပါပြီးသားဆိုရင် ယူမယ်
+                if (walletObj.account && walletObj.account.userFriendlyAddress) {
+                    return walletObj.account.userFriendlyAddress;
+                }
+                if (walletObj.userFriendlyAddress) {
+                    return walletObj.userFriendlyAddress;
+                }
+                
+                // 2. address သို့မဟုတ် account.address (Raw format 0:...) ကို ယူမယ်
+                let rawAddr = (walletObj.account && walletObj.account.address) ? walletObj.account.address : walletObj.address;
+                
+                if (rawAddr) {
+                    // TON Connect UI ရဲ့ built-in helper ဖြင့် UQ/EQ ပုံစံသို့ ပြောင်းလဲခြင်း
+                    if (typeof TON_CONNECT_UI !== 'undefined' && TON_CONNECT_UI.toUserFriendlyAddress) {
+                        let isTestnet = false;
+                        if (walletObj.account && walletObj.account.chain && walletObj.account.chain.toString() === '-3') {
+                            isTestnet = true;
+                        }
+                        return TON_CONNECT_UI.toUserFriendlyAddress(rawAddr, isTestnet);
+                    }
+                    return rawAddr;
+                }
+            } catch (e) {
+                console.error("Error formatting address:", e);
+                if (walletObj.account && walletObj.account.address) {
+                    return walletObj.account.address;
+                }
             }
             return null;
         }
