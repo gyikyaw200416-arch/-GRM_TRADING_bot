@@ -328,9 +328,9 @@
             console.warn("Supabase init notice:", e);
         }
 
-        // Initialize Official TON Connect UI (Fixes Tonkeeper connection bugs completely)
+        // Initialize Official TON Connect UI with your GitHub Raw manifest URL
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://raw.githubusercontent.com/your-username/your-repo/main/tonconnect-manifest.json', // ကိုယ့် manifest url ထည့်ရန် (သို့) ယာယီသုံးရန်
+            manifestUrl: 'https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/tonconnect-manifest.json',
             buttonRootId: 'ton-connect-button'
         });
 
@@ -338,7 +338,6 @@
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo) {
                 const rawAddress = walletInfo.account.address;
-                // Format address nicely for display if needed
                 console.log("Wallet connected:", rawAddress);
                 await saveAddressToSupabase(rawAddress);
             } else {
