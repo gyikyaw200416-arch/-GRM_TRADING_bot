@@ -511,40 +511,44 @@
     </div>
 
     <script>
-        // သင့်ပရောဂျက်၏ သန့်စင်သော Supabase URL နှင့် Anon Key ကို ထည့်ပါ (အမှားအယွင်းမရှိစေရန် spaces များနှင့် မြန်မာစာများ မပါစေရပါ)
+        // သင့်ပရောဂျက်၏ Supabase URL နှင့် Anon Key ကို ထည့်ပါ
         const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
         const SUPABASE_ANON_KEY = 'your-anon-key-here';
         
         let _supabase = null;
         try {
-            if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http')) {
+            if (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('your-project-id')) {
                 _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         } catch (e) {
             console.warn("Supabase init notice:", e);
         }
 
-        // ဥပမာ - User ကို သီးသန့်ခွဲခြားရန် Unique ID တစ်ခု (Telegram WebApp ဖြစ်ပါက window.Telegram.WebApp.initDataUnsafe.user.id ကို သုံးနိုင်သည်)
-        // ယခုလက်ရှိတွင် Browser LocalStorage ကို အသုံးပြုထားပါသည်
         let currentUserId = localStorage.getItem('grm_user_id');
         if (!currentUserId) {
-            currentUserId = 'user_' + Math.random().toString(36.substring(2, 9));
+            currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
+        // Safe Splash Screen Remover (Error ဘယ်လိုတက်တက် Screen ပွင့်လာစေရန် အာမခံသည်)
+        function hideSplashScreen() {
+            const splash = document.getElementById('splash-screen');
+            const mainApp = document.querySelector('.main-container');
+            if (splash && splash.style.display !== 'none') {
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    if (mainApp) mainApp.style.display = 'block';
+                }, 400);
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const splash = document.getElementById('splash-screen');
-                const mainApp = document.querySelector('.main-container');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => {
-                        splash.style.display = 'none';
-                        if (mainApp) mainApp.style.display = 'block';
-                    }, 500);
-                }
-            }, 1200);
+            setTimeout(hideSplashScreen, 1000);
         });
+
+        // နောက်ထပ် Safety အနေနဲ့ 2 စက္ကန့်ကြာရင် Splash Screen အလွန်အကျွံ မစောင့်ရအောင် အတင်းပိတ်ပေးခြင်း
+        setTimeout(hideSplashScreen, 2000);
 
         function switchTab(tabName, element) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -578,15 +582,13 @@
             if (tkModal) tkModal.classList.add('active');
         }
 
-        // ၁။ Address အသစ်ထည့်ခြင်း သို့မဟုတ် Update လုပ်ခြင်း (Upsert)
         async function saveAddressToSupabase(address) {
             if (!_supabase) {
-                alert("Supabase URL သို့မဟုတ် Key မှားယွင်းနေပါသည်။");
+                console.warn("Supabase not connected. Skipping DB save.");
                 return;
             }
             try {
-                // user_id ကိုအခြေခံ၍ ရှိပြီးသားဆိုရင် Update လုပ်မည်၊ မရှိသေးရင် အသစ်ထည့်မည် (Upsert)
-                const { data, error } = await _supabase
+                const { error } = await _supabase
                     .from('wallets')
                     .upsert([
                         { user_id: currentUserId, wallet_address: address, updated_at: new Date() }
@@ -594,7 +596,6 @@
                 
                 if (error) {
                     console.error('Supabase Save Error:', error.message);
-                    alert('Database Error: ' + error.message);
                 } else {
                     console.log('Wallet saved/updated successfully:', address);
                 }
@@ -603,20 +604,13 @@
             }
         }
 
-        // ၂။ Address ဖြုတ်ခြင်း (Disconnect) လုပ်လျှင် Supabase ထဲမှ ဖျက်ပစ်ခြင်း
         async function removeAddressFromSupabase() {
             if (!_supabase) return;
             try {
-                const { error } = await _supabase
+                await _supabase
                     .from('wallets')
                     .delete()
                     .eq('user_id', currentUserId);
-
-                if (error) {
-                    console.error('Supabase Delete Error:', error.message);
-                } else {
-                    console.log('Wallet removed from database successfully.');
-                }
             } catch (err) {
                 console.error('Connection error:', err);
             }
@@ -665,7 +659,6 @@
             toggleWalletMenu();
         }
 
-        // Disconnect လုပ်သည့်အခါ Supabase ထဲကပါ လိုက်ဖြုတ်ပေးမည်
         async function disconnectWallet() {
             await removeAddressFromSupabase();
             activeWalletAddress = '';
