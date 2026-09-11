@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- TON Connect UI SDK -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -122,152 +127,10 @@
             color: #f0b90b;
         }
 
-        /* Wallet Buttons */
-        .wallet-container { position: relative; }
-        .connect-wallet-btn {
-            background: #0088cc;
-            color: #fff;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
+        /* TON Connect Button Container Styling */
+        #ton-connect-button {
             display: flex;
             align-items: center;
-            gap: 5px;
-        }
-        .wallet-address-btn {
-            background: #121824;
-            color: #00f0ff;
-            border: 1px solid #00f0ff;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        /* Wallet Dropdown Menu */
-        .wallet-dropdown {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 38px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            width: 150px;
-            z-index: 100;
-            overflow: hidden;
-        }
-        .wallet-dropdown.show { display: block; }
-        .dropdown-item {
-            padding: 10px 12px;
-            font-size: 12px;
-            color: #fff;
-            cursor: pointer;
-            background: none;
-            width: 100%;
-            text-align: left;
-            border: none;
-            border-bottom: 1px solid #212d42;
-        }
-        .dropdown-item:hover { background: #212d42; }
-        .dropdown-item.disconnect { color: #ff5722; }
-
-        /* Modals */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 2000;
-            justify-content: center;
-            align-items: flex-end;
-        }
-        .modal-overlay.active { display: flex; }
-        .wallet-modal-content {
-            background: #121824;
-            width: 100%;
-            max-width: 450px;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            padding: 20px;
-            border-top: 1px solid #30363d;
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            color: #8b949e;
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        .ton-connect-loading { text-align: center; padding: 25px 0; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 136, 204, 0.2); border-top: 4px solid #0088cc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .select-app-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .select-app-option { background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px; color: #fff; }
-        .select-app-option:hover { border-color: #0088cc; }
-        .app-icon-circle { width: 36px; height: 36px; background: #0088cc; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; }
-
-        .address-input-box { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #30363d; padding-top: 12px; }
-        .address-input-box input { width: 100%; padding: 10px; background: #0b0f19; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 13px; outline: none; }
-        .address-input-box input:focus { border-color: #0088cc; }
-        .address-input-box button { background: #238636; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
-        .address-input-box button:hover { background: #2ea043; }
-
-        .tonkeeper-connect-box { text-align: center; padding: 10px 0; }
-        .tk-logo-ring {
-            width: 50px; height: 50px; background: #0088cc; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            margin: 0 auto 10px auto; font-size: 22px; box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
-        }
-        .tk-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-        .tk-desc { font-size: 12px; color: #8b949e; margin-bottom: 15px; line-height: 1.4; }
-        
-        .tk-account-selector {
-            background: #1a233a; border: 1px solid #30363d; border-radius: 12px;
-            padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px; text-align: left;
-        }
-        .tk-acc-left { display: flex; align-items: center; gap: 10px; }
-        .tk-key-icon {
-            width: 28px; height: 28px; background: #222; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; font-size: 12px;
-        }
-        .tk-acc-name { font-size: 13px; font-weight: bold; }
-        .tk-acc-addr { font-size: 11px; color: #00f0ff; }
-
-        .notification-toggle { display: flex; justify-content: space-between; align-items: center; background: #1a233a; border: 1px solid #30363d; border-radius: 12px; padding: 10px 12px; margin-bottom: 20px; font-size: 13px; text-align: left; }
-        .toggle-switch { width: 40px; height: 22px; background: #238636; border-radius: 11px; position: relative; cursor: pointer; }
-        .toggle-switch::after { content: ''; position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; }
-
-        .tk-connect-action-btn {
-            background: #0088cc; color: #fff; width: 100%; padding: 13px;
-            border-radius: 12px; border: none; font-size: 14px; font-weight: bold; cursor: pointer;
         }
 
         .card {
@@ -341,94 +204,17 @@
         <div class="loading-text">Loading GRM Miner...</div>
     </div>
 
-    <div id="wallet-modal" class="modal-overlay">
-        <div class="wallet-modal-content">
-            <div class="modal-header">
-                <span>Connect your TON wallet</span>
-                <button class="modal-close" onclick="closeModal('wallet-modal')">✕</button>
-            </div>
-            
-            <div id="modal-loading-view" class="ton-connect-loading">
-                <div class="spinner"></div>
-                <div style="font-size: 13px; color: #8b949e; margin-bottom: 5px;">Connecting to Tonkeeper...</div>
-            </div>
-
-            <div id="modal-select-app-view" style="display: none;">
-                <div class="select-app-grid">
-                    <div class="select-app-option" onclick="openTonkeeperApproval()">
-                        <div class="app-icon-circle">💎</div>
-                        <div>
-                            <div style="font-weight: bold;">Tonkeeper</div>
-                            <div style="font-size: 11px; color: #8b949e;">Open Tonkeeper wallet app</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="address-input-box">
-                    <div style="font-size: 12px; color: #8b949e;">Or paste wallet address manually:</div>
-                    <input type="text" id="manual-wallet-input" placeholder="UQBV... or EQ...">
-                    <button onclick="saveManualAddressToSupabase()">Save & Connect</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="tonkeeper-approval-modal" class="modal-overlay">
-        <div class="wallet-modal-content">
-            <div class="modal-header">
-                <span>Tonkeeper</span>
-                <button class="modal-close" onclick="closeModal('tonkeeper-approval-modal')">✕</button>
-            </div>
-            <div class="tonkeeper-connect-box">
-                <div class="tk-logo-ring">💎</div>
-                <div class="tk-title">Connect to GRM Mining</div>
-                <div class="tk-desc">GRM is requesting access to your wallet address:</div>
-                
-                <div class="tk-account-selector">
-                    <div class="tk-acc-left">
-                        <div class="tk-key-icon">🔑</div>
-                        <div>
-                            <div class="tk-acc-name">Rampage528</div>
-                            <div class="tk-acc-addr" id="selected-tk-addr">UQBV9...TonkeeperAutoX</div>
-                        </div>
-                    </div>
-                    <span style="color: #238636; font-size: 14px;">✔</span>
-                </div>
-
-                <div class="notification-toggle">
-                    <span>Allow Notifications</span>
-                    <div class="toggle-switch"></div>
-                </div>
-
-                <button class="tk-connect-action-btn" onclick="confirmTonkeeperConnect()">Connect wallet</button>
-            </div>
-        </div>
-    </div>
-
     <div class="main-container">
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
                     <span class="lvl-badge">Lvl 1</span>
-                    <span>Sky ⛏️</span>
+                    <span id="telegram-username">Loading... ⛏️</span>
                     <span style="font-size: 10px; color: #00f0ff;" id="mining-status-badge">IDLE</span>
                 </div>
                 
-                <div class="wallet-container">
-                    <div id="wallet-unconnected">
-                        <button class="connect-wallet-btn" onclick="openWalletModalFlow()">💎 Connect Wallet</button>
-                    </div>
-                    <div id="wallet-connected" style="display: none;">
-                        <button class="wallet-address-btn" onclick="toggleWalletMenu()">
-                            <span id="wallet-text">UQBV...zssX</span> ▾
-                        </button>
-                        <div id="wallet-dropdown" class="wallet-dropdown">
-                            <button class="dropdown-item" onclick="copyAddress()">📋 Copy address</button>
-                            <button class="dropdown-item" onclick="openWalletModalFlow()">🔄 Change wallet</button>
-                            <button class="dropdown-item disconnect" onclick="disconnectWallet()">🔌 Disconnect</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- TON Connect Official Button Container -->
+                <div id="ton-connect-button"></div>
             </div>
 
             <div style="font-size: 10px; color: #2ea043; margin-bottom: 10px;">0.07$ left to Lvl UP</div>
@@ -511,7 +297,25 @@
     </div>
 
     <script>
-        // Replace with your actual Supabase URL and Anon Key
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let currentUserId = 'user_guest';
+        let currentUserName = 'Miner';
+
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            currentUserId = 'tg_' + tg.initDataUnsafe.user.id;
+            currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
+        } else {
+            // Local fallback if tested outside Telegram browser
+            currentUserId = localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
+            localStorage.setItem('grm_user_id', currentUserId);
+        }
+
+        document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
+
+        // Supabase Setup
         const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
         const SUPABASE_ANON_KEY = 'your-anon-key-here';
         
@@ -524,23 +328,28 @@
             console.warn("Supabase init notice:", e);
         }
 
-        let currentUserId = localStorage.getItem('grm_user_id');
-        if (!currentUserId) {
-            currentUserId = 'user_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('grm_user_id', currentUserId);
-        }
+        // Initialize Official TON Connect UI (Fixes Tonkeeper connection bugs completely)
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://raw.githubusercontent.com/your-username/your-repo/main/tonconnect-manifest.json', // ကိုယ့် manifest url ထည့်ရန် (သို့) ယာယီသုံးရန်
+            buttonRootId: 'ton-connect-button'
+        });
 
-        // Check existing wallet on page load (LocalStorage & Supabase integration)
+        // Listen to wallet connection changes
+        tonConnectUI.onStatusChange(async (walletInfo) => {
+            if (walletInfo) {
+                const rawAddress = walletInfo.account.address;
+                // Format address nicely for display if needed
+                console.log("Wallet connected:", rawAddress);
+                await saveAddressToSupabase(rawAddress);
+            } else {
+                console.log("Wallet disconnected");
+                await removeAddressFromSupabase();
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', async () => {
             setTimeout(hideSplashScreen, 1000);
-            
-            const savedWallet = localStorage.getItem('grm_wallet_address');
-            if (savedWallet) {
-                activeWalletAddress = savedWallet;
-                finalizeConnection();
-            } else {
-                await loadUserWalletFromSupabase();
-            }
+            await loadUserWalletFromSupabase();
         });
 
         function hideSplashScreen() {
@@ -563,87 +372,41 @@
             if (element) element.classList.add('active');
         }
 
-        let activeWalletAddress = '';
-
-        function openWalletModalFlow() {
-            const dropdown = document.getElementById('wallet-dropdown');
-            if (dropdown) dropdown.classList.remove('show');
-
-            document.getElementById('wallet-modal').classList.add('active');
-            document.getElementById('modal-loading-view').style.display = 'block';
-            document.getElementById('modal-select-app-view').style.display = 'none';
-
-            setTimeout(() => {
-                document.getElementById('modal-loading-view').style.display = 'none';
-                document.getElementById('modal-select-app-view').style.display = 'block';
-            }, 1000);
-        }
-
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.classList.remove('active');
-        }
-
-        function openTonkeeperApproval() {
-            closeModal('wallet-modal');
-            const tkModal = document.getElementById('tonkeeper-approval-modal');
-            if (tkModal) tkModal.classList.add('active');
-        }
-
-        // Save or Update wallet address in Supabase safely
         async function saveAddressToSupabase(address) {
-            if (!_supabase) {
-                console.warn("Supabase not connected. Skipping DB save.");
-                return;
-            }
+            if (!_supabase) return;
             try {
-                const { data: existingData, error: fetchError } = await _supabase
+                const { data: existingData } = await _supabase
                     .from('wallets')
                     .select('*')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                if (fetchError) {
-                    console.error('Fetch Error:', fetchError.message);
-                }
-
                 if (existingData) {
-                    const { error: updateError } = await _supabase
+                    await _supabase
                         .from('wallets')
                         .update({ wallet_address: address, updated_at: new Date() })
                         .eq('user_id', currentUserId);
-
-                    if (updateError) console.error('Update Error:', updateError.message);
-                    else console.log('Wallet updated successfully:', address);
                 } else {
-                    const { error: insertError } = await _supabase
+                    await _supabase
                         .from('wallets')
-                        .insert([
-                            { user_id: currentUserId, wallet_address: address, updated_at: new Date() }
-                        ]);
-
-                    if (insertError) console.error('Insert Error:', insertError.message);
-                    else console.log('Wallet inserted successfully:', address);
+                        .insert([{ user_id: currentUserId, wallet_address: address, updated_at: new Date() }]);
                 }
             } catch (err) {
-                console.error('Connection error:', err);
+                console.error('Supabase save error:', err);
             }
         }
 
-        // Load wallet address from Supabase
         async function loadUserWalletFromSupabase() {
             if (!_supabase) return;
             try {
-                const { data, error } = await _supabase
+                const { data } = await _supabase
                     .from('wallets')
                     .select('wallet_address')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                if (!error && data && data.wallet_address) {
-                    activeWalletAddress = data.wallet_address;
-                    localStorage.setItem('grm_wallet_address', activeWalletAddress);
-                    finalizeConnection();
+                if (data && data.wallet_address) {
+                    // If needed, you can restore connection state
                 }
             } catch (err) {
                 console.error('Load wallet error:', err);
@@ -658,66 +421,8 @@
                     .delete()
                     .eq('user_id', currentUserId);
             } catch (err) {
-                console.error('Connection error:', err);
+                console.error('Supabase delete error:', err);
             }
-        }
-
-        async function confirmTonkeeperConnect() {
-            activeWalletAddress = "UQBV9...TonkeeperAutoX";
-            localStorage.setItem('grm_wallet_address', activeWalletAddress);
-            await saveAddressToSupabase(activeWalletAddress);
-            finalizeConnection();
-        }
-
-        async function saveManualAddressToSupabase() {
-            const manualInputElem = document.getElementById('manual-wallet-input');
-            if (!manualInputElem) return;
-            const manualInput = manualInputElem.value.trim();
-            if(!manualInput) {
-                alert('Please enter a valid wallet address.');
-                return;
-            }
-            activeWalletAddress = manualInput;
-            localStorage.setItem('grm_wallet_address', activeWalletAddress);
-            await saveAddressToSupabase(activeWalletAddress);
-            finalizeConnection();
-        }
-
-        function finalizeConnection() {
-            closeModal('wallet-modal');
-            closeModal('tonkeeper-approval-modal');
-            
-            const walletText = document.getElementById('wallet-text');
-            const walletUnconnected = document.getElementById('wallet-unconnected');
-            const walletConnected = document.getElementById('wallet-connected');
-
-            if (walletText) walletText.innerText = activeWalletAddress.substring(0, 6) + '...';
-            if (walletUnconnected) walletUnconnected.style.display = 'none';
-            if (walletConnected) walletConnected.style.display = 'block';
-        }
-
-        function toggleWalletMenu() {
-            const dropdown = document.getElementById('wallet-dropdown');
-            if (dropdown) dropdown.classList.toggle('show');
-        }
-
-        function copyAddress() {
-            navigator.clipboard.writeText(activeWalletAddress);
-            alert('Address copied to clipboard: ' + activeWalletAddress);
-            toggleWalletMenu();
-        }
-
-        async function disconnectWallet() {
-            await removeAddressFromSupabase();
-            activeWalletAddress = '';
-            localStorage.removeItem('grm_wallet_address');
-            
-            const walletConnected = document.getElementById('wallet-connected');
-            const walletUnconnected = document.getElementById('wallet-unconnected');
-            if (walletConnected) walletConnected.style.display = 'none';
-            if (walletUnconnected) walletUnconnected.style.display = 'block';
-            toggleWalletMenu();
-            alert('Wallet disconnected successfully.');
         }
 
         let isMining = false;
@@ -776,13 +481,6 @@
                     statusBadge.innerText = "IDLE";
                     statusBadge.style.color = "#00f0ff";
                 }
-            }
-        }
-
-        window.onclick = function(event) {
-            if (!event.target.matches('.wallet-address-btn') && !event.target.closest('.wallet-address-btn')) {
-                const dropdown = document.getElementById('wallet-dropdown');
-                if (dropdown && dropdown.classList.contains('show')) dropdown.classList.remove('show');
             }
         }
     </script>
