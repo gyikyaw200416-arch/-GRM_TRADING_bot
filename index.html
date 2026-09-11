@@ -131,7 +131,7 @@
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <!-- 6 Hours Countdown Timer (Coin Box ရဲ့ အထက်တွင်ပြရန်) -->
+            <!-- Countdown Timer Display (GRM အောက်တွင် အချိန်ပြရန်) -->
             <div class="mining-timer-display" id="mining-timer-display">06:00:00</div>
 
             <div class="coin-box" id="coin-box-elem">
@@ -219,7 +219,7 @@
         document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6InVub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
         let _supabase = null;
         try {
@@ -349,7 +349,7 @@
                     fields.balance = currentBalance;
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
-                    fields.is_verified = false; // Default unverified for new users
+                    fields.is_verified = false; // Default unverified
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -386,7 +386,7 @@
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
 
-                    // Supabase မှ is_verified တန်ဖိုး (TRUE/FALSE) ကို စစ်ဆေးပြီး UI ပြောင်းလဲခြင်း
+                    // Supabase မှ is_verified တန်ဖိုး (TRUE / FALSE) ကို စစ်ဆေးပြီး ပုံဖော်ပေးခြင်း
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
@@ -422,8 +422,10 @@
                         mining_start_time: 0,
                         is_verified: false
                     });
-                    verifiedBadge.innerText = "Unverified ❌";
-                    verifiedBadge.style.backgroundColor = "#da3633";
+                    if (verifiedBadge) {
+                        verifiedBadge.innerText = "Unverified ❌";
+                        verifiedBadge.style.backgroundColor = "#da3633";
+                    }
                 }
             } catch (err) {
                 console.error('Load user data exception:', err);
@@ -446,7 +448,7 @@
             if (!isMining && btn.innerText === "START") {
                 isMining = true;
                 miningStartTime = Date.now();
-                btn.innerText = "MINING"; // တောင်းဆိုထားသည့်အတိုင်း MINING ဟုပြောင်းထားပါသည်
+                btn.innerText = "MINING"; // ပုံပါအတိုင်း MINING လို့သာ ပြောင်းထားပါသည်
                 btn.style.background = "#212d42";
                 btn.style.color = "#00f0ff";
                 if (statusBadge) {
@@ -474,7 +476,7 @@
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM GRM") {
-                currentBalance += 0.0500; // Reward amount per session
+                currentBalance += 0.0500; 
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
 
@@ -508,7 +510,7 @@
             const coinBox = document.getElementById('coin-box-elem');
             const timerDisplay = document.getElementById('mining-timer-display');
 
-            btn.innerText = "MINING"; // တောင်းဆိုထားသည့်အတိုင်း MINING ဟုပြောင်းထားပါသည်
+            btn.innerText = "MINING";
             btn.style.background = "#212d42";
             btn.style.color = "#00f0ff";
             if (statusBadge) {
