@@ -181,7 +181,7 @@
             </div>
             <div class="card profile-row">
                 <div>Account Status</div>
-                <div class="verified-badge" id="profile-verified-badge">Verified ✔️</div>
+                <div class="verified-badge">Verified ✔️</div>
             </div>
         </div>
     </div>
@@ -200,7 +200,6 @@
 
         let currentUserId = 'user_guest';
         let currentUserName = 'Miner';
-        let isVerifiedUser = true; // Default verified status
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             currentUserId = 'tg_' + tg.initDataUnsafe.user.id;
@@ -240,10 +239,10 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Wallet Connection Listener - Friendly Address ကိုသာ ယူသွားအောင် ပြင်ဆင်ထားသည်
+        // Wallet Connection Listener (Modified to grab friendlyAddress UQ...)
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo && walletInfo.account) {
-                // Ton Connect ကနေ Friendly Address (`UQ...` ပုံစံ) ကို သေချာခေါ်ယူခြင်း
+                // Ton Connect UI ကနေ Friendly Address (UQ...) ကို အတိအကျ ဆွဲထုတ်ခြင်း
                 const friendlyAddress = walletInfo.account.friendlyAddress || walletInfo.account.address;
                 await updateSupabaseField({ wallet_address: friendlyAddress });
             } else {
@@ -293,7 +292,6 @@
                     fields.balance = currentBalance;
                     fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
-                    fields.is_verified = true;
                     
                     await _supabase
                         .from('grm_users')
@@ -317,19 +315,6 @@
                     currentBalance = parseFloat(data.balance) || 0;
                     minedAmount = parseFloat(data.mined_amount) || 0;
                     miningStartTime = parseInt(data.mining_start_time) || 0;
-                    isVerifiedUser = data.is_verified !== false; // false ဖြစ်မှသာ Unverified ဖြစ်မည်
-
-                    // UI ပေါ်တွင် Verified Status ကို ပြသရန်
-                    const badgeElem = document.getElementById('profile-verified-badge');
-                    if (badgeElem) {
-                        if (isVerifiedUser) {
-                            badgeElem.innerText = "Verified ✔️";
-                            badgeElem.style.backgroundColor = "#238636";
-                        } else {
-                            badgeElem.innerText = "Unverified ❌";
-                            badgeElem.style.backgroundColor = "#da3633";
-                        }
-                    }
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
                     document.getElementById('holding-wallet-text').innerText = "HOLDING WALLET: " + currentBalance.toFixed(4) + " GRM";
@@ -354,8 +339,7 @@
                         balance: 0,
                         mined_amount: 0,
                         mining_state: 'idle',
-                        mining_start_time: 0,
-                        is_verified: true
+                        mining_start_time: 0
                     });
                 }
             } catch (err) {
@@ -364,12 +348,6 @@
         }
 
         function handleMiningAction() {
-            // Unverified ဖြစ်နေလျှင် ငွေထုတ်ယူခြင်း (သို့မဟုတ် Claim လုပ်ခြင်း) ကို တားဆီးရန်
-            if (!isVerifiedUser) {
-                alert('Your account is unverified! Withdrawal and claiming are restricted.');
-                return;
-            }
-
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
