@@ -14,22 +14,21 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        /* တကယ့် Sci-Fi Control Room နောက်ခံပုံကို တိုက်ရိုက်ထည့်သွင်းပေးထားပါသည် */
+        /* Sci-Fi Machinery Control Room Background (ပေးထားသော ပုံစံအတိုင်း အမှန်တကယ် Control Room အပြင်အဆင်နှင့် အရောင်အသွေး) */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(rgba(7, 13, 24, 0.65), rgba(3, 6, 12, 0.85)), 
-                        url('https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/1000087966.jpg');
+            background: linear-gradient(135deg, rgba(7, 13, 24, 0.65) 0%, rgba(3, 6, 12, 0.82) 100%), 
+                        url('1000087971_2.jpg');
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
             z-index: -2; 
         }
 
         /* Tech circuit background effect overlay with cyan & gold sci-fi control room atmosphere */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.15) 0%, rgba(255, 180, 0, 0.05) 40%, transparent 75%),
-                        linear-gradient(180deg, rgba(7, 13, 24, 0.4) 0%, rgba(2, 5, 10, 0.75) 100%);
+            background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 180, 0, 0.03) 40%, transparent 75%),
+                        linear-gradient(180deg, rgba(7, 13, 24, 0.5) 0%, rgba(2, 5, 10, 0.75) 100%);
             z-index: -1; pointer-events: none;
         }
 
