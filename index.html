@@ -19,10 +19,11 @@
             z-index: -1; 
         }
 
-        /* Tech circuit background effect overlay */
+        /* Tech circuit background effect overlay styled with user's image reference */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, rgba(0, 240, 255, 0.1) 0%, rgba(5, 7, 11, 0.95) 80%);
+            background: linear-gradient(135deg, rgba(5, 7, 11, 0.9), rgba(11, 25, 44, 0.8)), 
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%2305070b"/><path d="M0 50h200M0 100h200M0 150h200M50 0v200M100 0v200M150 0v200" stroke="%231a2a47" stroke-width="0.8"/><circle cx="50" cy="50" r="3" fill="%2300f0ff"/><circle cx="150" cy="150" r="3" fill="%23ffb400"/><path d="M50 50 L100 100 L150 100" stroke="%2300f0ff" stroke-width="1.5" fill="none"/></svg>');
             z-index: -1; pointer-events: none;
         }
 
@@ -532,6 +533,7 @@
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
+            const assetBalance = document.getElementById('asset-balance');
             const activeAddr = getActiveWalletAddress();
 
             if (btn.innerText === "START MINING" && !activeAddr) {
@@ -555,6 +557,7 @@
 
                 updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime });
 
+                if (miningInterval) clearInterval(miningInterval);
                 miningInterval = setInterval(() => {
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                     let currentMined = elapsed * 0.000005;
@@ -563,13 +566,12 @@
 
             } else if (btn.innerText === "CLAIM") {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                const earnedMined = elapsed * 0.000005 + 0.001690;
+                const earnedMined = (elapsed * 0.000005) + 0.001690;
 
                 currentBalance += earnedMined; 
-                const assetBalance = document.getElementById('asset-balance');
-
                 if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
                 
+                // Reset mining start time so it restarts accumulation cleanly from near zero instead of jumping straight back
                 miningStartTime = Date.now();
                 amountDisplay.innerText = "0.000000 GRM";
 
@@ -600,12 +602,10 @@
             }
             if (coinBox) coinBox.classList.add('mining-anim');
 
-            let initialMined = 0.001690;
-            amountDisplay.innerText = initialMined.toFixed(6) + " GRM";
-
+            if (miningInterval) clearInterval(miningInterval);
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                let currentMinedRunning = 0.001690 + (elapsed * 0.000005);
+                let currentMinedRunning = elapsed * 0.000005;
                 amountDisplay.innerText = currentMinedRunning.toFixed(6) + " GRM";
             }, 1000);
         }
