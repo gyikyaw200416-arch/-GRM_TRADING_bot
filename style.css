@@ -1,0 +1,12 @@
+.app-bg { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: radial-gradient(circle at 50% 30%, rgba(22, 42, 74, 0.7) 0%, rgba(7, 13, 24, 0.9) 75%), 
+                url('https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/refs/heads/main/IMG_20260912_201928_325.jpg');
+    background-size: cover;
+    background-position: center;
+    z-index: -2; 
+}
