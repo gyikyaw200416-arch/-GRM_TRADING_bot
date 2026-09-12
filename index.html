@@ -14,21 +14,21 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        /* Sci-Fi Machinery Control Room Background (ပေးပို့ထားသောပုံအသစ် 1000087971_4.jpg ကို နောက်ခံအဖြစ် အသုံးပြုထားပါသည်) */
+        /* Sci-Fi Machinery Control Room Background (ပေးထားသော Control Room ပုံစံအတိုင်း အသေးစိတ်ထည့်သွင်းထားသည်) */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(135deg, rgba(7, 13, 24, 0.65) 0%, rgba(3, 6, 12, 0.85) 100%), 
-                        url('1000087971_4.jpg');
+            background: linear-gradient(180deg, rgba(10, 18, 32, 0.45) 0%, rgba(4, 8, 16, 0.85) 100%), 
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800"><defs><linearGradient id="wall" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23132238"/><stop offset="100%" stop-color="%23070d18"/></linearGradient></defs><rect width="800" height="800" fill="url(%23wall)"/><path d="M0 160h800M0 320h800M0 480h800M0 640h800M160 0v800M320 0v800M480 0v800M640 0v800" stroke="%231c3354" stroke-width="1.5" opacity="0.6"/><circle cx="200" cy="200" r="6" fill="%2300f0ff" opacity="0.8"/><circle cx="600" cy="300" r="6" fill="%23ffb400" opacity="0.8"/><circle cx="400" cy="600" r="6" fill="%2300f0ff" opacity="0.8"/><path d="M0 100 Q400 40 800 100 T800 700" stroke="%2300f0ff" stroke-width="2" fill="none" opacity="0.35"/><path d="M100 0 Q400 300 700 800" stroke="%23ffb400" stroke-width="1.5" fill="none" opacity="0.25"/></svg>');
             background-size: cover;
             background-position: center;
             z-index: -2; 
         }
 
-        /* Tech circuit background effect overlay with cyan & gold sci-fi control room atmosphere */
+        /* Tech circuit & Industrial Control Room atmosphere overlay with cyan & gold sci-fi glow */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 180, 0, 0.03) 40%, transparent 75%),
-                        linear-gradient(180deg, rgba(7, 13, 24, 0.5) 0%, rgba(2, 5, 10, 0.75) 100%);
+            background: radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.18) 0%, rgba(255, 180, 0, 0.05) 45%, rgba(3, 7, 15, 0.9) 85%),
+                        linear-gradient(180deg, rgba(7, 13, 24, 0.4) 0%, rgba(2, 5, 10, 0.88) 100%);
             z-index: -1; pointer-events: none;
         }
 
