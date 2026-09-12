@@ -14,12 +14,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        /* Sci-Fi Machinery Control Room Background (နောက်ခံပုံစံနှင့် အရောင်အသွေး သေချာပေါ်စေရန် ပြင်ဆင်ထားသည်) */
+        /* Sci-Fi Machinery Control Room Background (SVG Data URI ဖြင့် နောက်ခံပုံ သေချာပေါ်စေရန် တိုက်ရိုက်ထည့်သွင်းထားသည်) */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: radial-gradient(circle at 50% 30%, #162a4a 0%, #070d18 75%), 
                         linear-gradient(135deg, rgba(7, 13, 24, 0.85) 0%, rgba(3, 6, 12, 0.95) 100%), 
-                        url('https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/refs/heads/main/IMG_20260912_201928_325.jpg');
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23070d18"/><path d="M0 100h400M0 200h400M0 300h400M100 0v400M200 0v400M300 0v400" stroke="%23132744" stroke-width="1"/><circle cx="100" cy="100" r="4" fill="%2300f0ff"/><circle cx="300" cy="200" r="4" fill="%23ffb400"/><circle cx="200" cy="300" r="4" fill="%2300f0ff"/><path d="M0 50 Q200 20 400 50 T400 350" stroke="%2300f0ff" stroke-width="1.2" fill="none" opacity="0.3"/><path d="M50 0 Q200 150 350 400" stroke="%23ffb400" stroke-width="1" fill="none" opacity="0.2"/></svg>');
             background-size: cover;
             background-position: center;
             z-index: -2; 
@@ -183,7 +183,7 @@
 </head>
 <body>
 
-    <!-- နောက်ခံပတ်ဝန်းကျင်နှင့် အလင်းတန်း Effect များ (သေချာထည့်သွင်းထားသည်) -->
+    <!-- နောက်ခံပတ်ဝန်းကျင်နှင့် အလင်းတန်း Effect များ -->
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
