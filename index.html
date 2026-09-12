@@ -19,11 +19,11 @@
             z-index: -1; 
         }
 
-        /* Tech circuit background effect overlay styled with user's image reference */
+        /* Tech circuit background effect overlay styled with user's new tech circuit image reference */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(5, 7, 11, 0.9), rgba(11, 25, 44, 0.8)), 
-                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%2305070b"/><path d="M0 50h200M0 100h200M0 150h200M50 0v200M100 0v200M150 0v200" stroke="%231a2a47" stroke-width="0.8"/><circle cx="50" cy="50" r="3" fill="%2300f0ff"/><circle cx="150" cy="150" r="3" fill="%23ffb400"/><path d="M50 50 L100 100 L150 100" stroke="%2300f0ff" stroke-width="1.5" fill="none"/></svg>');
+            background: linear-gradient(135deg, rgba(5, 7, 11, 0.85), rgba(10, 20, 35, 0.8)), 
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%2305070b"/><path d="M0 50h200M0 100h200M0 150h200M50 0v200M100 0v200M150 0v200" stroke="%23132238" stroke-width="1"/><circle cx="50" cy="50" r="3.5" fill="%2300f0ff"/><circle cx="150" cy="150" r="3.5" fill="%23ffb400"/><path d="M50 50 Q100 20 150 50 T150 150" stroke="%2300f0ff" stroke-width="1.2" fill="none" opacity="0.6"/></svg>');
             z-index: -1; pointer-events: none;
         }
 
@@ -63,7 +63,7 @@
         .mining-amount-display { text-align: center; color: #00f0ff; font-size: 20px; font-weight: bold; margin: 4px 0 2px 0; letter-spacing: 1px; }
         .mining-subtitle { text-align: center; color: #8b949e; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 8px; text-transform: uppercase; }
         
-        /* Sci-Fi Tech Hologram Coin Box Styled like Image 2 */
+        /* Sci-Fi Tech Hologram Coin Box */
         .coin-box {
             width: 150px; height: 150px; margin: 10px auto;
             background: radial-gradient(circle, rgba(0, 240, 255, 0.2) 0%, rgba(11, 15, 25, 0.9) 80%), 
@@ -229,12 +229,9 @@
             </div>
         </div>
 
-        <!-- Miner Store: Level 1 မှ 30 ထိ (လေယာဉ်အင်ဂျင်ပစ္စည်းပုံများဖြင့်) -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar"><span>Jet Engine Miner Store (1 - 30)</span></div>
-            <div class="miners-grid" id="miners-store-grid">
-                <!-- Javascript ဖြင့် Level 1 မှ 30 ထိ အလိုအလျောက် ဖြည့်သွင်းပေးမည် -->
-            </div>
+            <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
         <div id="tab-friends" class="tab-content">
@@ -611,6 +608,12 @@
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 minedAmount = elapsed * 0.000005;
                 amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                
+                // တိကျစွာ ပေါင်းစပ်ပေးရန် အပေါ် Balance ကို လက်ရှိ Mined ရရှိလာမှုအပေါ်မူတည်၍ တိုက်ရိုက်ပြသပေးမည်
+                let liveTotalBalance = baseInitialBalance + minedAmount;
+                if (assetBalance) {
+                    assetBalance.innerText = liveTotalBalance.toFixed(6) + " GRM";
+                }
             }, 1000);
         }
     </script>
