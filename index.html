@@ -59,8 +59,9 @@
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
         
-        /* Mining Amount Display */
-        .mining-amount-display { text-align: center; color: #00f0ff; font-size: 24px; font-weight: bold; margin: 10px 0; letter-spacing: 1px; }
+        /* Mining Amount Display & Descriptive text */
+        .mining-amount-display { text-align: center; color: #00f0ff; font-size: 24px; font-weight: bold; margin: 6px 0; letter-spacing: 1px; }
+        .mining-subtitle { text-align: center; color: #8b949e; font-size: 11px; letter-spacing: 0.5px; margin-bottom: 10px; text-transform: uppercase; }
         
         /* Sci-Fi Tech Hologram Coin Box Styled like Image 2 */
         .coin-box {
@@ -204,7 +205,8 @@
                 <div class="asset-amount" id="asset-balance">0.860085 GRM</div>
             </div>
 
-            <div class="mining-amount-display" id="mining-amount-display">0.001690 GRM</div>
+            <div class="mining-amount-display" id="mining-amount-display">0.000000 GRM</div>
+            <div class="mining-subtitle">Current Mined Reward</div>
 
             <div class="coin-box" id="coin-box-elem">
                 <div class="coin-inner-graphic">
@@ -300,8 +302,9 @@
             buttonRootId: 'ton-connect-button'
         });
 
-        let currentBalance = 0.860085;
-        let minedAmount = 0.001690;
+        let baseInitialBalance = 0.860085; // Initial base balance loaded from database
+        let currentBalance = baseInitialBalance;
+        let minedAmount = 0;
         let isMining = true;
         let miningInterval;
         let miningStartTime = Date.now();
@@ -387,7 +390,7 @@
             renderMinersStore();
             await loadUserDataFromSupabase();
             setTimeout(hideSplashScreen, 1000);
-            startAutoMiningUI(0);
+            startAutoMiningUI();
         });
 
         tonConnectUI.onStatusChange(async (walletInfo) => {
@@ -466,8 +469,8 @@
                 } else {
                     fields.user_id = currentUserId;
                     fields.username = currentUserName;
-                    fields.balance = currentBalance;
-                    fields.mined_amount = minedAmount;
+                    fields.balance = baseInitialBalance;
+                    fields.mined_amount = 0;
                     fields.mining_state = 'mining';
                     fields.is_verified = false;
                     
@@ -499,8 +502,8 @@
                 const verifiedBadge = document.getElementById('profile-verified-badge');
 
                 if (data) {
-                    currentBalance = parseFloat(data.balance) || 0.860085;
-                    minedAmount = parseFloat(data.mined_amount) || 0.001690;
+                    baseInitialBalance = parseFloat(data.balance) || 0.860085;
+                    currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
@@ -560,23 +563,29 @@
                 if (miningInterval) clearInterval(miningInterval);
                 miningInterval = setInterval(() => {
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                    let currentMined = elapsed * 0.000005;
-                    amountDisplay.innerText = currentMined.toFixed(6) + " GRM";
+                    minedAmount = elapsed * 0.000005;
+                    amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                    
+                    // Correct live balance rendering: base saved balance + current live mined amount
+                    currentBalance = baseInitialBalance + minedAmount;
+                    assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                const earnedMined = (elapsed * 0.000005) + 0.001690;
+                const earnedMined = elapsed * 0.000005;
 
-                currentBalance += earnedMined; 
+                baseInitialBalance += earnedMined; // Add collected reward to base balance permanently
+                currentBalance = baseInitialBalance;
                 if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
                 
-                // Reset mining start time so it restarts accumulation cleanly from near zero instead of jumping straight back
+                // Reset mining timer and displays
                 miningStartTime = Date.now();
+                minedAmount = 0;
                 amountDisplay.innerText = "0.000000 GRM";
 
                 updateSupabaseField({
-                    balance: currentBalance,
+                    balance: baseInitialBalance,
                     mined_amount: 0,
                     mining_state: 'mining',
                     mining_start_time: miningStartTime
@@ -584,12 +593,13 @@
             }
         }
 
-        function startAutoMiningUI(elapsedSeconds) {
+        function startAutoMiningUI() {
             isMining = true;
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
+            const assetBalance = document.getElementById('asset-balance');
 
             btn.innerText = "CLAIM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
@@ -605,8 +615,12 @@
             if (miningInterval) clearInterval(miningInterval);
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                let currentMinedRunning = elapsed * 0.000005;
-                amountDisplay.innerText = currentMinedRunning.toFixed(6) + " GRM";
+                minedAmount = elapsed * 0.000005;
+                amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                
+                // Fix: Correctly reflect current base balance plus active mined accumulation
+                currentBalance = baseInitialBalance + minedAmount;
+                assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
             }, 1000);
         }
     </script>
