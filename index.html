@@ -48,7 +48,7 @@
         .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
         .wallet-info-row { display: flex; justify-content: space-around; text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 8px; }
         
-        /* Countdown Timer Style */
+        /* Countdown Timer Style (GRM အောက်တွင် အချိန်ပြရန်) */
         .mining-timer-display { text-align: center; color: #00f0ff; font-size: 24px; font-weight: bold; margin: 12px 0; letter-spacing: 2px; }
         
         .coin-box {
@@ -84,7 +84,7 @@
         .badge-need { background-color: #f0b90b; color: #000; }
 
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
-        .verified-badge { background-color: #238636; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .action-btn { background-color: #f0b90b; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
         .bottom-nav {
@@ -131,7 +131,7 @@
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <!-- Countdown Timer Display (GRM အောက်တွင် အချိန်ပြရန်) -->
+            <!-- Countdown Timer Display (GRM အောက်တွင် ၆ နာရီအချိန်ပြရန်) -->
             <div class="mining-timer-display" id="mining-timer-display">06:00:00</div>
 
             <div class="coin-box" id="coin-box-elem">
@@ -185,7 +185,7 @@
             </div>
             <div class="card profile-row">
                 <div>Account Status</div>
-                <div class="verified-badge" id="profile-verified-badge">Verified ✔️</div>
+                <div class="verified-badge" id="profile-verified-badge">Unverified ❌</div>
             </div>
         </div>
     </div>
@@ -240,7 +240,7 @@
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
-        const TOTAL_MINING_TIME = 6 * 60 * 60; // 6 hours in seconds
+        const TOTAL_MINING_TIME = 6 * 60 * 60; // ၆ နာရီ (စက္ကန့်ဖြင့်)
 
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
@@ -390,9 +390,11 @@
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
+                        verifiedBadge.style.color = "#ffffff";
                     } else {
                         verifiedBadge.innerText = "Unverified ❌";
                         verifiedBadge.style.backgroundColor = "#da3633";
+                        verifiedBadge.style.color = "#ffffff";
                     }
 
                     if (!data.wallet_address) {
@@ -425,6 +427,7 @@
                     if (verifiedBadge) {
                         verifiedBadge.innerText = "Unverified ❌";
                         verifiedBadge.style.backgroundColor = "#da3633";
+                        verifiedBadge.style.color = "#ffffff";
                     }
                 }
             } catch (err) {
@@ -448,7 +451,7 @@
             if (!isMining && btn.innerText === "START") {
                 isMining = true;
                 miningStartTime = Date.now();
-                btn.innerText = "MINING"; // ပုံပါအတိုင်း MINING လို့သာ ပြောင်းထားပါသည်
+                btn.innerText = "MINING"; // Mining in progress အစား MINING ဟု သုံးထားပါသည်
                 btn.style.background = "#212d42";
                 btn.style.color = "#00f0ff";
                 if (statusBadge) {
