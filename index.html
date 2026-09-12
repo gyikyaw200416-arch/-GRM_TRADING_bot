@@ -13,7 +13,18 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #05070b; color: #ffffff; overflow: hidden; }
-        .app-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a233a 0%, #05070b 100%); z-index: -1; }
+        .app-bg { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: linear-gradient(rgba(5, 7, 11, 0.75), rgba(5, 7, 11, 0.85)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%2305070b"/><path d="M0 50h100M50 0v100" stroke="%231a233a" stroke-width="0.5"/></svg>'); 
+            z-index: -1; 
+        }
+
+        /* Tech circuit background effect overlay */
+        .tech-bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 240, 255, 0.1) 0%, rgba(5, 7, 11, 0.95) 80%);
+            z-index: -1; pointer-events: none;
+        }
 
         /* Splash Screen */
         #splash-screen {
@@ -23,13 +34,13 @@
         }
         .logo-box {
             width: 150px; height: 150px; border-radius: 50%;
-            background: linear-gradient(135deg, #f0b90b 0%, #ff5722 100%);
+            background: linear-gradient(135deg, #00f0ff 0%, #0077ff 100%);
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 35px rgba(240, 185, 11, 0.6); margin-bottom: 30px;
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.6); margin-bottom: 30px;
         }
         .logo-inner { width: 138px; height: 138px; border-radius: 50%; background-color: #0b0f19; display: flex; justify-content: center; align-items: center; }
-        .logo-box span { background: linear-gradient(135deg, #f0b90b, #ff9800); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
-        .loading-text { color: #f0b90b; font-size: 16px; font-weight: 600; background: rgba(240, 185, 11, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(240, 185, 11, 0.4); }
+        .logo-box span { background: linear-gradient(135deg, #00f0ff, #00aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
+        .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
         /* Main Container */
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
@@ -39,43 +50,97 @@
         /* Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
         .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: #121824; padding: 5px 10px; border-radius: 8px; border: 1px solid #212d42; }
-        .lvl-badge { background: #212d42; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #f0b90b; }
+        .lvl-badge { background: #212d42; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; }
         #ton-connect-button { display: flex; align-items: center; }
 
         .card { background: #121824; border: 1px solid #212d42; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
-        .mine-header { text-align: center; margin-bottom: 15px; }
+        .mine-header { text-align: center; margin-bottom: 10px; }
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
         
         /* Mining Amount Display */
-        .mining-amount-display { text-align: center; color: #00f0ff; font-size: 24px; font-weight: bold; margin: 15px 0; letter-spacing: 1px; }
+        .mining-amount-display { text-align: center; color: #00f0ff; font-size: 24px; font-weight: bold; margin: 10px 0; letter-spacing: 1px; }
         
+        /* Sci-Fi Tech Hologram Coin Box Styled like Image 2 */
         .coin-box {
-            width: 150px; height: 150px; margin: 15px auto;
-            background: radial-gradient(circle, #f0b90b 0%, #b78103 100%);
+            width: 170px; height: 170px; margin: 15px auto;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.2) 0%, rgba(11, 15, 25, 0.9) 80%), 
+                        linear-gradient(135deg, #0b192c 0%, #050b14 100%);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); border: 4px solid #ffe873;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(0, 240, 255, 0.3); 
+            border: 3px solid #00f0ff;
+            position: relative;
             transition: transform 0.1s ease;
         }
+        
+        /* Outer holographic ring effect */
+        .coin-box::before {
+            content: '';
+            position: absolute;
+            top: -8px; left: -8px; right: -8px; bottom: -8px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 240, 255, 0.6);
+            animation: spinRing 20s linear infinite;
+        }
+
+        .coin-box::after {
+            content: '';
+            position: absolute;
+            top: -15px; left: -15px; right: -15px; bottom: -15px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 180, 0, 0.3);
+            border-top-color: transparent;
+            animation: spinRingReverse 15s linear infinite;
+        }
+
+        @keyframes spinRing {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spinRingReverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+
         .coin-box.mining-anim { animation: pulseCoin 1.5s infinite; }
         @keyframes pulseCoin {
-            0% { transform: scale(1); box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); }
-            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(240, 185, 11, 0.8); }
-            100% { transform: scale(1); box-shadow: 0 0 25px rgba(240, 185, 11, 0.4); }
+            0% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(0, 240, 255, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(0, 240, 255, 0.8), inset 0 0 30px rgba(0, 240, 255, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(0, 240, 255, 0.3); }
         }
-        .coin-inner-text { font-size: 30px; font-weight: 900; color: #111; }
+
+        .coin-inner-graphic {
+            width: 140px; height: 140px; border-radius: 50%;
+            background: radial-gradient(circle, #122942 0%, #050b14 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 2px solid rgba(0, 240, 255, 0.5);
+            box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .coin-gear-icon {
+            font-size: 28px;
+            margin-bottom: 2px;
+            filter: drop-shadow(0 0 5px #00f0ff);
+        }
+
+        .coin-inner-text { font-size: 26px; font-weight: 900; color: #00f0ff; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 240, 255, 0.8); }
+        
         .claim-btn {
-            background: linear-gradient(135deg, #f0b90b 0%, #ff9800 100%);
-            color: #000; width: 100%; padding: 14px; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+            color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
             font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(240, 185, 11, 0.4); margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px;
+            letter-spacing: 1px;
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
         /* Miners Grid & Cards with Jet Engine Theme */
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .miner-card { background: #0f141f; border: 1px solid #212d42; border-radius: 12px; padding: 12px; position: relative; text-align: center; }
-        .miner-card.active-border { border: 1px solid #f0b90b; }
+        .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
         .miner-card.unlock-border { border: 1px solid #2ea043; }
         .miner-card.locked-border { border: 1px solid #333; opacity: 0.7; }
         
@@ -90,13 +155,13 @@
         .miner-price-box { font-size: 16px; font-weight: bold; color: #2ea043; margin-bottom: 4px; text-align: left; }
         .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; text-align: left; }
         .status-badge { width: 100%; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; text-align: center; border: none; cursor: pointer; }
-        .badge-active { background-color: #238636; color: #fff; }
-        .badge-need { background-color: #f0b90b; color: #000; }
+        .badge-active { background-color: #0077ff; color: #fff; box-shadow: 0 0 8px rgba(0, 119, 255, 0.4); }
+        .badge-need { background-color: #2ea043; color: #fff; }
         .badge-lock { background-color: #212d42; color: #8b949e; cursor: not-allowed; }
 
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
         .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .action-btn { background-color: #f0b90b; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
@@ -104,13 +169,14 @@
             display: flex; justify-content: space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
-        .nav-item.active { color: #f0b90b; }
+        .nav-item.active { color: #00f0ff; }
         .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
     </style>
 </head>
 <body>
 
     <div class="app-bg"></div>
+    <div class="tech-bg-overlay"></div>
 
     <div id="splash-screen">
         <div class="logo-box">
@@ -124,8 +190,8 @@
             <div class="top-bar">
                 <div class="user-info">
                     <span class="lvl-badge">Lvl 1</span>
-                    <span id="telegram-username">Loading... ⛏️</span>
-                    <span style="font-size: 10px; color: #00f0ff;" id="mining-status-badge">IDLE</span>
+                    <span id="telegram-username">Shadow ✈️</span>
+                    <span style="font-size: 10px; color: #2ea043;" id="mining-status-badge">MINING AUTO</span>
                 </div>
                 <div id="ton-connect-button"></div>
             </div>
@@ -134,16 +200,19 @@
 
             <div class="mine-header">
                 <div class="asset-title">ASSETS</div>
-                <div class="asset-amount" id="asset-balance">0.000000 GRM</div>
+                <div class="asset-amount" id="asset-balance">0.860085 GRM</div>
             </div>
 
-            <div class="mining-amount-display" id="mining-amount-display">0.000000 GRM</div>
+            <div class="mining-amount-display" id="mining-amount-display">0.001690 GRM</div>
 
             <div class="coin-box" id="coin-box-elem">
-                <div class="coin-inner-text">GRM</div>
+                <div class="coin-inner-graphic">
+                    <div class="coin-gear-icon">⚙️</div>
+                    <div class="coin-inner-text">GRM</div>
+                </div>
             </div>
             
-            <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">START MINING</button>
+            <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
         <div id="tab-tasks" class="tab-content">
@@ -168,7 +237,7 @@
         <div id="tab-friends" class="tab-content">
             <div class="top-bar"><span>Friends & Referrals</span></div>
             <div class="card" style="text-align: center; padding: 25px;">
-                <h3 style="color: #f0b90b; margin-bottom: 10px;">Invite Friends!</h3>
+                <h3 style="color: #00f0ff; margin-bottom: 10px;">Invite Friends!</h3>
                 <button class="action-btn" style="width: 100%; padding: 12px;" onclick="alert('Link copied!')">Copy Invite Link</button>
             </div>
         </div>
@@ -207,7 +276,7 @@
             localStorage.setItem('grm_saved_username', currentUserName);
         } else {
             currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
-            currentUserName = localStorage.getItem('grm_saved_username') || 'Miner';
+            currentUserName = localStorage.getItem('grm_saved_username') || 'Shadow';
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
@@ -230,27 +299,26 @@
             buttonRootId: 'ton-connect-button'
         });
 
-        let currentBalance = 0.000000;
-        let minedAmount = 0.000000;
-        let isMining = false;
+        let currentBalance = 0.860085;
+        let minedAmount = 0.001690;
+        let isMining = true;
         let miningInterval;
-        let miningStartTime = 0;
+        let miningStartTime = Date.now();
 
-        // Level 1 မှ 30 ထိ ဈေးနှုန်းနှင့် အမြန်နှုန်းများကို အစဉ်လိုက် ဖန်တီးခြင်း (1$ မှစတင်သည်)
+        // Level 1 မှ 30 ထိ ဈေးနှုန်းနှင့် အမြန်နှုန်းများကို အစဉ်လိုက် ဖန်တီးခြင်း
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
             if (!grid) return;
             let html = '';
             
             for (let i = 1; i <= 30; i++) {
-                let price = (i * 1.00).toFixed(2); // Level 1 လျှင် 1.00$, Level 2 လျှင် 2.00$ စသည်ဖြင့် 
-                let speed = (i * 0.5).toFixed(2);   // Speed တိုးသွားမည့် ပမာဏ
+                let price = (i * 1.00).toFixed(2);
+                let speed = (i * 0.5).toFixed(2);
                 let borderClass = i === 1 ? 'active-border' : (i === 2 ? 'unlock-border' : 'locked-border');
                 let btnClass = i === 1 ? 'badge-active' : (i === 2 ? 'badge-need' : 'badge-lock');
                 let btnText = i === 1 ? 'ACTIVE' : (i === 2 ? 'BUY NOW' : 'LOCKED');
 
-                // လေယာဉ်အင်ဂျင်ပုံ အစားထိုးရန် (Airplane Jet Engine Icon / Image placeholder)
-                let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; // Jet Turbine Engine Icon
+                let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 
                 html += `
                     <div class="miner-card ${borderClass}">
@@ -318,6 +386,7 @@
             renderMinersStore();
             await loadUserDataFromSupabase();
             setTimeout(hideSplashScreen, 1000);
+            startAutoMiningUI(0);
         });
 
         tonConnectUI.onStatusChange(async (walletInfo) => {
@@ -398,7 +467,7 @@
                     fields.username = currentUserName;
                     fields.balance = currentBalance;
                     fields.mined_amount = minedAmount;
-                    fields.mining_state = 'idle';
+                    fields.mining_state = 'mining';
                     fields.is_verified = false;
                     
                     if (!fields.wallet_address) {
@@ -429,9 +498,9 @@
                 const verifiedBadge = document.getElementById('profile-verified-badge');
 
                 if (data) {
-                    currentBalance = parseFloat(data.balance) || 0;
-                    minedAmount = parseFloat(data.mined_amount) || 0;
-                    miningStartTime = parseInt(data.mining_start_time) || 0;
+                    currentBalance = parseFloat(data.balance) || 0.860085;
+                    minedAmount = parseFloat(data.mined_amount) || 0.001690;
+                    miningStartTime = parseInt(data.mining_start_time) || Date.now();
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
 
@@ -450,26 +519,6 @@
                         if (activeAddr) {
                             await updateSupabaseField({ wallet_address: activeAddr });
                         }
-                    }
-
-                    if (data.mining_state === 'mining' && miningStartTime > 0) {
-                        const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
-                        startAutoMiningUI(elapsedSeconds);
-                    }
-                } else {
-                    let activeAddr = getActiveWalletAddress();
-                    await updateSupabaseField({
-                        wallet_address: activeAddr || null,
-                        balance: 0,
-                        mined_amount: 0,
-                        mining_state: 'idle',
-                        mining_start_time: 0,
-                        is_verified: false
-                    });
-                    if (verifiedBadge) {
-                        verifiedBadge.innerText = "Unverified ❌";
-                        verifiedBadge.style.backgroundColor = "#da3633";
-                        verifiedBadge.style.color = "#ffffff";
                     }
                 }
             } catch (err) {
@@ -514,7 +563,7 @@
 
             } else if (btn.innerText === "CLAIM") {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                const earnedMined = elapsed * 0.000005;
+                const earnedMined = elapsed * 0.000005 + 0.001690;
 
                 currentBalance += earnedMined; 
                 const assetBalance = document.getElementById('asset-balance');
@@ -551,12 +600,12 @@
             }
             if (coinBox) coinBox.classList.add('mining-anim');
 
-            let currentMined = elapsedSeconds * 0.000005;
-            amountDisplay.innerText = currentMined.toFixed(6) + " GRM";
+            let initialMined = 0.001690;
+            amountDisplay.innerText = initialMined.toFixed(6) + " GRM";
 
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                let currentMinedRunning = elapsed * 0.000005;
+                let currentMinedRunning = 0.001690 + (elapsed * 0.000005);
                 amountDisplay.innerText = currentMinedRunning.toFixed(6) + " GRM";
             }, 1000);
         }
