@@ -48,7 +48,7 @@
         .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
         .wallet-info-row { display: flex; justify-content: space-around; text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 8px; }
         
-        /* Mining Amount Display (အချိန်နေရာတွင် တူးပြီးသားပမာဏကို ပြရန်) */
+        /* Mining Amount Display (တစ်စက္ကန့်ချင်း တက်လာမည့် ပမာဏပြရန်) */
         .mining-amount-display { text-align: center; color: #00f0ff; font-size: 24px; font-weight: bold; margin: 12px 0; letter-spacing: 1px; }
         
         .coin-box {
@@ -131,14 +131,14 @@
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <!-- Mining Amount Display (အချိန်အစား တူးပြီးသားပမာဏကို ပြမည့်နေရာ) -->
+            <!-- တစ်စက္ကန့်ချင်းတက်မည့်ပမာဏ ပြသမည့်နေရာ -->
             <div class="mining-amount-display" id="mining-amount-display">0.0000 GRM</div>
 
             <div class="coin-box" id="coin-box-elem">
                 <div class="coin-inner-text">GRM</div>
             </div>
             
-            <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">START</button>
+            <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">START MINING</button>
         </div>
 
         <div id="tab-tasks" class="tab-content">
@@ -236,12 +236,11 @@
         });
 
         let currentBalance = 0.0000;
-        let minedAmount = 0.0000;
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
-        const TOTAL_MINING_TIME = 6 * 60 * 60; // ၆ နာရီ (စက္ကန့်ဖြင့်)
-        const TOTAL_REWARD = 0.0500; // ၆ နာရီပြည့်ရင် ရမည့် စုစုပေါင်း GRM ပမာဏ
+        const TOTAL_MINING_TIME = 6 * 60 * 60; // ၆ နာရီ (စက္ကန့်ဖြင့် - 21600 စက္ကန့်)
+        const RATE_PER_SECOND = 0.000005; // တစ်စက္ကန့်လျှင် တက်မည့်နှုန်း
 
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
@@ -348,7 +347,6 @@
                     fields.user_id = currentUserId;
                     fields.username = currentUserName;
                     fields.balance = currentBalance;
-                    fields.mined_amount = minedAmount;
                     fields.mining_state = 'idle';
                     fields.is_verified = false;
                     
@@ -381,7 +379,6 @@
 
                 if (data) {
                     currentBalance = parseFloat(data.balance) || 0;
-                    minedAmount = parseFloat(data.mined_amount) || 0;
                     miningStartTime = parseInt(data.mining_start_time) || 0;
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(4) + " GRM";
@@ -419,7 +416,6 @@
                     await updateSupabaseField({
                         wallet_address: activeAddr || null,
                         balance: 0,
-                        mined_amount: 0,
                         mining_state: 'idle',
                         mining_start_time: 0,
                         is_verified: false
@@ -441,10 +437,10 @@
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
 
-            if (!isMining && btn.innerText === "START") {
+            if (!isMining && btn.innerText === "START MINING") {
                 isMining = true;
                 miningStartTime = Date.now();
-                btn.innerText = "MINING";
+                btn.innerText = "MINING...";
                 btn.style.background = "#212d42";
                 btn.style.color = "#00f0ff";
                 if (statusBadge) {
@@ -463,14 +459,17 @@
                         setReadyToClaimUI();
                         updateSupabaseField({ mining_state: 'ready' });
                     } else {
-                        // ဖြတ်သန်းသွားသော စက္ကန့်ပေါ်မူတည်ပြီး တူးပြီးသားပမာဏကို တွက်ချက်ပြသခြင်း
-                        let currentMined = (elapsed / TOTAL_MINING_TIME) * TOTAL_REWARD;
+                        // တစ်စက္ကန့်ကို 0.000005 နှုန်းဖြင့် တွက်ချက်ပြသခြင်း
+                        let currentMined = elapsed * RATE_PER_SECOND;
                         amountDisplay.innerText = currentMined.toFixed(4) + " GRM";
                     }
                 }, 1000);
 
-            } else if (btn.innerText === "CLAIM GRM") {
-                currentBalance += TOTAL_REWARD; 
+            } else if (btn.innerText === "CLAIM") {
+                // ၆ နာရီပြည့်ပါက စုစုပေါင်းရမည့်ပမာဏ (21600 * 0.000005 = 0.1080 GRM) ကို Balance ထဲ ပေါင်းထည့်မည်
+                const finalReward = TOTAL_MINING_TIME * RATE_PER_SECOND;
+                currentBalance += finalReward; 
+                
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
 
@@ -480,7 +479,7 @@
                 isMining = false;
                 amountDisplay.innerText = "0.0000 GRM";
                 
-                btn.innerText = "START";
+                btn.innerText = "START MINING";
                 btn.style.background = "linear-gradient(135deg, #f0b90b 0%, #ff9800 100%)";
                 btn.style.color = "#000";
                 if (statusBadge) {
@@ -490,7 +489,6 @@
 
                 updateSupabaseField({
                     balance: currentBalance,
-                    mined_amount: 0,
                     mining_state: 'idle',
                     mining_start_time: 0
                 });
@@ -504,7 +502,7 @@
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
 
-            btn.innerText = "MINING";
+            btn.innerText = "MINING...";
             btn.style.background = "#212d42";
             btn.style.color = "#00f0ff";
             if (statusBadge) {
@@ -513,8 +511,9 @@
             }
             if (coinBox) coinBox.classList.add('mining-anim');
 
-            let currentMined = (elapsedSeconds / TOTAL_MINING_TIME) * TOTAL_REWARD;
-            if (currentMined > TOTAL_REWARD) currentMined = TOTAL_REWARD;
+            let currentMined = elapsedSeconds * RATE_PER_SECOND;
+            const maxReward = TOTAL_MINING_TIME * RATE_PER_SECOND;
+            if (currentMined > maxReward) currentMined = maxReward;
             amountDisplay.innerText = currentMined.toFixed(4) + " GRM";
 
             miningInterval = setInterval(() => {
@@ -525,7 +524,7 @@
                     setReadyToClaimUI();
                     updateSupabaseField({ mining_state: 'ready' });
                 } else {
-                    let currentMinedRunning = (elapsed / TOTAL_MINING_TIME) * TOTAL_REWARD;
+                    let currentMinedRunning = elapsed * RATE_PER_SECOND;
                     amountDisplay.innerText = currentMinedRunning.toFixed(4) + " GRM";
                 }
             }, 1000);
@@ -538,12 +537,14 @@
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
 
-            btn.innerText = "CLAIM GRM";
+            btn.innerText = "CLAIM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
             btn.style.color = "#fff";
             if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
             if (coinBox) coinBox.classList.remove('mining-anim');
-            amountDisplay.innerText = TOTAL_REWARD.toFixed(4) + " GRM";
+            
+            const maxReward = TOTAL_MINING_TIME * RATE_PER_SECOND;
+            amountDisplay.innerText = maxReward.toFixed(4) + " GRM";
         }
     </script>
 </body>
