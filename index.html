@@ -564,9 +564,6 @@
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                     minedAmount = elapsed * 0.000005;
                     amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
-                    
-                    currentBalance = baseInitialBalance + minedAmount;
-                    assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
@@ -614,9 +611,6 @@
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 minedAmount = elapsed * 0.000005;
                 amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
-                
-                currentBalance = baseInitialBalance + minedAmount;
-                assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
             }, 1000);
         }
     </script>
