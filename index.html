@@ -48,7 +48,7 @@
         .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
         .wallet-info-row { display: flex; justify-content: space-around; text-align: center; font-size: 11px; color: #8b949e; margin-bottom: 8px; }
         
-        /* Mining Amount Display (တစ်စက္ကန့်ချင်း တက်လာမည့် ပမာဏပြရန်) */
+        /* Mining Amount Display */
         .mining-amount-display { text-align: center; color: #00f0ff; font-size: 24px; font-weight: bold; margin: 12px 0; letter-spacing: 1px; }
         
         .coin-box {
@@ -131,7 +131,7 @@
                 <span>POOL WALLET: 0.0000 GRM</span>
             </div>
 
-            <!-- တစ်စက္ကန့်ချင်းတက်မည့်ပမာဏ ပြသမည့်နေရာ -->
+            <!-- Mining Amount Display (စတင်နှိပ်မှသာ တက်လာမည့် ပမာဏ) -->
             <div class="mining-amount-display" id="mining-amount-display">0.0000 GRM</div>
 
             <div class="coin-box" id="coin-box-elem">
@@ -239,8 +239,9 @@
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
-        const TOTAL_MINING_TIME = 6 * 60 * 60; // ၆ နာရီ (စက္ကန့်ဖြင့် - 21600 စက္ကန့်)
-        const RATE_PER_SECOND = 0.000005; // တစ်စက္ကန့်လျှင် တက်မည့်နှုန်း
+        const TOTAL_MINING_TIME = 6 * 60 * 60; // ၆ နာရီ (စက္ကန့်ဖြင့် 21,600 စက္ကန့်)
+        const REWARD_PER_SECOND = 0.000005; // တစ်စက္ကန့်လျှင် တိုးမည့်ပမာဏ
+        const TOTAL_REWARD = TOTAL_MINING_TIME * REWARD_PER_SECOND; // ၆ နာရီပြည့်ပါက စုစုပေါင်း 0.1080 GRM ရမည်
 
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
@@ -459,17 +460,14 @@
                         setReadyToClaimUI();
                         updateSupabaseField({ mining_state: 'ready' });
                     } else {
-                        // တစ်စက္ကန့်ကို 0.000005 နှုန်းဖြင့် တွက်ချက်ပြသခြင်း
-                        let currentMined = elapsed * RATE_PER_SECOND;
+                        // တစ်စက္ကန့်ကို 0.000005 နှုန်းဖြင့် တက်မည့်တွက်ချက်မှု
+                        let currentMined = elapsed * REWARD_PER_SECOND;
                         amountDisplay.innerText = currentMined.toFixed(4) + " GRM";
                     }
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
-                // ၆ နာရီပြည့်ပါက စုစုပေါင်းရမည့်ပမာဏ (21600 * 0.000005 = 0.1080 GRM) ကို Balance ထဲ ပေါင်းထည့်မည်
-                const finalReward = TOTAL_MINING_TIME * RATE_PER_SECOND;
-                currentBalance += finalReward; 
-                
+                currentBalance += TOTAL_REWARD; 
                 const assetBalance = document.getElementById('asset-balance');
                 const holdingWalletText = document.getElementById('holding-wallet-text');
 
@@ -511,9 +509,8 @@
             }
             if (coinBox) coinBox.classList.add('mining-anim');
 
-            let currentMined = elapsedSeconds * RATE_PER_SECOND;
-            const maxReward = TOTAL_MINING_TIME * RATE_PER_SECOND;
-            if (currentMined > maxReward) currentMined = maxReward;
+            let currentMined = elapsedSeconds * REWARD_PER_SECOND;
+            if (currentMined > TOTAL_REWARD) currentMined = TOTAL_REWARD;
             amountDisplay.innerText = currentMined.toFixed(4) + " GRM";
 
             miningInterval = setInterval(() => {
@@ -524,7 +521,7 @@
                     setReadyToClaimUI();
                     updateSupabaseField({ mining_state: 'ready' });
                 } else {
-                    let currentMinedRunning = elapsed * RATE_PER_SECOND;
+                    let currentMinedRunning = elapsed * REWARD_PER_SECOND;
                     amountDisplay.innerText = currentMinedRunning.toFixed(4) + " GRM";
                 }
             }, 1000);
@@ -542,9 +539,7 @@
             btn.style.color = "#fff";
             if (statusBadge) statusBadge.innerText = "READY TO CLAIM";
             if (coinBox) coinBox.classList.remove('mining-anim');
-            
-            const maxReward = TOTAL_MINING_TIME * RATE_PER_SECOND;
-            amountDisplay.innerText = maxReward.toFixed(4) + " GRM";
+            amountDisplay.innerText = TOTAL_REWARD.toFixed(4) + " GRM";
         }
     </script>
 </body>
