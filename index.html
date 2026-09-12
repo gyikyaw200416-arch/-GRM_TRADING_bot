@@ -502,6 +502,7 @@
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
 
+                    // Balance ကို အမြဲတမ်း ပုံသေ (Base) အတိုင်းသာ ပြသမည်
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
 
                     if (data.is_verified === true) {
@@ -560,25 +561,24 @@
                 miningInterval = setInterval(() => {
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                     minedAmount = elapsed * 0.000005;
-                    amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
                     
-                    let liveTotalBalance = baseInitialBalance + minedAmount;
-                    if (assetBalance) {
-                        assetBalance.innerText = liveTotalBalance.toFixed(6) + " GRM";
-                    }
+                    // အောက်က Mined Reward မှာသာ အလိုအလျောက် တက်နေပါမည် (Balance ထဲသို့ အလိုအလျောက် မပေါင်းပါ)
+                    amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 const earnedMined = elapsed * 0.000005;
 
-                // Claim လုပ်လိုက်သည့်အခါ Base Balance ထဲသို့ Mined ရရှိငွေကို တိကျစွာပေါင်းထည့်ပြီး အသစ်စတင်ရန်
+                // CLAIM ခလုတ်နှိပ်မှသာ Mined ရရှိငွေကို အပေါ်က Balance ထဲသို့ တိကျစွာ ပေါင်းထည့်မည်
                 baseInitialBalance += earnedMined; 
                 currentBalance = baseInitialBalance;
                 
                 miningStartTime = Date.now();
                 minedAmount = 0;
                 amountDisplay.innerText = "0.000000 GRM";
+                
+                // Balance တွင် ပေါင်းပြီးသား ပမာဏအသစ်ကို တိကျစွာ ပြသမည်
                 if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
 
                 updateSupabaseField({
@@ -596,7 +596,6 @@
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
-            const assetBalance = document.getElementById('asset-balance');
 
             btn.innerText = "CLAIM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
@@ -613,13 +612,9 @@
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 minedAmount = elapsed * 0.000005;
-                amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
                 
-                // Mined ရလာသည့် ပမာဏကို baseInitialBalance နှင့် ပေါင်း၍ Live ပြသခြင်း
-                let liveTotalBalance = baseInitialBalance + minedAmount;
-                if (assetBalance) {
-                    assetBalance.innerText = liveTotalBalance.toFixed(6) + " GRM";
-                }
+                // Mined Reward မှာသာ တက်နေမည်ဖြစ်ပြီး Assets Balance ထဲသို့ အလိုအလျောက် ဝင်မသွားပါ (CLAIM နှိပ်မှသာ ဝင်ပါမည်)
+                amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
             }, 1000);
         }
     </script>
