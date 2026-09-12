@@ -72,16 +72,27 @@
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
+        /* Miners Grid & Cards with Jet Engine Theme */
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .miner-card { background: #0f141f; border: 1px solid #212d42; border-radius: 12px; padding: 12px; position: relative; }
+        .miner-card { background: #0f141f; border: 1px solid #212d42; border-radius: 12px; padding: 12px; position: relative; text-align: center; }
         .miner-card.active-border { border: 1px solid #f0b90b; }
         .miner-card.unlock-border { border: 1px solid #2ea043; }
-        .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
-        .miner-price-box { font-size: 18px; font-weight: bold; color: #2ea043; margin-bottom: 4px; }
-        .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; }
+        .miner-card.locked-border { border: 1px solid #333; opacity: 0.7; }
+        
+        .engine-img-box {
+            width: 100%; height: 80px; background: #161b22; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; margin-bottom: 8px;
+            overflow: hidden; border: 1px solid #30363d;
+        }
+        .engine-img-box img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px #00f0ff); }
+
+        .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; text-align: left; }
+        .miner-price-box { font-size: 16px; font-weight: bold; color: #2ea043; margin-bottom: 4px; text-align: left; }
+        .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; text-align: left; }
         .status-badge { width: 100%; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; text-align: center; border: none; cursor: pointer; }
         .badge-active { background-color: #238636; color: #fff; }
         .badge-need { background-color: #f0b90b; color: #000; }
+        .badge-lock { background-color: #212d42; color: #8b949e; cursor: not-allowed; }
 
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
         .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
@@ -126,7 +137,6 @@
                 <div class="asset-amount" id="asset-balance">0.000000 GRM</div>
             </div>
 
-            <!-- Mining Amount Display (ဒဿသမ ၆ လုံးဖြင့် တူးပြီးသမျှ ပမာဏပြရန်) -->
             <div class="mining-amount-display" id="mining-amount-display">0.000000 GRM</div>
 
             <div class="coin-box" id="coin-box-elem">
@@ -147,21 +157,11 @@
             </div>
         </div>
 
+        <!-- Miner Store: Level 1 မှ 30 ထိ (လေယာဉ်အင်ဂျင်ပစ္စည်းပုံများဖြင့်) -->
         <div id="tab-miners" class="tab-content">
-            <div class="top-bar"><span>Miner Store</span></div>
-            <div class="miners-grid">
-                <div class="miner-card active-border">
-                    <div class="lvl-text">Lvl 185</div>
-                    <div class="miner-price-box">7.72$</div>
-                    <div class="miner-speed">Speed 5.46 TH/s</div>
-                    <button class="status-badge badge-active">ACTIVE</button>
-                </div>
-                <div class="miner-card unlock-border">
-                    <div class="lvl-text">Lvl 186</div>
-                    <div class="miner-price-box">7.91$</div>
-                    <div class="miner-speed">Speed 5.56 TH/s</div>
-                    <button class="status-badge badge-need">NEED 10,695 GRM</button>
-                </div>
+            <div class="top-bar"><span>Jet Engine Miner Store (1 - 30)</span></div>
+            <div class="miners-grid" id="miners-store-grid">
+                <!-- Javascript ဖြင့် Level 1 မှ 30 ထိ အလိုအလျောက် ဖြည့်သွင်းပေးမည် -->
             </div>
         </div>
 
@@ -186,7 +186,7 @@
     </div>
 
     <div class="bottom-nav">
-        <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">⛏️</span><span>Mine</span></button>
+        <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">✈️</span><span>Mine</span></button>
         <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
         <button class="nav-item" onclick="switchTab('miners', this)"><span class="icon">⚡</span><span>Miners</span></button>
         <button class="nav-item" onclick="switchTab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
@@ -211,7 +211,7 @@
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
-        document.getElementById('telegram-username').innerText = currentUserName + ' ⛏️';
+        document.getElementById('telegram-username').innerText = currentUserName + ' ✈️';
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
@@ -235,6 +235,47 @@
         let isMining = false;
         let miningInterval;
         let miningStartTime = 0;
+
+        // Level 1 မှ 30 ထိ ဈေးနှုန်းနှင့် အမြန်နှုန်းများကို အစဉ်လိုက် ဖန်တီးခြင်း (1$ မှစတင်သည်)
+        function renderMinersStore() {
+            const grid = document.getElementById('miners-store-grid');
+            if (!grid) return;
+            let html = '';
+            
+            for (let i = 1; i <= 30; i++) {
+                let price = (i * 1.00).toFixed(2); // Level 1 လျှင် 1.00$, Level 2 လျှင် 2.00$ စသည်ဖြင့် 
+                let speed = (i * 0.5).toFixed(2);   // Speed တိုးသွားမည့် ပမာဏ
+                let borderClass = i === 1 ? 'active-border' : (i === 2 ? 'unlock-border' : 'locked-border');
+                let btnClass = i === 1 ? 'badge-active' : (i === 2 ? 'badge-need' : 'badge-lock');
+                let btnText = i === 1 ? 'ACTIVE' : (i === 2 ? 'BUY NOW' : 'LOCKED');
+
+                // လေယာဉ်အင်ဂျင်ပုံ အစားထိုးရန် (Airplane Jet Engine Icon / Image placeholder)
+                let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; // Jet Turbine Engine Icon
+
+                html += `
+                    <div class="miner-card ${borderClass}">
+                        <div class="engine-img-box">
+                            <img src="${engineImg}" alt="Jet Engine">
+                        </div>
+                        <div class="lvl-text">Lvl ${i} Engine</div>
+                        <div class="miner-price-box">${price}$</div>
+                        <div class="miner-speed">Speed ${speed} TH/s</div>
+                        <button class="status-badge ${btnClass}" onclick="buyMiner(${i}, ${price})">${btnText}</button>
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+        }
+
+        function buyMiner(level, price) {
+            if (level === 1) {
+                alert("Level 1 Engine is already active!");
+            } else if (level === 2) {
+                alert("Purchasing Level 2 Jet Engine for $" + price);
+            } else {
+                alert("Please unlock previous levels first!");
+            }
+        }
 
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
@@ -274,6 +315,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            renderMinersStore();
             await loadUserDataFromSupabase();
             setTimeout(hideSplashScreen, 1000);
         });
@@ -296,8 +338,6 @@
             } else {
                 await updateSupabaseField({ wallet_address: null });
             }
-            
-            // Wallet ချိတ်လိုက်သည်နှင့် ခလုတ်အခြေအနေကို စစ်ဆေးပေးရန်
             checkWalletAndButtonState();
         });
 
@@ -325,7 +365,6 @@
             const btn = document.getElementById('mining-action-btn');
             const activeAddr = getActiveWalletAddress();
             
-            // အကယ်၍ Mining မစရသေးဘဲ Wallet မချိတ်ရသေးလျှင် Start ကို ပိတ်ထားမည်
             if (!isMining && btn.innerText === "START MINING" && !activeAddr) {
                 btn.disabled = true;
                 btn.title = "Please connect your wallet first!";
@@ -413,7 +452,6 @@
                         }
                     }
 
-                    // အချိန်အကန့်အသတ်မရှိ ဆက်တိုက်တူးနေမည့်ပုံစံ (mining_state က 'mining' ဖြစ်နေလျှင် ဆက်တိုက် Auto တူးမည်)
                     if (data.mining_state === 'mining' && miningStartTime > 0) {
                         const elapsedSeconds = Math.floor((Date.now() - miningStartTime) / 1000);
                         startAutoMiningUI(elapsedSeconds);
@@ -447,7 +485,6 @@
             const amountDisplay = document.getElementById('mining-amount-display');
             const activeAddr = getActiveWalletAddress();
 
-            // Wallet မချိတ်ရသေးလျှင် Start လုပ်ခွင့်မပေးပါ
             if (btn.innerText === "START MINING" && !activeAddr) {
                 alert("ကျေးဇူးပြု၍ ပထမဆုံး Wallet ချိတ်ဆက်ပါ (Please connect your wallet first!)");
                 return;
@@ -469,7 +506,6 @@
 
                 updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime });
 
-                // တစ်စက္ကန့်ကို 0.000005 နှုန်းဖြင့် အချိန်အကန့်အသတ်မရှိ ဆက်တိုက်တူးပေးခြင်း
                 miningInterval = setInterval(() => {
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                     let currentMined = elapsed * 0.000005;
@@ -477,7 +513,6 @@
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
-                // လက်ရှိတူးပြီးသား ပမာဏကို တွက်ချက်ပြီး Balance ထဲ ထည့်မည်
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 const earnedMined = elapsed * 0.000005;
 
@@ -486,11 +521,9 @@
 
                 if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
                 
-                // ချက်ချင်း ပြန်လည်စတင်စေရန် အချိန်ကို အသစ်ပြန်စ (Auto Restart ဖြင့် ဆက်တူးနေမည်)
                 miningStartTime = Date.now();
                 amountDisplay.innerText = "0.000000 GRM";
 
-                // Database သို့ တန်ဖိုးသစ်များ ပေးပို့သိမ်းဆည်းခြင်း
                 updateSupabaseField({
                     balance: currentBalance,
                     mined_amount: 0,
