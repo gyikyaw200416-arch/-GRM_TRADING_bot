@@ -13,18 +13,17 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #05070b; color: #ffffff; overflow: hidden; }
-        
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(rgba(5, 7, 11, 0.85), rgba(5, 7, 11, 0.92)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%2305070b"/><path d="M0 50h100M50 0v100" stroke="%231a233a" stroke-width="0.5"/></svg>'); 
-            z-index: -2; 
+            background: linear-gradient(rgba(5, 7, 11, 0.75), rgba(5, 7, 11, 0.85)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%2305070b"/><path d="M0 50h100M50 0v100" stroke="%231a233a" stroke-width="0.5"/></svg>'); 
+            z-index: -1; 
         }
 
-        /* Tech circuit background effect overlay styled with user's second image reference */
+        /* Tech circuit background effect overlay styled with user's new tech circuit image reference */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(5, 7, 11, 0.88), rgba(11, 25, 44, 0.82)), 
-                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%2305070b"/><path d="M0 50h200M0 100h200M0 150h200M50 0v200M100 0v200M150 0v200" stroke="%231a2a47" stroke-width="0.8"/><circle cx="50" cy="50" r="3" fill="%2300f0ff"/><circle cx="150" cy="150" r="3" fill="%23ffb400"/><path d="M50 50 L100 100 L150 100" stroke="%2300f0ff" stroke-width="1.5" fill="none"/></svg>');
+            background: linear-gradient(135deg, rgba(5, 7, 11, 0.85), rgba(10, 20, 35, 0.8)), 
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%2305070b"/><path d="M0 50h200M0 100h200M0 150h200M50 0v200M100 0v200M150 0v200" stroke="%23132238" stroke-width="1"/><circle cx="50" cy="50" r="3.5" fill="%2300f0ff"/><circle cx="150" cy="150" r="3.5" fill="%23ffb400"/><path d="M50 50 Q100 20 150 50 T150 150" stroke="%2300f0ff" stroke-width="1.2" fill="none" opacity="0.6"/></svg>');
             z-index: -1; pointer-events: none;
         }
 
@@ -50,27 +49,27 @@
         .tab-content.active { display: block; }
 
         /* Top Bar */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 15px; font-weight: bold; position: relative; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
         .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: #121824; padding: 5px 10px; border-radius: 8px; border: 1px solid #212d42; }
         .lvl-badge { background: #212d42; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; }
         #ton-connect-button { display: flex; align-items: center; }
 
         .card { background: #121824; border: 1px solid #212d42; border-radius: 14px; padding: 15px; margin-bottom: 12px; }
-        .mine-header { text-align: center; margin-bottom: 2px; }
-        .asset-title { color: #8b949e; font-size: 11px; letter-spacing: 1px; margin-bottom: 2px; }
-        .asset-amount { font-size: 22px; font-weight: bold; color: #00f0ff; }
+        .mine-header { text-align: center; margin-bottom: 5px; }
+        .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
+        .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; }
         
         /* Mining Amount Display & Descriptive text */
-        .mining-amount-display { text-align: center; color: #00f0ff; font-size: 18px; font-weight: bold; margin: 2px 0 1px 0; letter-spacing: 1px; }
-        .mining-subtitle { text-align: center; color: #8b949e; font-size: 9px; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+        .mining-amount-display { text-align: center; color: #00f0ff; font-size: 20px; font-weight: bold; margin: 4px 0 2px 0; letter-spacing: 1px; }
+        .mining-subtitle { text-align: center; color: #8b949e; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 18px; text-transform: uppercase; }
         
-        /* Sci-Fi Tech Hologram Coin Box Styled like Image 1 & 2 */
+        /* Sci-Fi Tech Hologram Coin Box - ကြီးမားအောင် ပြင်ဆင်ထားသည် */
         .coin-box {
-            width: 135px; height: 135px; margin: 6px auto;
+            width: 190px; height: 190px; margin: 15px auto 25px auto;
             background: radial-gradient(circle, rgba(0, 240, 255, 0.2) 0%, rgba(11, 15, 25, 0.9) 80%), 
                         linear-gradient(135deg, #0b192c 0%, #050b14 100%);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.3); 
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(0, 240, 255, 0.3); 
             border: 3px solid #00f0ff;
             position: relative;
             transition: transform 0.1s ease;
@@ -80,7 +79,7 @@
         .coin-box::before {
             content: '';
             position: absolute;
-            top: -6px; left: -6px; right: -6px; bottom: -6px;
+            top: -7px; left: -7px; right: -7px; bottom: -7px;
             border-radius: 50%;
             border: 1px dashed rgba(0, 240, 255, 0.6);
             animation: spinRing 20s linear infinite;
@@ -89,7 +88,7 @@
         .coin-box::after {
             content: '';
             position: absolute;
-            top: -12px; left: -12px; right: -12px; bottom: -12px;
+            top: -14px; left: -14px; right: -14px; bottom: -14px;
             border-radius: 50%;
             border: 2px solid rgba(255, 180, 0, 0.3);
             border-top-color: transparent;
@@ -108,34 +107,34 @@
 
         .coin-box.mining-anim { animation: pulseCoin 1.5s infinite; }
         @keyframes pulseCoin {
-            0% { transform: scale(1); box-shadow: 0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.3); }
-            50% { transform: scale(1.05); box-shadow: 0 0 45px rgba(0, 240, 255, 0.8), inset 0 0 25px rgba(0, 240, 255, 0.6); }
-            100% { transform: scale(1); box-shadow: 0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.3); }
+            0% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(0, 240, 255, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(0, 240, 255, 0.8), inset 0 0 30px rgba(0, 240, 255, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(0, 240, 255, 0.3); }
         }
 
         .coin-inner-graphic {
-            width: 108px; height: 108px; border-radius: 50%;
+            width: 154px; height: 154px; border-radius: 50%;
             background: radial-gradient(circle, #122942 0%, #050b14 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             border: 2px solid rgba(0, 240, 255, 0.5);
-            box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.4);
+            box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.4);
             position: relative;
             overflow: hidden;
         }
 
         .coin-gear-icon {
-            font-size: 20px;
-            margin-bottom: 2px;
+            font-size: 30px;
+            margin-bottom: 4px;
             filter: drop-shadow(0 0 5px #00f0ff);
         }
 
-        .coin-inner-text { font-size: 19px; font-weight: 900; color: #00f0ff; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 240, 255, 0.8); }
+        .coin-inner-text { font-size: 26px; font-weight: 900; color: #00f0ff; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 240, 255, 0.8); }
         
         .claim-btn {
             background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
-            color: #fff; width: 100%; padding: 12px; border: none; border-radius: 12px;
+            color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
             font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 6px;
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px;
             letter-spacing: 1px;
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
@@ -199,7 +198,7 @@
                 <div id="ton-connect-button"></div>
             </div>
 
-            <div style="font-size: 10px; color: #2ea043; margin-bottom: 6px;">0.07$ left to Lvl UP</div>
+            <div style="font-size: 10px; color: #2ea043; margin-bottom: 8px;">0.07$ left to Lvl UP</div>
 
             <div class="mine-header">
                 <div class="asset-title">ASSETS</div>
@@ -230,7 +229,6 @@
             </div>
         </div>
 
-        <!-- Miner Store: Level 1 မှ 30 ထိ -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar"><span>Jet Engine Miner Store (1 - 30)</span></div>
             <div class="miners-grid" id="miners-store-grid"></div>
@@ -563,19 +561,25 @@
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                     minedAmount = elapsed * 0.000005;
                     amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                    
+                    let liveTotalBalance = baseInitialBalance + minedAmount;
+                    if (assetBalance) {
+                        assetBalance.innerText = liveTotalBalance.toFixed(6) + " GRM";
+                    }
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 const earnedMined = elapsed * 0.000005;
 
+                // Claim လုပ်လိုက်သည့်အခါ Base Balance ထဲသို့ Mined ရရှိငွေကို တိကျစွာပေါင်းထည့်ပြီး အသစ်စတင်ရန်
                 baseInitialBalance += earnedMined; 
                 currentBalance = baseInitialBalance;
-                if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
                 
                 miningStartTime = Date.now();
                 minedAmount = 0;
                 amountDisplay.innerText = "0.000000 GRM";
+                if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
 
                 updateSupabaseField({
                     balance: baseInitialBalance,
@@ -609,8 +613,13 @@
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 minedAmount = elapsed * 0.000005;
-                amountById = minedAmount;
                 amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                
+                // Mined ရလာသည့် ပမာဏကို baseInitialBalance နှင့် ပေါင်း၍ Live ပြသခြင်း
+                let liveTotalBalance = baseInitialBalance + minedAmount;
+                if (assetBalance) {
+                    assetBalance.innerText = liveTotalBalance.toFixed(6) + " GRM";
+                }
             }, 1000);
         }
     </script>
