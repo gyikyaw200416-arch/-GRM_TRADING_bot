@@ -183,6 +183,7 @@
 </head>
 <body>
 
+    <!-- နောက်ခံပတ်ဝန်းကျင်နှင့် အလင်းတန်း Effect များ (သေချာထည့်သွင်းထားသည်) -->
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
@@ -194,6 +195,7 @@
     </div>
 
     <div class="main-container">
+        <!-- Mine Tab -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
@@ -224,6 +226,7 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
+        <!-- Tasks Tab -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Channel Joins</span></div>
             <div class="card profile-row">
@@ -235,11 +238,13 @@
             </div>
         </div>
 
+        <!-- Miners Tab -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar"><span>Jet Engine Miner Store (1 - 30)</span></div>
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
+        <!-- Friends Tab -->
         <div id="tab-friends" class="tab-content">
             <div class="top-bar"><span>Friends & Referrals</span></div>
             <div class="card" style="text-align: center; padding: 25px;">
@@ -248,6 +253,7 @@
             </div>
         </div>
 
+        <!-- Profile Tab -->
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span>Profile</span>
@@ -260,6 +266,7 @@
         </div>
     </div>
 
+    <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">✈️</span><span>Mine</span></button>
         <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
@@ -268,6 +275,7 @@
         <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
     </div>
 
+    <!-- JavaScript Logic -->
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
