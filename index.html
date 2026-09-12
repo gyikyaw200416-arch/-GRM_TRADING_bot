@@ -14,22 +14,22 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        /* Sci-Fi Machinery Control Room Background (SVG Data URI ဖြင့် နောက်ခံပုံ သေချာပေါ်စေရန် တိုက်ရိုက်ထည့်သွင်းထားသည်) */
+        /* Sci-Fi Machinery Control Room Background (ပုံပါအတိုင်း အလန်းစား Control Room နောက်ခံနှင့် Circuit ပုံစံများ) */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle at 50% 30%, #162a4a 0%, #070d18 75%), 
-                        linear-gradient(135deg, rgba(7, 13, 24, 0.85) 0%, rgba(3, 6, 12, 0.95) 100%), 
-                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23070d18"/><path d="M0 100h400M0 200h400M0 300h400M100 0v400M200 0v400M300 0v400" stroke="%23132744" stroke-width="1"/><circle cx="100" cy="100" r="4" fill="%2300f0ff"/><circle cx="300" cy="200" r="4" fill="%23ffb400"/><circle cx="200" cy="300" r="4" fill="%2300f0ff"/><path d="M0 50 Q200 20 400 50 T400 350" stroke="%2300f0ff" stroke-width="1.2" fill="none" opacity="0.3"/><path d="M50 0 Q200 150 350 400" stroke="%23ffb400" stroke-width="1" fill="none" opacity="0.2"/></svg>');
+            background: 
+                radial-gradient(circle at 50% 40%, rgba(0, 240, 255, 0.15) 0%, rgba(10, 20, 35, 0.8) 60%, rgba(3, 6, 12, 0.98) 100%),
+                linear-gradient(135deg, rgba(7, 13, 24, 0.9) 0%, rgba(3, 6, 12, 0.95) 100%), 
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23070d18"/><path d="M0 100h400M0 200h400M0 300h400M100 0v400M200 0v400M300 0v400" stroke="%23132744" stroke-width="1.5"/><circle cx="100" cy="100" r="5" fill="%2300f0ff" opacity="0.8"/><circle cx="300" cy="200" r="5" fill="%23ffb400" opacity="0.8"/><circle cx="200" cy="300" r="5" fill="%2300f0ff" opacity="0.8"/><path d="M0 50 Q200 20 400 50 T400 350" stroke="%2300f0ff" stroke-width="1.5" fill="none" opacity="0.4"/><path d="M50 0 Q200 150 350 400" stroke="%23ffb400" stroke-width="1.2" fill="none" opacity="0.3"/></svg>');
             background-size: cover;
-            background-position: center;
             z-index: -2; 
         }
 
         /* Tech circuit background effect overlay with cyan & gold sci-fi control room atmosphere */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 180, 0, 0.03) 40%, transparent 75%),
-                        linear-gradient(180deg, rgba(7, 13, 24, 0.6) 0%, rgba(2, 5, 10, 0.85) 100%);
+            background: radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.18) 0%, rgba(255, 180, 0, 0.05) 50%, transparent 80%),
+                        linear-gradient(180deg, rgba(7, 13, 24, 0.4) 0%, rgba(2, 5, 10, 0.8) 100%);
             z-index: -1; pointer-events: none;
         }
 
@@ -183,7 +183,6 @@
 </head>
 <body>
 
-    <!-- နောက်ခံပတ်ဝန်းကျင်နှင့် အလင်းတန်း Effect များ -->
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
@@ -195,7 +194,6 @@
     </div>
 
     <div class="main-container">
-        <!-- Mine Tab -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
@@ -226,7 +224,6 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
-        <!-- Tasks Tab -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Channel Joins</span></div>
             <div class="card profile-row">
@@ -238,13 +235,11 @@
             </div>
         </div>
 
-        <!-- Miners Tab -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar"><span>Jet Engine Miner Store (1 - 30)</span></div>
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
-        <!-- Friends Tab -->
         <div id="tab-friends" class="tab-content">
             <div class="top-bar"><span>Friends & Referrals</span></div>
             <div class="card" style="text-align: center; padding: 25px;">
@@ -253,7 +248,6 @@
             </div>
         </div>
 
-        <!-- Profile Tab -->
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span>Profile</span>
@@ -266,7 +260,6 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">✈️</span><span>Mine</span></button>
         <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
@@ -275,7 +268,6 @@
         <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
     </div>
 
-    <!-- JavaScript Logic -->
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
