@@ -14,16 +14,17 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        /* Sci-Fi Machinery Control Room Background */
+        /* Sci-Fi Machinery Control Room Background (Fixed URL for GitHub rendering) */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: linear-gradient(rgba(7, 13, 24, 0.5), rgba(7, 13, 24, 0.7)), 
-                        url('IMG_20260912_201928_325.jpg') no-repeat center center;
+                        url('https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/IMG_20260912_201928_325.jpg')
+ no-repeat center center;
             background-size: cover;
             z-index: -2; 
         }
 
-        /* Tech circuit background effect overlay */
+        /* Tech circuit background effect overlay with cyan & gold sci-fi control room atmosphere */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.1) 0%, rgba(255, 180, 0, 0.03) 40%, transparent 75%),
@@ -58,15 +59,17 @@
         .lvl-badge { background: #132744; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); }
         #ton-connect-button { display: flex; align-items: center; }
 
-        /* Cards */
+        /* Cards - Transparency increased so background image shows clearly */
         .card { background: rgba(13, 22, 38, 0.65); backdrop-filter: blur(8px); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 14px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,240,255,0.15); }
         .mine-header { text-align: center; margin-bottom: 5px; }
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; text-shadow: 0 0 12px rgba(0,240,255,0.5); }
         
+        /* Mining Amount Display & Descriptive text */
         .mining-amount-display { text-align: center; color: #ffb400; font-size: 20px; font-weight: bold; margin: 4px 0 2px 0; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,180,0,0.4); }
         .mining-subtitle { text-align: center; color: #8b949e; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 18px; text-transform: uppercase; }
         
+        /* Sci-Fi Tech Hologram Coin Box styled to match image reactor core */
         .coin-box {
             width: 190px; height: 190px; margin: 15px auto 25px auto;
             background: radial-gradient(circle, rgba(0, 240, 255, 0.25) 0%, rgba(7, 13, 24, 0.8) 80%), 
@@ -78,20 +81,35 @@
             transition: transform 0.1s ease;
         }
         
+        /* Outer holographic ring effect */
         .coin-box::before {
-            content: ''; position: absolute; top: -8px; left: -8px; right: -8px; bottom: -8px;
-            border-radius: 50%; border: 1px dashed rgba(0, 240, 255, 0.7);
+            content: '';
+            position: absolute;
+            top: -8px; left: -8px; right: -8px; bottom: -8px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 240, 255, 0.7);
             animation: spinRing 20s linear infinite;
         }
 
         .coin-box::after {
-            content: ''; position: absolute; top: -15px; left: -15px; right: -15px; bottom: -15px;
-            border-radius: 50%; border: 2px solid rgba(255, 180, 0, 0.4); border-top-color: transparent;
+            content: '';
+            position: absolute;
+            top: -15px; left: -15px; right: -15px; bottom: -15px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 180, 0, 0.4);
+            border-top-color: transparent;
             animation: spinRingReverse 15s linear infinite;
         }
 
-        @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spinRingReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+        @keyframes spinRing {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spinRingReverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
 
         .coin-box.mining-anim { animation: pulseCoin 1.5s infinite; }
         @keyframes pulseCoin {
@@ -106,20 +124,28 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             border: 2px solid rgba(255, 180, 0, 0.7);
             box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.6);
-            position: relative; overflow: hidden;
+            position: relative;
+            overflow: hidden;
         }
 
-        .coin-gear-icon { font-size: 30px; margin-bottom: 4px; filter: drop-shadow(0 0 10px #00f0ff); }
+        .coin-gear-icon {
+            font-size: 30px;
+            margin-bottom: 4px;
+            filter: drop-shadow(0 0 10px #00f0ff);
+        }
+
         .coin-inner-text { font-size: 26px; font-weight: 900; color: #ffb400; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255, 180, 0, 0.8); }
         
         .claim-btn {
             background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
             color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
             font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px; letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px;
+            letter-spacing: 1px;
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
+        /* Miners Grid & Cards with Jet Engine Theme */
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .miner-card { background: rgba(13, 20, 33, 0.75); backdrop-filter: blur(6px); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; }
         .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
