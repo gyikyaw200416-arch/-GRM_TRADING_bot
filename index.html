@@ -12,21 +12,21 @@
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body, html { width: 100%; height: 100%; color: #ffffff; overflow: hidden; background-color: #070d18; }
+        body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        /* Sci-Fi Machinery Control Room Background ကို ရုပ်ထွက်သေချာပေါ်အောင် ပြင်ဆင်ထားသည် */
+        /* Sci-Fi Machinery Control Room Background - ပြင်ဆင်ပြီး (အမဲရောင်လွှမ်းနေမှုကို လျှော့ချထားသည်) */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(rgba(7, 13, 24, 0.4), rgba(7, 13, 24, 0.6)), 
-                        url('https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/refs/heads/main/IMG_20260912_201928_325.jpg') no-repeat center center;
+            background: linear-gradient(rgba(7, 13, 24, 0.2), rgba(7, 13, 24, 0.4)), 
+                        url('1000088544.jpg') no-repeat center center;
             background-size: cover;
             z-index: -2; 
         }
 
-        /* Tech circuit background effect overlay */
+        /* Tech circuit background effect overlay - ပုံပေါ်င်လွင်အောင် အမဲဖုံးခြင်းကို ဖြုတ်ထားသည် */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.08) 0%, rgba(255, 180, 0, 0.02) 40%, transparent 75%);
+            background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.08) 0%, transparent 70%);
             z-index: -1; pointer-events: none;
         }
 
@@ -53,7 +53,7 @@
 
         /* Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
-        .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: rgba(13, 22, 38, 0.85); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 10px rgba(0,240,255,0.1); }
+        .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: rgba(13, 22, 38, 0.85); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 10px rgba(0,240,255,0.1); backdrop-filter: blur(4px); }
         .lvl-badge { background: #132744; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); }
         #ton-connect-button { display: flex; align-items: center; }
 
@@ -62,12 +62,14 @@
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; text-shadow: 0 0 12px rgba(0,240,255,0.5); }
         
+        /* Mining Amount Display & Descriptive text */
         .mining-amount-display { text-align: center; color: #ffb400; font-size: 20px; font-weight: bold; margin: 4px 0 2px 0; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,180,0,0.4); }
         .mining-subtitle { text-align: center; color: #8b949e; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 18px; text-transform: uppercase; }
         
+        /* Sci-Fi Tech Hologram Coin Box */
         .coin-box {
             width: 190px; height: 190px; margin: 15px auto 25px auto;
-            background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(7, 13, 24, 0.85) 80%), 
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(7, 13, 24, 0.8) 80%), 
                         linear-gradient(135deg, #0d213f 0%, #03070f 100%);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 0 40px rgba(0, 240, 255, 0.5), inset 0 0 25px rgba(0, 240, 255, 0.5); 
@@ -122,7 +124,12 @@
             overflow: hidden;
         }
 
-        .coin-gear-icon { font-size: 30px; margin-bottom: 4px; filter: drop-shadow(0 0 10px #00f0ff); }
+        .coin-gear-icon {
+            font-size: 30px;
+            margin-bottom: 4px;
+            filter: drop-shadow(0 0 10px #00f0ff);
+        }
+
         .coin-inner-text { font-size: 26px; font-weight: 900; color: #ffb400; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255, 180, 0, 0.8); }
         
         .claim-btn {
@@ -134,14 +141,15 @@
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
+        /* Miners Grid & Cards */
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .miner-card { background: rgba(13, 20, 33, 0.85); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; }
+        .miner-card { background: rgba(13, 20, 33, 0.85); backdrop-filter: blur(6px); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; }
         .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
         .miner-card.unlock-border { border: 1px solid #2ea043; }
         .miner-card.locked-border { border: 1px solid #333; opacity: 0.7; }
         
         .engine-img-box {
-            width: 100%; height: 80px; background: #0f1624; border-radius: 8px;
+            width: 100%; height: 80px; background: rgba(15, 22, 36, 0.6); border-radius: 8px;
             display: flex; justify-content: center; align-items: center; margin-bottom: 8px;
             overflow: hidden; border: 1px solid rgba(0, 240, 255, 0.2);
         }
@@ -161,7 +169,7 @@
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
-            background-color: rgba(7, 13, 24, 0.9); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
+            background-color: rgba(7, 13, 24, 0.88); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
             display: flex; justify-content: space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
@@ -196,10 +204,10 @@
 
             <div class="mine-header">
                 <div class="asset-title">ASSETS</div>
-                <div class="asset-amount" id="asset-balance">1.290380 GRM</div>
+                <div class="asset-amount" id="asset-balance">0.860085 GRM</div>
             </div>
 
-            <div class="mining-amount-display" id="mining-amount-display">0.025190 GRM</div>
+            <div class="mining-amount-display" id="mining-amount-display">0.000000 GRM</div>
             <div class="mining-subtitle">Current Mined Reward</div>
 
             <div class="coin-box" id="coin-box-elem">
@@ -293,9 +301,9 @@
             buttonRootId: 'ton-connect-button'
         });
 
-        let baseInitialBalance = 1.290380; 
+        let baseInitialBalance = 0.860085; 
         let currentBalance = baseInitialBalance;
-        let minedAmount = 0.025190;
+        let minedAmount = 0;
         let isMining = true;
         let miningInterval;
         let miningStartTime = Date.now();
@@ -491,8 +499,8 @@
 
                 const verifiedBadge = document.getElementById('profile-verified-badge');
 
-                    if (data) {
-                    baseInitialBalance = parseFloat(data.balance) || 1.290380;
+                if (data) {
+                    baseInitialBalance = parseFloat(data.balance) || 0.860085;
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
 
@@ -553,14 +561,14 @@
                 if (miningInterval) clearInterval(miningInterval);
                 miningInterval = setInterval(() => {
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                    minedAmount = 0.025190 + (elapsed * 0.000005);
+                    minedAmount = elapsed * 0.000005;
                     
                     amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                const earnedMined = 0.025190 + (elapsed * 0.000005);
+                const earnedMined = elapsed * 0.000005;
 
                 baseInitialBalance += earnedMined; 
                 currentBalance = baseInitialBalance;
@@ -601,9 +609,9 @@
             if (miningInterval) clearInterval(miningInterval);
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                let currentRunningMined = 0.025190 + (elapsed * 0.000005);
+                minedAmount = elapsed * 0.000005;
                 
-                amountDisplay.innerText = currentRunningMined.toFixed(6) + " GRM";
+                amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
             }, 1000);
         }
     </script>
