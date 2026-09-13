@@ -12,15 +12,15 @@
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
+        body, html { width: 100%; height: 100%; color: #ffffff; overflow: hidden; background: #070d18; }
         
-        /* Sci-Fi Machinery Control Room Background Image */
+        /* Background Image Fixed Using CSS */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(rgba(7, 13, 24, 0.5), rgba(7, 13, 24, 0.7)), 
+            background: linear-gradient(rgba(7, 13, 24, 0.4), rgba(7, 13, 24, 0.6)), 
                         url('https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/refs/heads/main/IMG_20260912_201928_325.jpg') no-repeat center center;
             background-size: cover;
-            z-index: -2; 
+            z-index: -10; 
         }
 
         /* Tech circuit background effect overlay with cyan & gold sci-fi control room atmosphere */
@@ -28,7 +28,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.1) 0%, rgba(255, 180, 0, 0.03) 40%, transparent 75%),
                         linear-gradient(180deg, rgba(7, 13, 24, 0.2) 0%, rgba(2, 5, 10, 0.5) 100%);
-            z-index: -1; pointer-events: none;
+            z-index: -9; pointer-events: none;
         }
 
         /* Splash Screen */
