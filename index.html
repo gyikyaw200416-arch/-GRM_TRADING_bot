@@ -14,6 +14,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
+        /* Sci-Fi Machinery Control Room Background */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background-color: #070d18;
@@ -25,6 +26,7 @@
             z-index: -2; 
         }
 
+        /* Tech circuit background effect overlay */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 180, 0, 0.04) 40%, transparent 75%),
@@ -32,6 +34,7 @@
             z-index: -1; pointer-events: none;
         }
 
+        /* Splash Screen */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #070d18; display: flex; flex-direction: column;
@@ -47,10 +50,12 @@
         .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
+        /* Main Container */
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        /* Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
         .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: rgba(13, 22, 38, 0.9); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 10px rgba(0,240,255,0.1); }
         .lvl-badge { background: #132744; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); }
@@ -61,9 +66,11 @@
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; text-shadow: 0 0 12px rgba(0,240,255,0.5); }
         
+        /* Mining Amount Display & Descriptive text */
         .mining-amount-display { text-align: center; color: #ffb400; font-size: 20px; font-weight: bold; margin: 4px 0 2px 0; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,180,0,0.4); }
         .mining-subtitle { text-align: center; color: #8b949e; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 18px; text-transform: uppercase; }
         
+        /* Sci-Fi Tech Hologram Coin Box */
         .coin-box {
             width: 190px; height: 190px; margin: 15px auto 25px auto;
             background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(7, 13, 24, 0.95) 80%), 
@@ -132,14 +139,13 @@
         .claim-btn {
             background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
             color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
-            font-size: 15px; font-weight: bold; cursor: pointer;
+            font-size: 16px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px;
-            letter-spacing: 1px; transition: all 0.3s ease;
+            letter-spacing: 1px;
         }
-        .claim-btn.join-required { background: linear-gradient(135deg, #0088cc 0%, #0055ff 100%); box-shadow: 0 4px 15px rgba(0, 136, 204, 0.5); }
-        .claim-btn.locked { background: #222b38; color: #6c7a89; cursor: not-allowed; box-shadow: none; border: 1px solid #334455; }
-        .claim-btn:disabled { opacity: 0.8; cursor: not-allowed; }
+        .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
+        /* Miners Grid */
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .miner-card { background: rgba(13, 20, 33, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; }
         .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
@@ -164,6 +170,7 @@
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
         .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        .action-btn:disabled { background-color: #333; color: #888; box-shadow: none; cursor: not-allowed; }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
@@ -218,6 +225,7 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
+        <!-- Task Tab with Channel Join & 3-Hour Cooldown Timer System -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Channel Joins</span></div>
             <div class="card profile-row">
@@ -225,7 +233,7 @@
                     <strong>Join Official Telegram Channel</strong>
                     <p style="font-size: 12px; color: #8b949e;">Earn +3 GRM</p>
                 </div>
-                <button class="action-btn" id="task-join-btn" onclick="openChannelAndVerify()">Join</button>
+                <button class="action-btn" id="task-channel-btn" onclick="handleChannelTask()">Join</button>
             </div>
         </div>
 
@@ -263,10 +271,6 @@
     </div>
 
     <script>
-        const REQUIRED_CHANNEL_ID = '5020977059';
-        const CHANNEL_LINK = 'https://t.me/GRM_TRADING_bot';
-        const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
-
         const tg = window.Telegram.WebApp;
         tg.expand();
 
@@ -308,11 +312,15 @@
         let minedAmount = 0;
         let isMining = true;
         let miningInterval;
-        let countdownInterval;
         let miningStartTime = Date.now();
-        
-        let hasJoinedChannel = localStorage.getItem('grm_joined_channel_' + currentUserId) === 'true';
-        let lastClaimTime = parseInt(localStorage.getItem('grm_last_claim_time_' + currentUserId) || '0');
+
+        /* Task & Cooldown Logic Configuration */
+        const TARGET_CHANNEL_ID = '5020977059';
+        const CHANNEL_LINK = 'https://t.me/c/5020977059'; // Telegram Channel Link
+        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours in Milliseconds
+        let taskState = 'init'; // 'init', 'joined', 'cooldown'
+        let cooldownEndTime = 0;
+        let taskTimerInterval;
 
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
@@ -393,9 +401,9 @@
         window.addEventListener('DOMContentLoaded', async () => {
             renderMinersStore();
             await loadUserDataFromSupabase();
+            initTaskState();
             setTimeout(hideSplashScreen, 1000);
             startAutoMiningUI();
-            updateButtonStateBasedOnChannelAndTimer();
         });
 
         tonConnectUI.onStatusChange(async (walletInfo) => {
@@ -478,8 +486,6 @@
                     fields.mined_amount = 0;
                     fields.mining_state = 'mining';
                     fields.is_verified = false;
-                    fields.has_joined_channel = hasJoinedChannel;
-                    fields.last_claim_time = lastClaimTime;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -513,14 +519,8 @@
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
                     
-                    if (data.has_joined_channel !== undefined) {
-                        hasJoinedChannel = data.has_joined_channel;
-                        localStorage.setItem('grm_joined_channel_' + currentUserId, hasJoinedChannel ? 'true' : 'false');
-                    }
-
-                    if (data.last_claim_time) {
-                        lastClaimTime = parseInt(data.last_claim_time);
-                        localStorage.setItem('grm_last_claim_time_' + currentUserId, lastClaimTime.toString());
+                    if (data.cooldown_end_time) {
+                        cooldownEndTime = parseInt(data.cooldown_end_time);
                     }
 
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
@@ -548,130 +548,76 @@
             checkWalletAndButtonState();
         }
 
-        function openChannelAndVerify() {
-            if (tg.openTelegramLink) {
-                tg.openTelegramLink(CHANNEL_LINK);
-            } else {
-                window.open(CHANNEL_LINK, '_blank');
-            }
-
-            setTimeout(() => {
-                hasJoinedChannel = true;
-                localStorage.setItem('grm_joined_channel_' + currentUserId, 'true');
-                
-                const taskBtn = document.getElementById('task-join-btn');
-                if (taskBtn) {
-                    taskBtn.innerText = "Joined ✔️";
-                    taskBtn.style.background = "#2ea043";
-                    taskBtn.disabled = true;
-                }
-
-                updateSupabaseField({ has_joined_channel: true, is_verified: true });
-                updateButtonStateBasedOnChannelAndTimer();
-            }, 3000);
-        }
-
-        function updateButtonStateBasedOnChannelAndTimer() {
-            const btn = document.getElementById('mining-action-btn');
-            const now = Date.now();
-            const timeDiff = now - lastClaimTime;
-
-            if (!hasJoinedChannel) {
-                btn.innerText = "JOIN CHANNEL TO CLAIM (+3 GRM)";
-                btn.className = "claim-btn join-required";
-                btn.disabled = false;
-                if (countdownInterval) clearInterval(countdownInterval);
-                return;
-            }
-
-            if (timeDiff < THREE_HOURS_MS) {
-                btn.className = "claim-btn locked";
-                btn.disabled = true;
-                start3HourCountdown(THREE_HOURS_MS - timeDiff);
-            } else {
-                btn.innerText = "CLAIM (+3 GRM)";
-                btn.className = "claim-btn";
-                btn.disabled = false;
-                if (countdownInterval) clearInterval(countdownInterval);
-            }
-        }
-
-        function start3HourCountdown(remainingTime) {
-            const btn = document.getElementById('mining-action-btn');
-            if (countdownInterval) clearInterval(countdownInterval);
-
-            function updateTimer() {
-                if (remainingTime <= 0) {
-                    clearInterval(countdownInterval);
-                    updateButtonStateBasedOnChannelAndTimer();
-                    return;
-                }
-
-                let hours = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
-                let minutes = Math.floor((remainingTime / (1000 * 60)) % 60);
-                let seconds = Math.floor((remainingTime / 1000) % 60);
-
-                hours = (hours < 10) ? "0" + hours : hours;
-                minutes = (minutes < 10) ? "0" + minutes : minutes;
-                seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-                btn.innerText = `NEXT CLAIM IN ${hours}:${minutes}:${seconds}`;
-                remainingTime -= 1000;
-            }
-
-            updateTimer();
-            countdownInterval = setInterval(updateTimer, 1000);
-        }
-
         function handleMiningAction() {
             const btn = document.getElementById('mining-action-btn');
+            const statusBadge = document.getElementById('mining-status-badge');
+            const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
             const assetBalance = document.getElementById('asset-balance');
+            const activeAddr = getActiveWalletAddress();
 
-            if (!hasJoinedChannel) {
-                alert("Channel ကို အမှန်တကယ် Join ပြီးမှသာ 3 GRM Claim လို့ရပါမည်!");
-                openChannelAndVerify();
+            if (btn.innerText === "START MINING" && !activeAddr) {
+                alert("ကျေးဇူးပြု၍ ပထမဆုံး Wallet ချိတ်ဆက်ပါ (Please connect your wallet first!)");
                 return;
             }
 
-            const now = Date.now();
-            if (now - lastClaimTime < THREE_HOURS_MS) {
-                alert("ကျေးဇူးပြု၍ ၃ နာရီပြည့်အောင် စောင့်ဆိုင်းပေးပါ။");
-                return;
+            if (btn.innerText === "START MINING") {
+                isMining = true;
+                miningStartTime = Date.now();
+                btn.innerText = "CLAIM";
+                btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
+                btn.style.color = "#fff";
+                btn.disabled = false;
+                
+                if (statusBadge) {
+                    statusBadge.innerText = "MINING AUTO";
+                    statusBadge.style.color = "#2ea043";
+                }
+                if (coinBox) coinBox.classList.add('mining-anim');
+
+                updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime });
+
+                if (miningInterval) clearInterval(miningInterval);
+                miningInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
+                    minedAmount = elapsed * 0.000005;
+                    
+                    amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                }, 1000);
+
+            } else if (btn.innerText === "CLAIM") {
+                const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
+                const earnedMined = elapsed * 0.000005;
+
+                baseInitialBalance += earnedMined; 
+                currentBalance = baseInitialBalance;
+                
+                miningStartTime = Date.now();
+                minedAmount = 0;
+                amountDisplay.innerText = "0.000000 GRM";
+                
+                if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
+
+                updateSupabaseField({
+                    balance: baseInitialBalance,
+                    mined_amount: 0,
+                    mining_state: 'mining',
+                    mining_start_time: miningStartTime
+                });
             }
-
-            const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-            const earnedMined = elapsed * 0.000005;
-
-            baseInitialBalance += (earnedMined + 3.000000); 
-            currentBalance = baseInitialBalance;
-            
-            miningStartTime = Date.now();
-            lastClaimTime = Date.now();
-            minedAmount = 0;
-            
-            localStorage.setItem('grm_last_claim_time_' + currentUserId, lastClaimTime.toString());
-            
-            amountDisplay.innerText = "0.000000 GRM";
-            if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
-
-            updateSupabaseField({
-                balance: baseInitialBalance,
-                mined_amount: 0,
-                mining_state: 'mining',
-                mining_start_time: miningStartTime,
-                last_claim_time: lastClaimTime
-            });
-
-            alert("၃ GRM နှင့် Mined Reward ကို အောင်မြင်စွာ Claim လိုက်ပါပြီ!");
-            updateButtonStateBasedOnChannelAndTimer();
         }
 
         function startAutoMiningUI() {
             isMining = true;
+            const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
+
+            btn.innerText = "CLAIM";
+            btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
+            btn.style.color = "#fff";
+            btn.disabled = false;
 
             if (statusBadge) {
                 statusBadge.innerText = "MINING AUTO";
@@ -686,6 +632,127 @@
                 
                 amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
             }, 1000);
+        }
+
+        /* ----------------------------------------------------
+           Task Tab Channel Join & 3-Hour Cooldown Functionality
+        ------------------------------------------------------- */
+        function initTaskState() {
+            const savedCooldown = localStorage.getItem('grm_task_cooldown_' + currentUserId);
+            if (savedCooldown) {
+                cooldownEndTime = parseInt(savedCooldown);
+            }
+
+            const now = Date.now();
+            if (cooldownEndTime && cooldownEndTime > now) {
+                startTaskCooldown(cooldownEndTime - now);
+            } else {
+                const isJoined = localStorage.getItem('grm_task_joined_' + currentUserId);
+                if (isJoined === 'true') {
+                    setTaskButtonClaimState();
+                } else {
+                    setTaskButtonJoinState();
+                }
+            }
+        }
+
+        function setTaskButtonJoinState() {
+            taskState = 'init';
+            const btn = document.getElementById('task-channel-btn');
+            if (btn) {
+                btn.innerText = 'Join';
+                btn.disabled = false;
+                btn.style.backgroundColor = '#00f0ff';
+                btn.style.color = '#000';
+            }
+        }
+
+        function setTaskButtonClaimState() {
+            taskState = 'joined';
+            const btn = document.getElementById('task-channel-btn');
+            if (btn) {
+                btn.innerText = 'Claim (+3 GRM)';
+                btn.disabled = false;
+                btn.style.backgroundColor = '#2ea043';
+                btn.style.color = '#fff';
+            }
+        }
+
+        function handleChannelTask() {
+            const btn = document.getElementById('task-channel-btn');
+            
+            if (taskState === 'init') {
+                // Channel Link ကို ဖွင့်ပေးခြင်း
+                if (tg && tg.openTelegramLink) {
+                    tg.openTelegramLink(CHANNEL_LINK);
+                } else {
+                    window.open(CHANNEL_LINK, '_blank');
+                }
+                
+                // Channel ဝင်ရန် Click ပြီးလျှင် Claim နိုင်မည့် State သို့ ပြောင်းလဲခြင်း
+                localStorage.setItem('grm_task_joined_' + currentUserId, 'true');
+                setTaskButtonClaimState();
+
+            } else if (taskState === 'joined') {
+                // 3 GRM Claim ယူပြီး Balance ပေါင်းထည့်ပေးခြင်း
+                baseInitialBalance += 3;
+                currentBalance = baseInitialBalance;
+                document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
+
+                // Supabase Database တွင် Balance အသစ်ပြင်ဆင်ခြင်း
+                updateSupabaseField({ balance: baseInitialBalance });
+
+                alert("Congratulation! Received +3 GRM");
+
+                // 3-Hour Cooldown စတင်ခြင်း (3:00:00)
+                const endTime = Date.now() + COOLDOWN_TIME;
+                cooldownEndTime = endTime;
+                localStorage.setItem('grm_task_cooldown_' + currentUserId, endTime.toString());
+                localStorage.removeItem('grm_task_joined_' + currentUserId);
+                
+                updateSupabaseField({ cooldown_end_time: endTime });
+                startTaskCooldown(COOLDOWN_TIME);
+            }
+        }
+
+        function startTaskCooldown(durationMs) {
+            taskState = 'cooldown';
+            const btn = document.getElementById('task-channel-btn');
+            if (btn) btn.disabled = true;
+
+            let remainingTime = Math.floor(durationMs / 1000);
+
+            if (taskTimerInterval) clearInterval(taskTimerInterval);
+            
+            function updateTimerUI() {
+                if (remainingTime <= 0) {
+                    clearInterval(taskTimerInterval);
+                    localStorage.removeItem('grm_task_cooldown_' + currentUserId);
+                    cooldownEndTime = 0;
+                    setTaskButtonJoinState();
+                    return;
+                }
+
+                const hours = Math.floor(remainingTime / 3600);
+                const minutes = Math.floor((remainingTime % 3600) / 60);
+                const seconds = remainingTime % 60;
+
+                const formattedTime = 
+                    String(hours).padStart(2, '0') + ':' +
+                    String(minutes).padStart(2, '0') + ':' +
+                    String(seconds).padStart(2, '0');
+
+                if (btn) {
+                    btn.innerText = formattedTime;
+                    btn.style.backgroundColor = '#333333';
+                    btn.style.color = '#888888';
+                }
+
+                remainingTime--;
+            }
+
+            updateTimerUI();
+            taskTimerInterval = setInterval(updateTimerUI, 1000);
         }
     </script>
 </body>
