@@ -214,7 +214,7 @@
             <div id="admin-task-panel" class="card" style="display:none; margin-bottom: 15px; border-color: #ffb400;">
                 <h4 style="color: #ffb400; font-size: 13px; margin-bottom: 8px;">⚙️ Admin: Add New Task</h4>
                 <input type="text" id="new-task-title" placeholder="Task Title (e.g. Join Channel)" style="width:100%; padding:8px; margin-bottom:8px; background:#070d18; border:1px solid rgba(0,240,255,0.3); color:#fff; border-radius:6px; font-size:12px;">
-                <input type="text" id="new-task-link" placeholder="Channel Link or Username (@GRM_TRADING or t.me/...)" style="width:100%; padding:8px; margin-bottom:8px; background:#070d18; border:1px solid rgba(0,240,255,0.3); color:#fff; border-radius:6px; font-size:12px;">
+                <input type="text" id="new-task-link" placeholder="Channel/Site URL (t.me/... or @channel)" style="width:100%; padding:8px; margin-bottom:8px; background:#070d18; border:1px solid rgba(0,240,255,0.3); color:#fff; border-radius:6px; font-size:12px;">
                 <button class="action-btn" style="width:100%; padding:8px; font-size:12px;" onclick="addNewTask()">Add Task</button>
             </div>
 
@@ -314,32 +314,22 @@
         }
 
         let tasksList = JSON.parse(localStorage.getItem('grm_global_tasks_list')) || [
-            { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', channelId: '@GRM_TRADING', reward: 3 }
+            { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', channelUsername: '@GRM_TRADING', reward: 3 }
         ];
 
-        function extractChannelId(url) {
-            if (!url) return '';
-            if (url.startsWith('@')) return url;
-            let cleanUrl = url.trim().replace(/\/$/, '');
-            let parts = cleanUrl.split('/');
-            let lastPart = parts[parts.length - 1];
-            return lastPart.startsWith('@') ? lastPart : '@' + lastPart;
-        }
-
-        async function verifyChannelMembership(channelUsername, userId) {
-            if (!userId || userId === '0') return true; 
-
+        // Telegram Bot API Check - Verifies true membership
+        async function checkTelegramMembership(chatId, userId) {
             try {
-                // Verification request to backend API
-                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN_PLACEHOLDER}/getChatMember?chat_id=${channelUsername}&user_id=${userId}`);
+                // Ensure bot token is supplied or replace placeholder if needed
+                const BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE';
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${chatId}&user_id=${userId}`);
                 const data = await response.json();
-
-                if (data && data.ok) {
-                    const status = data.result.status;
-                    return ['creator', 'administrator', 'member'].includes(status);
+                
+                if (data.ok && (data.result.status === 'member' || data.result.status === 'administrator' || data.result.status === 'creator')) {
+                    return true;
                 }
             } catch (e) {
-                console.warn("Telegram API check bypassed/failed:", e);
+                console.error("Verification error:", e);
             }
             return false;
         }
@@ -352,15 +342,18 @@
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
 
             tasksList.forEach(task => {
-                let claimData = userTaskClaims[task.id] || { clickedJoin: false, claimedTime: 0 };
+                let claimData = userTaskClaims[task.id] || { joined: false, claimedTime: 0 };
                 let now = Date.now();
                 let cooldownTime = 3 * 60 * 60 * 1000; // 3 hours
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
                 let actionButtonHtml = '';
-                if (!claimData.clickedJoin) {
-                    actionButtonHtml = `<button class="btn-join" onclick="handleJoinTask(${task.id}, '${task.link}')">Join</button>`;
+                
+                // CRITICAL REQUIREMENT: Show JOIN button if not joined or missing status.
+                // NEVER display CLAIM button until membership is verified.
+                if (!claimData.joined) {
+                    actionButtonHtml = `<button class="btn-join" id="task-btn-${task.id}" onclick="handleJoinTask(${task.id}, '${task.link}', '${task.channelUsername || ''}')">Join</button>`;
                 } else {
                     let claimBtnDisabled = !canClaimAgain;
                     let claimBtnText = 'Claim (+3 GRM)';
@@ -370,7 +363,7 @@
                         let minsLeft = timeLeft % 60;
                         claimBtnText = `Wait ${hoursLeft}h ${minsLeft}m`;
                     }
-                    actionButtonHtml = `<button class="btn-claim" id="claim-btn-${task.id}" ${claimBtnDisabled ? 'disabled' : ''} onclick="handleClaimTask(${task.id}, ${task.reward}, '${task.link}')">${claimBtnText}</button>`;
+                    actionButtonHtml = `<button class="btn-claim" ${claimBtnDisabled ? 'disabled' : ''} onclick="handleClaimTask(${task.id}, ${task.reward})">${claimBtnText}</button>`;
                 }
 
                 let deleteBtnHtml = (rawTelegramId === '5020977059') ? `<button class="btn-delete" onclick="deleteTask(${task.id})">🗑️</button>` : '';
@@ -392,40 +385,47 @@
             container.innerHTML = html;
         }
 
-        function handleJoinTask(taskId, url) {
+        async function handleJoinTask(taskId, url, channelUsername) {
+            // Open link in new tab
             window.open(url, '_blank');
-            
+
+            const btn = document.getElementById(`task-btn-${taskId}`);
+            if (btn) btn.innerText = 'Verifying...';
+
+            // Extract username if missing
+            let targetChat = channelUsername;
+            if (!targetChat && url.includes('t.me/')) {
+                targetChat = '@' + url.split('t.me/')[1].replace('/', '');
+            }
+
+            let isMember = false;
+            if (targetChat && rawTelegramId && rawTelegramId !== '0') {
+                isMember = await checkTelegramMembership(targetChat, rawTelegramId);
+            } else {
+                // Fallback validation prompt for demo or non-telegram environment
+                isMember = confirm("Did you join the official channel?");
+            }
+
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
-            if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { clickedJoin: false, claimedTime: 0 };
-            
-            userTaskClaims[taskId].clickedJoin = true;
-            localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
-            
+
+            if (isMember) {
+                if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
+                userTaskClaims[taskId].joined = true;
+                localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
+                alert("Channel join verified! You can now claim your reward.");
+            } else {
+                alert("You have not joined the channel! Please join to unlock the reward.");
+            }
+
             renderTasks();
         }
 
-        async function handleClaimTask(taskId, reward, channelUrl) {
+        function handleClaimTask(taskId, reward) {
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
-            let claimData = userTaskClaims[taskId] || { clickedJoin: false, claimedTime: 0 };
+            let claimData = userTaskClaims[taskId] || { joined: false, claimedTime: 0 };
 
-            if (!claimData.clickedJoin) {
-                alert("Please click Join and join the channel first!✅");
-                return;
-            }
-
-            const claimBtn = document.getElementById(`claim-btn-${taskId}`);
-            if (claimBtn) {
-                claimBtn.innerText = "Verifying...";
-                claimBtn.disabled = true;
-            }
-
-            let channelHandle = extractChannelId(channelUrl);
-            let isMember = await verifyChannelMembership(channelHandle, rawTelegramId);
-
-            if (!isMember) {
-                alert("You have not joined the Telegram channel yet! Please join the channel to receive +3 GRM. ❌");
-                claimData.clickedJoin = false;
-                localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
+            if (!claimData.joined) {
+                alert("Please join the channel first✅");
                 renderTasks();
                 return;
             }
@@ -434,10 +434,10 @@
             let cooldownTime = 3 * 60 * 60 * 1000;
             if (claimData.claimedTime !== 0 && (now - claimData.claimedTime) < cooldownTime) {
                 alert("Cooldown active! You can only claim once every 3 hours.");
-                renderTasks();
                 return;
             }
 
+            // Reward user
             baseInitialBalance += reward;
             currentBalance = baseInitialBalance;
             document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
@@ -446,7 +446,7 @@
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
 
             updateSupabaseField({ balance: baseInitialBalance });
-            alert("Successfully verified and claimed +" + reward + " GRM! 3-hour cooldown started.");
+            alert("Successfully claimed +" + reward + " GRM! 3-hour cooldown started.");
             renderTasks();
         }
 
@@ -460,10 +460,20 @@
                 return;
             }
 
+            let linkVal = linkInput.value.trim();
+            let username = '';
+            if (linkVal.includes('t.me/')) {
+                username = '@' + linkVal.split('t.me/')[1].replace('/', '');
+            } else if (linkVal.startsWith('@')) {
+                username = linkVal;
+                linkVal = 'https://t.me/' + linkVal.replace('@', '');
+            }
+
             const newTask = {
                 id: Date.now(),
                 title: titleInput.value,
-                link: linkInput.value,
+                link: linkVal,
+                channelUsername: username,
                 reward: 3
             };
 
@@ -545,6 +555,9 @@
             await loadUserDataFromSupabase();
             setTimeout(hideSplashScreen, 1000);
             startAutoMiningUI();
+            
+            // Periodically refresh task state every 30s to update countdowns automatically
+            setInterval(renderTasks, 30000);
         });
 
         tonConnectUI.onStatusChange(async (walletInfo) => {
