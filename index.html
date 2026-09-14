@@ -14,7 +14,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        /* Sci-Fi Machinery Control Room Background */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background-color: #070d18;
@@ -26,7 +25,6 @@
             z-index: -2; 
         }
 
-        /* Tech circuit background effect overlay */
         .tech-bg-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 180, 0, 0.04) 40%, transparent 75%),
@@ -34,7 +32,6 @@
             z-index: -1; pointer-events: none;
         }
 
-        /* Splash Screen */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #070d18; display: flex; flex-direction: column;
@@ -50,12 +47,10 @@
         .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
-        /* Main Container */
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
         .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: rgba(13, 22, 38, 0.9); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 10px rgba(0,240,255,0.1); }
         .lvl-badge { background: #132744; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); }
@@ -66,11 +61,9 @@
         .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
         .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; text-shadow: 0 0 12px rgba(0,240,255,0.5); }
         
-        /* Mining Amount Display & Descriptive text */
         .mining-amount-display { text-align: center; color: #ffb400; font-size: 20px; font-weight: bold; margin: 4px 0 2px 0; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,180,0,0.4); }
         .mining-subtitle { text-align: center; color: #8b949e; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 18px; text-transform: uppercase; }
         
-        /* Sci-Fi Tech Hologram Coin Box */
         .coin-box {
             width: 190px; height: 190px; margin: 15px auto 25px auto;
             background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(7, 13, 24, 0.95) 80%), 
@@ -101,15 +94,8 @@
             animation: spinRingReverse 15s linear infinite;
         }
 
-        @keyframes spinRing {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes spinRingReverse {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
-        }
+        @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spinRingReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
 
         .coin-box.mining-anim { animation: pulseCoin 1.5s infinite; }
         @keyframes pulseCoin {
@@ -124,28 +110,20 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             border: 2px solid rgba(255, 180, 0, 0.7);
             box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.6);
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
         }
 
-        .coin-gear-icon {
-            font-size: 30px;
-            margin-bottom: 4px;
-            filter: drop-shadow(0 0 10px #00f0ff);
-        }
-
+        .coin-gear-icon { font-size: 30px; margin-bottom: 4px; filter: drop-shadow(0 0 10px #00f0ff); }
         .coin-inner-text { font-size: 26px; font-weight: 900; color: #ffb400; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255, 180, 0, 0.8); }
         
         .claim-btn {
             background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
             color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
             font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px;
-            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px; letter-spacing: 1px;
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
-        /* Miners Grid */
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .miner-card { background: rgba(13, 20, 33, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; }
         .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
@@ -171,6 +149,9 @@
         .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
         .action-btn:disabled { background-color: #333; color: #888; box-shadow: none; cursor: not-allowed; }
+
+        /* Admin UI Form Inputs */
+        .admin-input { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; background: #070d18; border: 1px solid rgba(0,240,255,0.4); border-radius: 6px; color: #fff; font-size: 12px; }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
@@ -225,15 +206,24 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
-        <!-- Task Tab with Verified Channel Join & Cooldown Timer -->
+        <!-- Dynamic Tasks Tab with Admin Control Support -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Channel Joins</span></div>
-            <div class="card profile-row">
-                <div>
-                    <strong>Join Official Telegram Channel</strong>
-                    <p style="font-size: 12px; color: #8b949e;">Earn +3 GRM</p>
-                </div>
-                <button class="action-btn" id="task-channel-btn" onclick="handleChannelTask()">Join</button>
+            
+            <!-- ADMIN ONLY PANEL (ID 5020977059 တက်မှသာ ပေါ်မည်) -->
+            <div id="admin-panel" class="card" style="display: none; border: 1px dashed #ffb400; background: rgba(255, 180, 0, 0.05);">
+                <h4 style="color: #ffb400; margin-bottom: 8px;">⚙️ Admin Task Control Panel</h4>
+                <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel & Group)">
+                <input type="text" id="adm-channel-id" class="admin-input" placeholder="Channel Chat ID (e.g. -10020977059)">
+                <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
+                <input type="text" id="adm-group-id" class="admin-input" placeholder="Group Chat ID (Optional: e.g. -100xxxxxxxx)">
+                <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
+                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 3)" value="3">
+                <button class="action-btn" style="width: 100%; background: #ffb400; color: #000;" onclick="adminSaveTask()">Add / Update Task</button>
+            </div>
+
+            <div id="tasks-list-container">
+                <!-- Dynamic Tasks Will Render Here -->
             </div>
         </div>
 
@@ -277,6 +267,7 @@
         let rawUserId = '';
         let currentUserId = '';
         let currentUserName = 'Miner';
+        const ADMIN_ID = '5020977059'; // သီးသန့် ID သာ မြင်နိုင်သော Admin ID
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             rawUserId = tg.initDataUnsafe.user.id.toString();
@@ -319,15 +310,23 @@
         let miningStartTime = Date.now();
 
         /* Task & Real Bot Verification Configuration */
-        const BOT_TOKEN = '7774026330:AAFA-xxxxxxx'; // Bot API Token ကို ထည့်ပေးပါ
-        const TARGET_CHANNEL_ID = '-10020977059'; // Private/Public Channel ID (-100...)
-        const CHANNEL_LINK = 'https://t.me/c/5020977059';
-        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours
-        
-        let taskState = 'init'; // 'init', 'verify', 'joined', 'cooldown'
-        let cooldownEndTime = 0;
-        let taskTimerInterval;
-        let hasOpenedChannel = false;
+        const BOT_TOKEN = '7774026330:AAFA-xxxxxxx'; // Bot API Token
+        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // Exact 3 Hours Cooldown
+
+        // Dynamic Tasks List Initial Structure
+        let activeTasksList = JSON.parse(localStorage.getItem('grm_dynamic_tasks')) || [
+            {
+                id: 'task_main_channel',
+                title: 'Join Official Channel & Group',
+                channelId: '-10020977059',
+                channelLink: 'https://t.me/c/5020977059',
+                groupId: '',
+                groupLink: '',
+                reward: 3
+            }
+        ];
+
+        let taskStates = {}; // Stores individual task states
 
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
@@ -408,20 +407,72 @@
         window.addEventListener('DOMContentLoaded', async () => {
             renderMinersStore();
             await loadUserDataFromSupabase();
-            initTaskState();
+            checkAdminPermissions();
+            renderTasksList();
             setTimeout(hideSplashScreen, 1000);
             startAutoMiningUI();
         });
 
+        /* Dynamic Admin Access Logic */
+        function checkAdminPermissions() {
+            const adminPanel = document.getElementById('admin-panel');
+            if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) {
+                if (adminPanel) adminPanel.style.display = 'block';
+            } else {
+                if (adminPanel) adminPanel.style.display = 'none';
+            }
+        }
+
+        function adminSaveTask() {
+            const title = document.getElementById('adm-task-title').value.trim();
+            const channelId = document.getElementById('adm-channel-id').value.trim();
+            const channelLink = document.getElementById('adm-channel-link').value.trim();
+            const groupId = document.getElementById('adm-group-id').value.trim();
+            const groupLink = document.getElementById('adm-group-link').value.trim();
+            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 3;
+
+            if (!title || !channelId || !channelLink) {
+                alert("Please fill in at least Title, Channel ID, and Channel Link!");
+                return;
+            }
+
+            const newTask = {
+                id: 'task_' + Date.now(),
+                title: title,
+                channelId: channelId,
+                channelLink: channelLink,
+                groupId: groupId,
+                groupLink: groupLink,
+                reward: reward
+            };
+
+            activeTasksList.push(newTask);
+            localStorage.setItem('grm_dynamic_tasks', JSON.stringify(activeTasksList));
+            
+            // Input Fields ရှင်းထုတ်ခြင်း
+            document.getElementById('adm-task-title').value = '';
+            document.getElementById('adm-channel-id').value = '';
+            document.getElementById('adm-channel-link').value = '';
+            document.getElementById('adm-group-id').value = '';
+            document.getElementById('adm-group-link').value = '';
+
+            renderTasksList();
+            alert("Task added successfully!");
+        }
+
+        function adminDeleteTask(taskId) {
+            if (confirm("Are you sure you want to remove this task?")) {
+                activeTasksList = activeTasksList.filter(t => t.id !== taskId);
+                localStorage.setItem('grm_dynamic_tasks', JSON.stringify(activeTasksList));
+                renderTasksList();
+            }
+        }
+
         tonConnectUI.onStatusChange(async (walletInfo) => {
             let addressToSave = null;
             try {
-                if (walletInfo) {
-                    addressToSave = extractUserFriendlyAddress(walletInfo);
-                }
-                if (!addressToSave) {
-                    addressToSave = getActiveWalletAddress();
-                }
+                if (walletInfo) addressToSave = extractUserFriendlyAddress(walletInfo);
+                if (!addressToSave) addressToSave = getActiveWalletAddress();
             } catch (err) {
                 console.error("Wallet status change error:", err);
             }
@@ -479,13 +530,8 @@
                     .maybeSingle();
 
                 if (existing) {
-                    if (fields.wallet_address === null && existing.wallet_address) {
-                        delete fields.wallet_address;
-                    }
-                    await _supabase
-                        .from('grm_users')
-                        .update(fields)
-                        .eq('user_id', currentUserId);
+                    if (fields.wallet_address === null && existing.wallet_address) delete fields.wallet_address;
+                    await _supabase.from('grm_users').update(fields).eq('user_id', currentUserId);
                 } else {
                     fields.user_id = currentUserId;
                     fields.username = currentUserName;
@@ -496,14 +542,10 @@
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
-                        if (activeAddr) {
-                            fields.wallet_address = activeAddr;
-                        }
+                        if (activeAddr) fields.wallet_address = activeAddr;
                     }
 
-                    await _supabase
-                        .from('grm_users')
-                        .insert([fields]);
+                    await _supabase.from('grm_users').insert([fields]);
                 }
             } catch (err) {
                 console.error('Supabase update general error:', err);
@@ -526,10 +568,6 @@
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
                     
-                    if (data.cooldown_end_time) {
-                        cooldownEndTime = parseInt(data.cooldown_end_time);
-                    }
-
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
 
                     if (data.is_verified === true) {
@@ -540,13 +578,6 @@
                         verifiedBadge.innerText = "Unverified ❌";
                         verifiedBadge.style.backgroundColor = "#da3633";
                         verifiedBadge.style.color = "#ffffff";
-                    }
-
-                    if (!data.wallet_address) {
-                        let activeAddr = getActiveWalletAddress();
-                        if (activeAddr) {
-                            await updateSupabaseField({ wallet_address: activeAddr });
-                        }
                     }
                 }
             } catch (err) {
@@ -588,7 +619,6 @@
                 miningInterval = setInterval(() => {
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                     minedAmount = elapsed * 0.000005;
-                    
                     amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
                 }, 1000);
 
@@ -636,72 +666,71 @@
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
                 minedAmount = elapsed * 0.000005;
-                
                 amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
             }, 1000);
         }
 
         /* ----------------------------------------------------
-           Telegram Channel Real-time Membership Verification
+           Dynamic Tasks Rendering & Membership Checking System
         ------------------------------------------------------- */
-        function initTaskState() {
-            const savedCooldown = localStorage.getItem('grm_task_cooldown_' + currentUserId);
-            if (savedCooldown) {
-                cooldownEndTime = parseInt(savedCooldown);
-            }
+        function renderTasksList() {
+            const container = document.getElementById('tasks-list-container');
+            if (!container) return;
+            
+            let html = '';
+            const isAdmin = (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID);
 
-            const now = Date.now();
-            if (cooldownEndTime && cooldownEndTime > now) {
-                startTaskCooldown(cooldownEndTime - now);
-            } else {
-                const isOpened = localStorage.getItem('grm_task_opened_' + currentUserId);
-                if (isOpened === 'true') {
-                    hasOpenedChannel = true;
-                    setTaskButtonVerifyState();
-                } else {
-                    setTaskButtonJoinState();
+            activeTasksList.forEach(task => {
+                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
+                const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
+                const now = Date.now();
+                
+                let btnText = 'Join';
+                let btnStyle = 'background-color: #00f0ff; color: #000;';
+                let btnDisabled = false;
+
+                if (cooldownEnd && cooldownEnd > now) {
+                    btnDisabled = true;
+                    btnStyle = 'background-color: #333333; color: #888888;';
+                } else if (taskStates[task.id] === 'verify') {
+                    btnText = 'Verify Check';
+                    btnStyle = 'background-color: #ffb400; color: #000;';
+                } else if (taskStates[task.id] === 'joined') {
+                    btnText = `Claim (+${task.reward} GRM)`;
+                    btnStyle = 'background-color: #2ea043; color: #fff;';
                 }
-            }
+
+                html += `
+                    <div class="card profile-row" id="card-${task.id}">
+                        <div>
+                            <strong>${task.title}</strong>
+                            <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM</p>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>
+                            ${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Timer စတင်ရန် Cooldown ရှိပါက
+            activeTasksList.forEach(task => {
+                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
+                const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
+                const now = Date.now();
+                if (cooldownEnd && cooldownEnd > now) {
+                    runTaskTimer(task.id, cooldownEnd - now);
+                }
+            });
         }
 
-        function setTaskButtonJoinState() {
-            taskState = 'init';
-            const btn = document.getElementById('task-channel-btn');
-            if (btn) {
-                btn.innerText = 'Join';
-                btn.disabled = false;
-                btn.style.backgroundColor = '#00f0ff';
-                btn.style.color = '#000';
-            }
-        }
-
-        function setTaskButtonVerifyState() {
-            taskState = 'verify';
-            const btn = document.getElementById('task-channel-btn');
-            if (btn) {
-                btn.innerText = 'Verify Check';
-                btn.disabled = false;
-                btn.style.backgroundColor = '#ffb400';
-                btn.style.color = '#000';
-            }
-        }
-
-        function setTaskButtonClaimState() {
-            taskState = 'joined';
-            const btn = document.getElementById('task-channel-btn');
-            if (btn) {
-                btn.innerText = 'Claim (+3 GRM)';
-                btn.disabled = false;
-                btn.style.backgroundColor = '#2ea043';
-                btn.style.color = '#fff';
-            }
-        }
-
-        // Telegram Bot API getChatMember စစ်ဆေးပေးသည့် Function
-        async function checkTelegramMembership(userId) {
-            if (!userId) return false;
+        async function checkTelegramMembership(chatId, userId) {
+            if (!chatId || !userId) return false;
             try {
-                const url = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${TARGET_CHANNEL_ID}&user_id=${userId}`;
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${chatId}&user_id=${userId}`;
                 const response = await fetch(url);
                 const data = await response.json();
                 
@@ -711,99 +740,103 @@
                 }
                 return false;
             } catch (error) {
-                console.error("Error checking Telegram membership:", error);
+                console.error("Error checking membership for " + chatId, error);
                 return false;
             }
         }
 
-        async function handleChannelTask() {
-            const btn = document.getElementById('task-channel-btn');
-            
-            if (taskState === 'init') {
-                hasOpenedChannel = true;
-                localStorage.setItem('grm_task_opened_' + currentUserId, 'true');
+        async function handleDynamicTaskAction(taskId) {
+            const task = activeTasksList.find(t => t.id === taskId);
+            if (!task) return;
 
-                if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(CHANNEL_LINK);
-                } else {
-                    window.open(CHANNEL_LINK, '_blank');
-                }
+            const btn = document.getElementById(`btn-${taskId}`);
+            const state = taskStates[taskId] || 'init';
+
+            if (state === 'init') {
+                taskStates[taskId] = 'verify';
                 
-                setTaskButtonVerifyState();
+                // Channel Open
+                if (tg && tg.openTelegramLink) {
+                    tg.openTelegramLink(task.channelLink);
+                } else {
+                    window.open(task.channelLink, '_blank');
+                }
 
-            } else if (taskState === 'verify') {
+                // Group ရှိပါက ဖွင့်ပေးရန်
+                if (task.groupLink) {
+                    setTimeout(() => {
+                        if (tg && tg.openTelegramLink) tg.openTelegramLink(task.groupLink);
+                        else window.open(task.groupLink, '_blank');
+                    }, 1000);
+                }
+
+                renderTasksList();
+
+            } else if (state === 'verify') {
                 btn.innerText = "Checking...";
                 btn.disabled = true;
 
-                // Server-side / Bot API ဖြင့် တကယ် Join ထားခြင်း ရှိ/မရှိ စစ်ဆေးခြင်း
-                const isMember = await checkTelegramMembership(rawUserId);
-
-                if (isMember) {
-                    setTaskButtonClaimState();
-                } else {
-                    alert("Please join the channel first✅");
-                    setTaskButtonJoinState();
+                // 1. Check Channel Membership
+                const isChannelMember = await checkTelegramMembership(task.channelId, rawUserId);
+                
+                // 2. Check Group Membership (If Specified)
+                let isGroupMember = true;
+                if (task.groupId) {
+                    isGroupMember = await checkTelegramMembership(task.groupId, rawUserId);
                 }
 
-            } else if (taskState === 'joined') {
+                if (isChannelMember && isGroupMember) {
+                    taskStates[taskId] = 'joined';
+                    renderTasksList();
+                } else {
+                    alert("Please join both Channel and Group first! (Make sure Bot is Admin) ✅");
+                    taskStates[taskId] = 'init';
+                    renderTasksList();
+                }
+
+            } else if (state === 'joined') {
                 // Claim reward
-                baseInitialBalance += 3;
+                baseInitialBalance += task.reward;
                 currentBalance = baseInitialBalance;
                 document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
 
                 updateSupabaseField({ balance: baseInitialBalance });
 
-                alert("Congratulations! Received +3 GRM");
+                alert(`Congratulations! Received +${task.reward} GRM`);
 
-                const endTime = Date.now() + COOLDOWN_TIME;
-                cooldownEndTime = endTime;
-                localStorage.setItem('grm_task_cooldown_' + currentUserId, endTime.toString());
-                localStorage.removeItem('grm_task_opened_' + currentUserId);
-                
-                updateSupabaseField({ cooldown_end_time: endTime });
-                startTaskCooldown(COOLDOWN_TIME);
+                const cooldownEnd = Date.now() + COOLDOWN_TIME;
+                localStorage.setItem(`grm_task_cd_${taskId}_${currentUserId}`, cooldownEnd.toString());
+                delete taskStates[taskId];
+
+                runTaskTimer(taskId, COOLDOWN_TIME);
             }
         }
 
-        function startTaskCooldown(durationMs) {
-            taskState = 'cooldown';
-            const btn = document.getElementById('task-channel-btn');
-            if (btn) btn.disabled = true;
+        function runTaskTimer(taskId, durationMs) {
+            const btn = document.getElementById(`btn-${taskId}`);
+            let remaining = Math.floor(durationMs / 1000);
 
-            let remainingTime = Math.floor(durationMs / 1000);
-
-            if (taskTimerInterval) clearInterval(taskTimerInterval);
-            
-            function updateTimerUI() {
-                if (remainingTime <= 0) {
-                    clearInterval(taskTimerInterval);
-                    localStorage.removeItem('grm_task_cooldown_' + currentUserId);
-                    cooldownEndTime = 0;
-                    hasOpenedChannel = false;
-                    setTaskButtonJoinState();
+            const timer = setInterval(() => {
+                if (remaining <= 0) {
+                    clearInterval(timer);
+                    localStorage.removeItem(`grm_task_cd_${taskId}_${currentUserId}`);
+                    renderTasksList();
                     return;
                 }
 
-                const hours = Math.floor(remainingTime / 3600);
-                const minutes = Math.floor((remainingTime % 3600) / 60);
-                const seconds = remainingTime % 60;
-
-                const formattedTime = 
-                    String(hours).padStart(2, '0') + ':' +
-                    String(minutes).padStart(2, '0') + ':' +
-                    String(seconds).padStart(2, '0');
+                const h = Math.floor(remaining / 3600);
+                const m = Math.floor((remaining % 3600) / 60);
+                const s = remaining % 60;
+                const formatted = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 
                 if (btn) {
-                    btn.innerText = formattedTime;
+                    btn.innerText = formatted;
+                    btn.disabled = true;
                     btn.style.backgroundColor = '#333333';
                     btn.style.color = '#888888';
                 }
-
-                remainingTime--;
-            }
-
-            updateTimerUI();
-            taskTimerInterval = setInterval(updateTimerUI, 1000);
+                remaining--;
+            }, 1000);
         }
     </script>
 </body>
