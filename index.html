@@ -274,16 +274,20 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        let rawUserId = '';
         let currentUserId = '';
         let currentUserName = 'Miner';
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-            currentUserId = 'tg_' + tg.initDataUnsafe.user.id;
+            rawUserId = tg.initDataUnsafe.user.id.toString();
+            currentUserId = 'tg_' + rawUserId;
             currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
             localStorage.setItem('grm_saved_user_id', currentUserId);
+            localStorage.setItem('grm_saved_raw_id', rawUserId);
             localStorage.setItem('grm_saved_username', currentUserName);
         } else {
             currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
+            rawUserId = localStorage.getItem('grm_saved_raw_id') || '';
             currentUserName = localStorage.getItem('grm_saved_username') || 'Shadow';
             localStorage.setItem('grm_user_id', currentUserId);
         }
@@ -314,9 +318,12 @@
         let miningInterval;
         let miningStartTime = Date.now();
 
-        /* Task & Verification Configuration */
+        /* Task & Real Bot Verification Configuration */
+        const BOT_TOKEN = '7774026330:AAFA-xxxxxxx'; // Bot API Token ကို ထည့်ပေးပါ
+        const TARGET_CHANNEL_ID = '-10020977059'; // Private/Public Channel ID (-100...)
         const CHANNEL_LINK = 'https://t.me/c/5020977059';
         const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours
+        
         let taskState = 'init'; // 'init', 'verify', 'joined', 'cooldown'
         let cooldownEndTime = 0;
         let taskTimerInterval;
@@ -635,7 +642,7 @@
         }
 
         /* ----------------------------------------------------
-           Task Tab Channel Join & Verification System
+           Telegram Channel Real-time Membership Verification
         ------------------------------------------------------- */
         function initTaskState() {
             const savedCooldown = localStorage.getItem('grm_task_cooldown_' + currentUserId);
@@ -690,7 +697,26 @@
             }
         }
 
-        function handleChannelTask() {
+        // Telegram Bot API getChatMember စစ်ဆေးပေးသည့် Function
+        async function checkTelegramMembership(userId) {
+            if (!userId) return false;
+            try {
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${TARGET_CHANNEL_ID}&user_id=${userId}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.ok && data.result) {
+                    const status = data.result.status;
+                    return ['member', 'administrator', 'creator'].includes(status);
+                }
+                return false;
+            } catch (error) {
+                console.error("Error checking Telegram membership:", error);
+                return false;
+            }
+        }
+
+        async function handleChannelTask() {
             const btn = document.getElementById('task-channel-btn');
             
             if (taskState === 'init') {
@@ -706,19 +732,18 @@
                 setTaskButtonVerifyState();
 
             } else if (taskState === 'verify') {
-                if (!hasOpenedChannel) {
-                    alert("Please click Join and subscribe to the channel first!");
-                    setTaskButtonJoinState();
-                    return;
-                }
-
-                // Verify client-side state
                 btn.innerText = "Checking...";
                 btn.disabled = true;
 
-                setTimeout(() => {
+                // Server-side / Bot API ဖြင့် တကယ် Join ထားခြင်း ရှိ/မရှိ စစ်ဆေးခြင်း
+                const isMember = await checkTelegramMembership(rawUserId);
+
+                if (isMember) {
                     setTaskButtonClaimState();
-                }, 1200);
+                } else {
+                    alert("Please join the channel first✅");
+                    setTaskButtonJoinState();
+                }
 
             } else if (taskState === 'joined') {
                 // Claim reward
