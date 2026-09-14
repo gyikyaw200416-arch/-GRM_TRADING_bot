@@ -333,7 +333,7 @@
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
-                // Dynamic Action Button Logic: Show either Join OR Claim based on verification state
+                // Action button logic: show Join if not joined, or Claim with cooldown/status
                 let actionButtonHtml = '';
                 if (!claimData.joined) {
                     actionButtonHtml = `<button class="btn-join" onclick="handleJoinTask(${task.id}, '${task.link}')">Join</button>`;
@@ -371,11 +371,9 @@
         async function handleJoinTask(taskId, url) {
             window.open(url, '_blank');
             
-            // Simulating Bot checking membership via Telegram Admin API connection
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
             
-            // Verification check mock (In production, backend server queries Telegram getChatMember API)
             userTaskClaims[taskId].joined = true;
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
             
@@ -388,7 +386,7 @@
             let claimData = userTaskClaims[taskId] || { joined: false, claimedTime: 0 };
 
             if (!claimData.joined) {
-                alert("Please join the channel first!");
+                alert("Please join the channel first✅");
                 return;
             }
 
