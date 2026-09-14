@@ -225,7 +225,7 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
-        <!-- Task Tab with Channel Join & 3-Hour Cooldown Timer System -->
+        <!-- Task Tab with Verified Channel Join & Cooldown Timer -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Channel Joins</span></div>
             <div class="card profile-row">
@@ -314,13 +314,13 @@
         let miningInterval;
         let miningStartTime = Date.now();
 
-        /* Task & Cooldown Logic Configuration */
-        const TARGET_CHANNEL_ID = '5020977059';
-        const CHANNEL_LINK = 'https://t.me/c/5020977059'; // Telegram Channel Link
-        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours in Milliseconds
-        let taskState = 'init'; // 'init', 'joined', 'cooldown'
+        /* Task & Verification Configuration */
+        const CHANNEL_LINK = 'https://t.me/c/5020977059';
+        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours
+        let taskState = 'init'; // 'init', 'verify', 'joined', 'cooldown'
         let cooldownEndTime = 0;
         let taskTimerInterval;
+        let hasOpenedChannel = false;
 
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
@@ -557,7 +557,7 @@
             const activeAddr = getActiveWalletAddress();
 
             if (btn.innerText === "START MINING" && !activeAddr) {
-                alert("ကျေးဇူးပြု၍ ပထမဆုံး Wallet ချိတ်ဆက်ပါ (Please connect your wallet first!)");
+                alert("Please connect your wallet first!");
                 return;
             }
 
@@ -635,7 +635,7 @@
         }
 
         /* ----------------------------------------------------
-           Task Tab Channel Join & 3-Hour Cooldown Functionality
+           Task Tab Channel Join & Verification System
         ------------------------------------------------------- */
         function initTaskState() {
             const savedCooldown = localStorage.getItem('grm_task_cooldown_' + currentUserId);
@@ -647,9 +647,10 @@
             if (cooldownEndTime && cooldownEndTime > now) {
                 startTaskCooldown(cooldownEndTime - now);
             } else {
-                const isJoined = localStorage.getItem('grm_task_joined_' + currentUserId);
-                if (isJoined === 'true') {
-                    setTaskButtonClaimState();
+                const isOpened = localStorage.getItem('grm_task_opened_' + currentUserId);
+                if (isOpened === 'true') {
+                    hasOpenedChannel = true;
+                    setTaskButtonVerifyState();
                 } else {
                     setTaskButtonJoinState();
                 }
@@ -663,6 +664,17 @@
                 btn.innerText = 'Join';
                 btn.disabled = false;
                 btn.style.backgroundColor = '#00f0ff';
+                btn.style.color = '#000';
+            }
+        }
+
+        function setTaskButtonVerifyState() {
+            taskState = 'verify';
+            const btn = document.getElementById('task-channel-btn');
+            if (btn) {
+                btn.innerText = 'Verify Check';
+                btn.disabled = false;
+                btn.style.backgroundColor = '#ffb400';
                 btn.style.color = '#000';
             }
         }
@@ -682,33 +694,46 @@
             const btn = document.getElementById('task-channel-btn');
             
             if (taskState === 'init') {
-                // Channel Link ကို ဖွင့်ပေးခြင်း
+                hasOpenedChannel = true;
+                localStorage.setItem('grm_task_opened_' + currentUserId, 'true');
+
                 if (tg && tg.openTelegramLink) {
                     tg.openTelegramLink(CHANNEL_LINK);
                 } else {
                     window.open(CHANNEL_LINK, '_blank');
                 }
                 
-                // Channel ဝင်ရန် Click ပြီးလျှင် Claim နိုင်မည့် State သို့ ပြောင်းလဲခြင်း
-                localStorage.setItem('grm_task_joined_' + currentUserId, 'true');
-                setTaskButtonClaimState();
+                setTaskButtonVerifyState();
+
+            } else if (taskState === 'verify') {
+                if (!hasOpenedChannel) {
+                    alert("Please click Join and subscribe to the channel first!");
+                    setTaskButtonJoinState();
+                    return;
+                }
+
+                // Verify client-side state
+                btn.innerText = "Checking...";
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    setTaskButtonClaimState();
+                }, 1200);
 
             } else if (taskState === 'joined') {
-                // 3 GRM Claim ယူပြီး Balance ပေါင်းထည့်ပေးခြင်း
+                // Claim reward
                 baseInitialBalance += 3;
                 currentBalance = baseInitialBalance;
                 document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
 
-                // Supabase Database တွင် Balance အသစ်ပြင်ဆင်ခြင်း
                 updateSupabaseField({ balance: baseInitialBalance });
 
-                alert("Congratulation! Received +3 GRM");
+                alert("Congratulations! Received +3 GRM");
 
-                // 3-Hour Cooldown စတင်ခြင်း (3:00:00)
                 const endTime = Date.now() + COOLDOWN_TIME;
                 cooldownEndTime = endTime;
                 localStorage.setItem('grm_task_cooldown_' + currentUserId, endTime.toString());
-                localStorage.removeItem('grm_task_joined_' + currentUserId);
+                localStorage.removeItem('grm_task_opened_' + currentUserId);
                 
                 updateSupabaseField({ cooldown_end_time: endTime });
                 startTaskCooldown(COOLDOWN_TIME);
@@ -729,6 +754,7 @@
                     clearInterval(taskTimerInterval);
                     localStorage.removeItem('grm_task_cooldown_' + currentUserId);
                     cooldownEndTime = 0;
+                    hasOpenedChannel = false;
                     setTaskButtonJoinState();
                     return;
                 }
