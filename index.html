@@ -314,6 +314,7 @@
             }
         }
 
+        // Default local/supabase task structure simulation
         let tasksList = JSON.parse(localStorage.getItem('grm_tasks_list')) || [
             { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', reward: 3 }
         ];
@@ -332,8 +333,8 @@
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
+                // Action button logic: show Join if not joined, or Claim with cooldown/status
                 let actionButtonHtml = '';
-                // အကယ်၍ Channel မ join ရသေးရင် (သို့မဟုတ် join ခလုတ်ကို နှိပ်ပြီးမှ ဝင်ရောက်လာရင်)
                 if (!claimData.joined) {
                     actionButtonHtml = `<button class="btn-join" onclick="handleJoinTask(${task.id}, '${task.link}')">Join</button>`;
                 } else {
@@ -373,10 +374,10 @@
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
             
-            // Join ခလုတ်နှိပ်ပြီးမှ joined ကို true ပြောင်းပေးသည်
             userTaskClaims[taskId].joined = true;
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
             
+            alert("Channel join status verified successfully! You can now claim your reward.");
             renderTasks();
         }
 
@@ -384,7 +385,6 @@
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             let claimData = userTaskClaims[taskId] || { joined: false, claimedTime: 0 };
 
-            // အကယ်၍ Channel မ join ရသေးဘူးဆိုရင် (joined က false ဖြစ်နေရင်)
             if (!claimData.joined) {
                 alert("Please join the channel first✅");
                 return;
@@ -397,7 +397,7 @@
                 return;
             }
 
-            // Reward ဖြည့်တင်းပေးခြင်း
+            // Reward user
             baseInitialBalance += reward;
             currentBalance = baseInitialBalance;
             document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
