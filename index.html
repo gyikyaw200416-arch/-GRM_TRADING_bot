@@ -14,10 +14,14 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
+        /* Sci-Fi Machinery Control Room Background */
         .app-bg { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: linear-gradient(rgba(7, 13, 24, 0.78), rgba(2, 5, 10, 0.88)), url('1000088562.jpg');
-            background-size: cover; background-position: center; background-repeat: no-repeat; z-index: -2; 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: -2; 
         }
 
         .tech-bg-overlay {
@@ -27,6 +31,7 @@
             z-index: -1; pointer-events: none;
         }
 
+        /* Splash Screen */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #070d18; display: flex; flex-direction: column;
@@ -42,10 +47,12 @@
         .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
+        /* Main Container */
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        /* Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
         .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: rgba(13, 22, 38, 0.9); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 10px rgba(0,240,255,0.1); backdrop-filter: blur(5px); }
         .lvl-badge { background: #132744; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); }
@@ -65,18 +72,39 @@
                         linear-gradient(135deg, #0d213f 0%, #03070f 100%);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
             box-shadow: 0 0 40px rgba(0, 240, 255, 0.5), inset 0 0 25px rgba(0, 240, 255, 0.5); 
-            border: 3px solid #00f0ff; position: relative; transition: transform 0.1s ease;
+            border: 3px solid #00f0ff;
+            position: relative;
+            transition: transform 0.1s ease;
         }
+        
         .coin-box::before {
-            content: ''; position: absolute; top: -8px; left: -8px; right: -8px; bottom: -8px;
-            border-radius: 50%; border: 1px dashed rgba(0, 240, 255, 0.7); animation: spinRing 20s linear infinite;
+            content: '';
+            position: absolute;
+            top: -8px; left: -8px; right: -8px; bottom: -8px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 240, 255, 0.7);
+            animation: spinRing 20s linear infinite;
         }
+
         .coin-box::after {
-            content: ''; position: absolute; top: -15px; left: -15px; right: -15px; bottom: -15px;
-            border-radius: 50%; border: 2px solid rgba(255, 180, 0, 0.4); border-top-color: transparent; animation: spinRingReverse 15s linear infinite;
+            content: '';
+            position: absolute;
+            top: -15px; left: -15px; right: -15px; bottom: -15px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 180, 0, 0.4);
+            border-top-color: transparent;
+            animation: spinRingReverse 15s linear infinite;
         }
-        @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spinRingReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+
+        @keyframes spinRing {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spinRingReverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
 
         .coin-box.mining-anim { animation: pulseCoin 1.5s infinite; }
         @keyframes pulseCoin {
@@ -89,18 +117,25 @@
             width: 154px; height: 154px; border-radius: 50%;
             background: radial-gradient(circle, #102d4f 0%, #040914 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border: 2px solid rgba(255, 180, 0, 0.7); box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.6);
-            position: relative; overflow: hidden;
+            border: 2px solid rgba(255, 180, 0, 0.7);
+            box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.6);
+            position: relative;
+            overflow: hidden;
         }
+
         .coin-gear-icon { font-size: 30px; margin-bottom: 4px; filter: drop-shadow(0 0 10px #00f0ff); }
         .coin-inner-text { font-size: 26px; font-weight: 900; color: #ffb400; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255, 180, 0, 0.8); }
         
         .claim-btn {
-            background: linear-gradient(135deg, #238636 0%, #2ea043 100%); color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
-            font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px; letter-spacing: 1px;
+            background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+            color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px;
+            letter-spacing: 1px;
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
+        /* Miners Grid & Cards */
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .miner-card { background: rgba(13, 20, 33, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; backdrop-filter: blur(5px); }
         .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
@@ -109,7 +144,8 @@
         
         .engine-img-box {
             width: 100%; height: 80px; background: #0f1624; border-radius: 8px;
-            display: flex; justify-content: center; align-items: center; margin-bottom: 8px; overflow: hidden; border: 1px solid rgba(0, 240, 255, 0.2);
+            display: flex; justify-content: center; align-items: center; margin-bottom: 8px;
+            overflow: hidden; border: 1px solid rgba(0, 240, 255, 0.2);
         }
         .engine-img-box img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px #00f0ff); }
 
@@ -126,9 +162,9 @@
         .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
         .action-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
-        /* Task Specific Styles */
-        .task-card { display: flex; justify-content: space-between; align-items: center; background: rgba(13, 22, 38, 0.88); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-        .task-timer-btn { background: #1f293d; color: #8b949e; border: 1px solid #334155; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: not-allowed; }
+        /* Admin Add Task Panel Styles */
+        .admin-panel { background: rgba(20, 10, 30, 0.95); border: 1px solid #ffb400; padding: 12px; border-radius: 10px; margin-bottom: 12px; }
+        .admin-input { width: 100%; padding: 8px; margin-bottom: 8px; background: #070d18; border: 1px solid rgba(0,240,255,0.4); color: #fff; border-radius: 6px; font-size: 12px; }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
@@ -153,7 +189,6 @@
     </div>
 
     <div class="main-container">
-        <!-- MINE TAB -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
@@ -184,39 +219,37 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
-        <!-- TASKS TAB -->
+        <!-- Tasks Tab -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Channel Joins</span></div>
             
-            <!-- Admin Panel Add Task (Visible only for User ID: 5020977059) -->
-            <div id="admin-task-creator" class="card" style="display:none; border: 1px dashed #00f0ff; background: rgba(0, 240, 255, 0.05);">
-                <h4 style="color: #00f0ff; font-size: 13px; margin-bottom: 8px;">⚙️ Admin: Add New Channel Task</h4>
-                <input type="text" id="new-task-title" placeholder="Channel Task Name (e.g. Join VIP Channel)" style="width:1px; width:100%; padding:8px; margin-bottom:6px; background:#070d18; border:1px solid #334155; color:#fff; border-radius:6px; font-size:12px;">
-                <input type="text" id="new-task-link" placeholder="Telegram Link (e.g. https://t.me/WORLDBESTCRYPTO)" style="width:100%; padding:8px; margin-bottom:8px; background:#070d18; border:1px solid #334155; color:#fff; border-radius:6px; font-size:12px;">
-                <button class="action-btn" style="width:100%; padding:8px;" onclick="addNewCustomTask()">Add Task</button>
+            <!-- Admin Only Add Task Section (User ID: 5020977059 သာ မြင်ရမည်) -->
+            <div id="admin-task-container" style="display: none;">
+                <div class="admin-panel">
+                    <h4 style="color: #ffb400; font-size: 13px; margin-bottom: 8px;">⚙️ Admin Add Task Panel</h4>
+                    <input type="text" id="admin-task-title" class="admin-input" placeholder="Task Title (e.g. Join VIP Channel)">
+                    <input type="text" id="admin-task-link" class="admin-input" placeholder="Telegram Channel Link (e.g. https://t.me/yourchannel)">
+                    <button class="action-btn" style="width: 100%; background: #ffb400; color: #000;" onclick="addNewDynamicTask()">Add New Task</button>
+                </div>
             </div>
 
+            <!-- Dynamic Tasks Container (အဟောင်းရော အသစ်ထည့်သမျှပါ ပေါ်နေစေရန်) -->
             <div id="tasks-list-container">
-                <!-- Default Channel Task -->
-                <div class="task-card" id="task-default-channel">
+                <div class="card profile-row" id="default-task-card">
                     <div>
-                        <strong style="font-size: 13px;">Join Official Telegram Channel</strong>
-                        <p style="font-size: 11px; color: #00f0ff;">Earn +1 GRM</p>
+                        <strong id="default-task-title">Join Official Telegram Channel</strong>
+                        <p style="font-size: 12px; color: #8b949e;" id="default-task-reward">Earn +3 GRM</p>
                     </div>
-                    <div id="task-action-area-default">
-                        <button class="action-btn" onclick="handleJoinChannelTask('default', 'https://t.me/WORLDBESTCRYPTO')">Join</button>
-                    </div>
+                    <button class="action-btn" id="default-task-btn" onclick="handleTaskJoinClick()">Join</button>
                 </div>
             </div>
         </div>
 
-        <!-- MINERS TAB -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar"><span>Jet Engine Miner Store (1 - 30)</span></div>
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
-        <!-- FRIENDS TAB -->
         <div id="tab-friends" class="tab-content">
             <div class="top-bar"><span>Friends & Referrals</span></div>
             <div class="card" style="text-align: center; padding: 25px;">
@@ -225,7 +258,6 @@
             </div>
         </div>
 
-        <!-- PROFILE TAB -->
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span>Profile</span>
@@ -235,13 +267,9 @@
                 <div>Account Status</div>
                 <div class="verified-badge" id="profile-verified-badge">Unverified ❌</div>
             </div>
-            <div class="card" style="font-size: 12px; color: #8b949e;">
-                Telegram Numeric ID: <span id="display-numeric-id" style="color: #00f0ff; font-weight: bold;">-</span>
-            </div>
         </div>
     </div>
 
-    <!-- BOTTOM NAV -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">✈️</span><span>Mine</span></button>
         <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
@@ -255,29 +283,24 @@
         tg.expand();
 
         let currentUserId = '';
-        let currentNumericId = '';
         let currentUserName = 'Miner';
+        let rawNumericTgId = '';
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
-            currentNumericId = String(tg.initDataUnsafe.user.id);
-            currentUserId = 'tg_' + currentNumericId;
+            rawNumericTgId = String(tg.initDataUnsafe.user.id);
+            currentUserId = 'tg_' + rawNumericTgId;
             currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
             localStorage.setItem('grm_saved_user_id', currentUserId);
-            localStorage.setItem('grm_saved_numeric_id', currentNumericId);
             localStorage.setItem('grm_saved_username', currentUserName);
+            localStorage.setItem('grm_numeric_id', rawNumericTgId);
         } else {
-            currentNumericId = localStorage.getItem('grm_saved_numeric_id') || '5020977059'; // Test fallback
-            currentUserId = localStorage.getItem('grm_saved_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
+            currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
             currentUserName = localStorage.getItem('grm_saved_username') || 'Shadow';
+            rawNumericTgId = localStorage.getItem('grm_numeric_id') || '';
+            localStorage.setItem('grm_user_id', currentUserId);
         }
 
         document.getElementById('telegram-username').innerText = currentUserName + ' ✈️';
-        document.getElementById('display-numeric-id').innerText = currentNumericId;
-
-        // Check if user ID is 5020977059 to show admin task creator
-        if (currentNumericId === '5020977059') {
-            document.getElementById('admin-task-creator').style.display = 'block';
-        }
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
@@ -303,218 +326,193 @@
         let miningInterval;
         let miningStartTime = Date.now();
 
-        // Tasks system state mapping
-        let userTaskTimers = JSON.parse(localStorage.getItem('grm_task_timers_' + currentUserId) || '{}');
-        let customTasksList = JSON.parse(localStorage.getItem('grm_custom_tasks_global') || '[]');
+        // Task Timer Settings (3 Hours = 10800 seconds)
+        let taskCooldownEnd = 0; 
+        let taskTimerInterval = null;
+        const CHANNEL_URL = "https://t.me/WORLDBESTCRYPTO"; // သင်အမှန်တကယ် join စေချင်သော Channel Link
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            renderMinersStore();
-            renderTasksUI();
-            await loadUserDataFromSupabase();
-            setTimeout(hideSplashScreen, 1000);
-            startAutoMiningUI();
-            startTaskTimersTicker();
-        });
+        function checkAdminVisibility() {
+            const adminContainer = document.getElementById('admin-task-container');
+            // ID '5020977059' ဖြစ်မှသာ Admin Panel ပေါ်မည်
+            if (rawNumericTgId === '5020977059') {
+                if (adminContainer) adminContainer.style.display = 'block';
+            } else {
+                if (adminContainer) adminContainer.style.display = 'none';
+            }
+        }
+
+        function handleTaskJoinClick() {
+            const btn = document.getElementById('default-task-btn');
+            if (btn.innerText === "Join") {
+                // Channel သို့ ပို့ပေးမည်
+                window.open(CHANNEL_URL, '_blank');
+                btn.innerText = "Claim (3 GRM)";
+                btn.style.background = "#2ea043";
+            } else if (btn.innerText.includes("Claim")) {
+                // Claim လုပ်ဆောင်ချက်
+                baseInitialBalance += 3.00;
+                currentBalance = baseInitialBalance;
+                document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
+
+                // ၃ နာရီ (10800 စက္ကန့်) Timer စတင်မည်
+                taskCooldownEnd = Date.now() + (3 * 60 * 60 * 1000);
+                updateSupabaseField({ balance: baseInitialBalance, task_cooldown_end: taskCooldownEnd });
+                startTaskTimerUI();
+            }
+        }
+
+        function startTaskTimerUI() {
+            const btn = document.getElementById('default-task-btn');
+            if (taskTimerInterval) clearInterval(taskTimerInterval);
+
+            taskTimerInterval = setInterval(() => {
+                const now = Date.now();
+                const timeLeft = taskCooldownEnd - now;
+
+                if (timeLeft <= 0) {
+                    clearInterval(taskTimerInterval);
+                    btn.innerText = "Join";
+                    btn.disabled = false;
+                    btn.style.background = "#00f0ff";
+                    btn.style.color = "#000";
+                } else {
+                    btn.disabled = true;
+                    btn.style.background = "#333";
+                    btn.style.color = "#777";
+                    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    btn.innerText = `Next in ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+                }
+            }, 1000);
+        }
+
+        function addNewDynamicTask() {
+            const title = document.getElementById('admin-task-title').value.trim();
+            const link = document.getElementById('admin-task-link').value.trim();
+            if (!title || !link) {
+                alert("Please fill both task title and link!");
+                return;
+            }
+
+            const container = document.getElementById('tasks-list-container');
+            const newTaskCard = document.createElement('div');
+            newTaskCard.className = 'card profile-row';
+            newTaskCard.innerHTML = `
+                <div>
+                    <strong>${title}</strong>
+                    <p style="font-size: 12px; color: #8b949e;">Earn +3 GRM</p>
+                </div>
+                <button class="action-btn" onclick="window.open('${link}', '_blank')">View</button>
+            `;
+            container.appendChild(newTaskCard);
+            alert("New Task added successfully!");
+            document.getElementById('admin-task-title').value = '';
+            document.getElementById('admin-task-link').value = '';
+        }
 
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
             if (!grid) return;
             let html = '';
+            
             for (let i = 1; i <= 30; i++) {
                 let price = (i * 1.00).toFixed(2);
                 let speed = (i * 0.5).toFixed(2);
                 let borderClass = i === 1 ? 'active-border' : (i === 2 ? 'unlock-border' : 'locked-border');
                 let btnClass = i === 1 ? 'badge-active' : (i === 2 ? 'badge-need' : 'badge-lock');
                 let btnText = i === 1 ? 'ACTIVE' : (i === 2 ? 'BUY NOW' : 'LOCKED');
+
                 let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 
                 html += `
                     <div class="miner-card ${borderClass}">
-                        <div class="engine-img-box"><img src="${engineImg}" alt="Jet Engine"></div>
+                        <div class="engine-img-box">
+                            <img src="${engineImg}" alt="Jet Engine">
+                        </div>
                         <div class="lvl-text">Lvl ${i} Engine</div>
                         <div class="miner-price-box">${price}$</div>
                         <div class="miner-speed">Speed ${speed} TH/s</div>
                         <button class="status-badge ${btnClass}" onclick="buyMiner(${i}, ${price})">${btnText}</button>
-                    </div>`;
+                    </div>
+                `;
             }
             grid.innerHTML = html;
         }
 
         function buyMiner(level, price) {
-            if (level === 1) alert("Level 1 Engine is already active!");
-            else if (level === 2) alert("Purchasing Level 2 Jet Engine for $" + price);
-            else alert("Please unlock previous levels first!");
-        }
-
-        // Tasks Rendering & Management with 3-hour cooldown timer
-        function renderTasksUI() {
-            const container = document.getElementById('tasks-list-container');
-            if (!container) return;
-
-            let html = `
-                <div class="task-card" id="task-default-channel">
-                    <div>
-                        <strong style="font-size: 13px;">Join Official Telegram Channel</strong>
-                        <p style="font-size: 11px; color: #00f0ff;">Earn +1 GRM</p>
-                    </div>
-                    <div id="task-action-area-default">
-                        ${getTaskButtonHTML('default', 'https://t.me/WORLDBESTCRYPTO')}
-                    </div>
-                </div>
-            `;
-
-            // Render custom admin tasks if any
-            customTasksList.forEach((t, idx) => {
-                html += `
-                    <div class="task-card" id="task-custom-${idx}">
-                        <div>
-                            <strong style="font-size: 13px;">${t.title}</strong>
-                            <p style="font-size: 11px; color: #00f0ff;">Earn +1 GRM</p>
-                        </div>
-                        <div id="task-action-area-custom-${idx}">
-                            ${getTaskButtonHTML('custom_' + idx, t.link)}
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function getTaskButtonHTML(taskId, link) {
-            let now = Date.now();
-            let expireTime = userTaskTimers[taskId] || 0;
-
-            if (expireTime > now) {
-                // Timer is active (3 hours cooldown)
-                let remainingSec = Math.ceil((expireTime - now) / 1000);
-                let hours = Math.floor(remainingSec / 3600);
-                let mins = Math.floor((remainingSec % 3600) / 60);
-                let secs = remainingSec % 60;
-                let timeStr = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-                return `<button class="task-timer-btn">Next in ${timeStr}</button>`;
-            } else if (expireTime === -1) {
-                // User has clicked Join, waiting for Claim verification
-                return `<button class="action-btn" style="background:#2ea043; color:#fff;" onclick="claimTaskReward('${taskId}')">Claim +1 GRM</button>`;
+            if (level === 1) {
+                alert("Level 1 Engine is already active!");
+            } else if (level === 2) {
+                alert("Purchasing Level 2 Jet Engine for $" + price);
             } else {
-                // Available to join
-                return `<button class="action-btn" onclick="handleJoinChannelTask('${taskId}', '${link}')">Join</button>`;
+                alert("Please unlock previous levels first!");
             }
-        }
-
-        function handleJoinChannelTask(taskId, link) {
-            // Open Telegram Channel link
-            window.open(link, '_blank');
-            
-            // Set state to pending claim verification (-1 means joined, ready to claim)
-            userTaskTimers[taskId] = -1;
-            localStorage.setItem('grm_task_timers_' + currentUserId, JSON.stringify(userTaskTimers));
-            renderTasksUI();
-        }
-
-        function claimTaskReward(taskId) {
-            // Reward +1 GRM
-            baseInitialBalance += 1.000000;
-            currentBalance = baseInitialBalance;
-            document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
-
-            // Set 3 hours cooldown from now (3 * 3600 * 1000 ms)
-            let cooldownTime = Date.now() + (3 * 60 * 60 * 1000);
-            userTaskTimers[taskId] = cooldownTime;
-            localStorage.setItem('grm_task_timers_' + currentUserId, JSON.stringify(userTaskTimers));
-
-            updateSupabaseField({ balance: baseInitialBalance });
-            renderTasksUI();
-            alert("Successfully claimed +1 GRM! Next task will appear in 3 hours.");
-        }
-
-        function startTaskTimersTicker() {
-            setInterval(() => {
-                let needsRe-render = false;
-                let now = Date.now();
-                for (let key in userTaskTimers) {
-                    if (userTaskTimers[key] > 0 && userTaskTimers[key] <= now) {
-                        userTaskTimers[key] = 0; // Timer expired, make task available again
-                        needsReRender = true;
-                    }
-                }
-                if (needsReRender) {
-                    localStorage.setItem('grm_task_timers_' + currentUserId, JSON.stringify(userTaskTimers));
-                    renderTasksUI();
-                } else {
-                    // Update countdown text elements without full re-render for smooth experience
-                    for (let key in userTaskTimers) {
-                        if (userTaskTimers[key] > now) {
-                            let remainingSec = Math.ceil((userTaskTimers[key] - now) / 1000);
-                            let hours = Math.floor(remainingSec / 3600);
-                            let mins = Math.floor((remainingSec % 3600) / 60);
-                            let secs = remainingSec % 60;
-                            let timeStr = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-                            
-                            let areaId = key.startsWith('custom_') ? 'task-action-area-' + key : 'task-action-area-default';
-                            let areaElem = document.getElementById(areaId);
-                            if (areaElem) {
-                                let btn = areaElem.querySelector('.task-timer-btn');
-                                if (btn) btn.innerText = `Next in ${timeStr}`;
-                            }
-                        }
-                    }
-                }
-            }, 1000);
-        }
-
-        function addNewCustomTask() {
-            if (currentNumericId !== '5020977059') {
-                alert("Unauthorized action!");
-                return;
-            }
-            const titleInput = document.getElementById('new-task-title');
-            const linkInput = document.getElementById('new-task-link');
-            
-            if (!titleInput.value || !linkInput.value) {
-                alert("Please fill in both title and link!");
-                return;
-            }
-
-            customTasksList.push({
-                title: titleInput.value,
-                link: linkInput.value
-            });
-            localStorage.setItem('grm_custom_tasks_global', JSON.stringify(customTasksList));
-            
-            titleInput.value = '';
-            linkInput.value = '';
-            renderTasksUI();
-            alert("New task added successfully!");
         }
 
         function extractUserFriendlyAddress(walletObj) {
             if (!walletObj) return null;
             try {
-                if (walletObj.account && walletObj.account.userFriendlyAddress) return walletObj.account.userFriendlyAddress;
-                if (walletObj.userFriendlyAddress) return walletObj.userFriendlyAddress;
+                if (walletObj.account && walletObj.account.userFriendlyAddress) {
+                    return walletObj.account.userFriendlyAddress;
+                }
+                if (walletObj.userFriendlyAddress) {
+                    return walletObj.userFriendlyAddress;
+                }
                 let rawAddr = (walletObj.account && walletObj.account.address) ? walletObj.account.address : walletObj.address;
                 if (rawAddr) {
                     if (typeof TON_CONNECT_UI !== 'undefined' && TON_CONNECT_UI.toUserFriendlyAddress) {
-                        let isTestnet = (walletObj.account && walletObj.account.chain && walletObj.account.chain.toString() === '-3');
+                        let isTestnet = false;
+                        if (walletObj.account && walletObj.account.chain && walletObj.account.chain.toString() === '-3') {
+                            isTestnet = true;
+                        }
                         return TON_CONNECT_UI.toUserFriendlyAddress(rawAddr, isTestnet);
                     }
                     return rawAddr;
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Error formatting address:", e);
+            }
             return null;
         }
 
         function getActiveWalletAddress() {
             try {
-                if (tonConnectUI && tonConnectUI.wallet) return extractUserFriendlyAddress(tonConnectUI.wallet);
-            } catch (e) { console.error(e); }
+                if (tonConnectUI && tonConnectUI.wallet) {
+                    return extractUserFriendlyAddress(tonConnectUI.wallet);
+                }
+            } catch (e) {
+                console.error("Error reading active wallet:", e);
+            }
             return null;
         }
 
+        window.addEventListener('DOMContentLoaded', async () => {
+            renderMinersStore();
+            checkAdminVisibility();
+            await loadUserDataFromSupabase();
+            setTimeout(hideSplashScreen, 1000);
+            startAutoMiningUI();
+        });
+
         tonConnectUI.onStatusChange(async (walletInfo) => {
-            let addressToSave = walletInfo ? extractUserFriendlyAddress(walletInfo) : getActiveWalletAddress();
-            await updateSupabaseField({ wallet_address: addressToSave || null });
+            let addressToSave = null;
+            try {
+                if (walletInfo) {
+                    addressToSave = extractUserFriendlyAddress(walletInfo);
+                }
+                if (!addressToSave) {
+                    addressToSave = getActiveWalletAddress();
+                }
+            } catch (err) {
+                console.error("Wallet status change error:", err);
+            }
+
+            if (addressToSave) {
+                await updateSupabaseField({ wallet_address: addressToSave });
+            } else {
+                await updateSupabaseField({ wallet_address: null });
+            }
             checkWalletAndButtonState();
         });
 
@@ -541,6 +539,7 @@
         function checkWalletAndButtonState() {
             const btn = document.getElementById('mining-action-btn');
             const activeAddr = getActiveWalletAddress();
+            
             if (!isMining && btn.innerText === "START MINING" && !activeAddr) {
                 btn.disabled = true;
                 btn.title = "Please connect your wallet first!";
@@ -554,10 +553,21 @@
             if (!_supabase) return;
             try {
                 fields.updated_at = new Date().toISOString();
-                const { data: existing } = await _supabase.from('grm_users').select('user_id, wallet_address').eq('user_id', currentUserId).maybeSingle();
+                
+                const { data: existing } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, wallet_address')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
                 if (existing) {
-                    if (fields.wallet_address === null && existing.wallet_address) delete fields.wallet_address;
-                    await _supabase.from('grm_users').update(fields).eq('user_id', currentUserId);
+                    if (fields.wallet_address === null && existing.wallet_address) {
+                        delete fields.wallet_address;
+                    }
+                    await _supabase
+                        .from('grm_users')
+                        .update(fields)
+                        .eq('user_id', currentUserId);
                 } else {
                     fields.user_id = currentUserId;
                     fields.username = currentUserName;
@@ -565,25 +575,46 @@
                     fields.mined_amount = 0;
                     fields.mining_state = 'mining';
                     fields.is_verified = false;
+                    
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
-                        if (activeAddr) fields.wallet_address = activeAddr;
+                        if (activeAddr) {
+                            fields.wallet_address = activeAddr;
+                        }
                     }
-                    await _supabase.from('grm_users').insert([fields]);
+
+                    await _supabase
+                        .from('grm_users')
+                        .insert([fields]);
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                console.error('Supabase update general error:', err);
+            }
         }
 
         async function loadUserDataFromSupabase() {
             if (!_supabase) return;
             try {
-                const { data } = await _supabase.from('grm_users').select('*').eq('user_id', currentUserId).maybeSingle();
+                const { data } = await _supabase
+                    .from('grm_users')
+                    .select('*')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
                 const verifiedBadge = document.getElementById('profile-verified-badge');
+
                 if (data) {
                     baseInitialBalance = parseFloat(data.balance) || 0.860085;
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
+                    taskCooldownEnd = parseInt(data.task_cooldown_end) || 0;
+
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
+
+                    // Task Timer Check
+                    if (taskCooldownEnd > Date.now()) {
+                        startTaskTimerUI();
+                    }
 
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
@@ -594,12 +625,17 @@
                         verifiedBadge.style.backgroundColor = "#da3633";
                         verifiedBadge.style.color = "#ffffff";
                     }
+
                     if (!data.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
-                        if (activeAddr) await updateSupabaseField({ wallet_address: activeAddr });
+                        if (activeAddr) {
+                            await updateSupabaseField({ wallet_address: activeAddr });
+                        }
                     }
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                console.error('Load user data exception:', err);
+            }
             checkWalletAndButtonState();
         }
 
@@ -624,7 +660,10 @@
                 btn.style.color = "#fff";
                 btn.disabled = false;
                 
-                if (statusBadge) { statusBadge.innerText = "MINING AUTO"; statusBadge.style.color = "#2ea043"; }
+                if (statusBadge) {
+                    statusBadge.innerText = "MINING AUTO";
+                    statusBadge.style.color = "#2ea043";
+                }
                 if (coinBox) coinBox.classList.add('mining-anim');
 
                 updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime });
@@ -670,7 +709,10 @@
             btn.style.color = "#fff";
             btn.disabled = false;
 
-            if (statusBadge) { statusBadge.innerText = "MINING AUTO"; statusBadge.style.color = "#2ea043"; }
+            if (statusBadge) {
+                statusBadge.innerText = "MINING AUTO";
+                statusBadge.style.color = "#2ea043";
+            }
             if (coinBox) coinBox.classList.add('mining-anim');
 
             if (miningInterval) clearInterval(miningInterval);
