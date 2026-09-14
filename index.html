@@ -314,13 +314,10 @@
             }
         }
 
-        // Default tasks list (Official Channel သီးသန့်ထားရှိခြင်း)
-        let defaultTasks = [
+        // Default task structure simulation with official channel
+        let tasksList = JSON.parse(localStorage.getItem('grm_tasks_list')) || [
             { id: 1, title: 'OFFICIAL CHANNEL', link: 'https://t.me/GRM_TRADING', reward: 3 }
         ];
-
-        let savedTasks = JSON.parse(localStorage.getItem('grm_tasks_list'));
-        let tasksList = (savedTasks && savedTasks.length > 0) ? savedTasks : defaultTasks;
 
         function renderTasks() {
             const container = document.getElementById('tasks-list-container');
@@ -336,22 +333,26 @@
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
-                let joinBtnText = claimData.joined ? 'Joined ✔️' : 'Join';
-                let joinBtnStyle = claimData.joined ? 'background:#238636;' : '';
+                let actionButtonHtml = '';
 
-                // Channel မ join ရသေးရင် Claim ခလုတ်ကို လုံးဝ မပြဘဲ (သို့) ဖုံးထားရန် / Disable လုပ်ရန်
-                let claimBtnHtml = '';
                 if (!claimData.joined) {
-                    // မ join ရသေးရင် Claim ခလုတ်မပေါ်စေဘဲ Join ဖို့ပဲပြမယ်
+                    // Step 1: Show Join button first
+                    actionButtonHtml = `<button class="btn-join" onclick="handleJoinTask(${task.id}, '${task.link}')">Join</button>`;
+                } else if (claimData.claimedTime > 0 && !canClaimAgain) {
+                    // Cooldown active display
+                    let timeLeft = Math.ceil((cooldownTime - timePassed) / (1000 * 60));
+                    let hoursLeft = Math.floor(timeLeft / 60);
+                    let minsLeft = timeLeft % 60;
+                    actionButtonHtml = `
+                        <button class="btn-join" style="background:#238636;" disabled>Joined ✔️</button>
+                        <button class="btn-claim" disabled>Wait ${hoursLeft}h ${minsLeft}m</button>
+                    `;
                 } else {
-                    if (!canClaimAgain) {
-                        let timeLeft = Math.ceil((cooldownTime - timePassed) / (1000 * 60));
-                        let hoursLeft = Math.floor(timeLeft / 60);
-                        let minsLeft = timeLeft % 60;
-                        claimBtnHtml = `<button class="btn-claim" disabled>Wait ${hoursLeft}h ${minsLeft}m</button>`;
-                    } else {
-                        claimBtnHtml = `<button class="btn-claim" onclick="handleClaimTask(${task.id}, ${task.reward})">Claim (+${task.reward} GRM)</button>`;
-                    }
+                    // Joined and ready or cooldown finished -> show Claim button
+                    actionButtonHtml = `
+                        <button class="btn-join" style="background:#238636;" onclick="handleJoinTask(${task.id}, '${task.link}')">Joined ✔️</button>
+                        <button class="btn-claim" onclick="handleClaimTask(${task.id}, ${task.reward})">Claim</button>
+                    `;
                 }
 
                 let deleteBtnHtml = (rawTelegramId === '5020977059') ? `<button class="btn-delete" onclick="deleteTask(${task.id})">🗑️</button>` : '';
@@ -363,8 +364,7 @@
                             <p>Earn +${task.reward} GRM (Every 3 Hours)</p>
                         </div>
                         <div class="task-actions">
-                            <button class="btn-join" style="${joinBtnStyle}" onclick="handleJoinTask(${task.id}, '${task.link}')">${joinBtnText}</button>
-                            ${claimBtnHtml}
+                            ${actionButtonHtml}
                             ${deleteBtnHtml}
                         </div>
                     </div>
@@ -377,15 +377,13 @@
         async function handleJoinTask(taskId, url) {
             window.open(url, '_blank');
             
-            // Simulating Bot checking membership
+            // Mark as joined and reveal claim button state
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
             
-            // Set joined to true to reveal the Claim button
             userTaskClaims[taskId].joined = true;
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
             
-            alert("Channel join status verified! Claim ခလုတ်ပေါ်လာပါပြီ။");
             renderTasks();
         }
 
@@ -394,18 +392,18 @@
             let claimData = userTaskClaims[taskId] || { joined: false, claimedTime: 0 };
 
             if (!claimData.joined) {
-                alert("ကျေးဇူးပြု၍ Channel ကို ဦးစွာ Join ပါ (Please join the channel first!)");
+                alert("Please join the channel first!");
                 return;
             }
 
             let now = Date.now();
             let cooldownTime = 3 * 60 * 60 * 1000;
             if (claimData.claimedTime !== 0 && (now - claimData.claimedTime) < cooldownTime) {
-                alert("၃ နာရီအတွင်း တစ်ကြိမ်သာ Claim နိုင်ပါသည် (Cooldown active!)");
+                alert("Cooldown active! Please wait 3 hours.");
                 return;
             }
 
-            // Reward user
+            // Reward user & trigger 3 hours countdown
             baseInitialBalance += reward;
             currentBalance = baseInitialBalance;
             document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
@@ -414,7 +412,6 @@
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
 
             updateSupabaseField({ balance: baseInitialBalance });
-            alert("Successfully claimed +" + reward + " GRM!");
             renderTasks();
         }
 
@@ -605,7 +602,7 @@
             const activeAddr = getActiveWalletAddress();
 
             if (btn.innerText === "START MINING" && !activeAddr) {
-                alert("ကျေးဇူးပြု၍ ပထမဆုံး Wallet ချိတ်ဆက်ပါ!");
+                alert("Please connect your wallet first!");
                 return;
             }
 
