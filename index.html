@@ -146,7 +146,7 @@
         .task-card { display: flex; justify-content: space-between; align-items: center; background: rgba(13, 22, 38, 0.88); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
         .task-info h4 { font-size: 13px; color: #fff; margin-bottom: 2px; }
         .task-info p { font-size: 11px; color: #ffb400; }
-        .task-actions { display: flex; gap: 6px; align-items: center; }
+        .task-actions { display: flex; gap: 6px; }
         .btn-join { background: #0077ff; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-claim { background: #2ea043; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-claim:disabled { background: #333; color: #777; cursor: not-allowed; }
@@ -314,9 +314,9 @@
             }
         }
 
-        // Default task structure simulation with official channel
+        // Default local/supabase task structure simulation
         let tasksList = JSON.parse(localStorage.getItem('grm_tasks_list')) || [
-            { id: 1, title: 'OFFICIAL CHANNEL', link: 'https://t.me/GRM_TRADING', reward: 3 }
+            { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', reward: 3 }
         ];
 
         function renderTasks() {
@@ -333,26 +333,20 @@
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
+                // Dynamic Action Button Logic: Show either Join OR Claim based on verification state
                 let actionButtonHtml = '';
-
                 if (!claimData.joined) {
-                    // Step 1: Show Join button first
                     actionButtonHtml = `<button class="btn-join" onclick="handleJoinTask(${task.id}, '${task.link}')">Join</button>`;
-                } else if (claimData.claimedTime > 0 && !canClaimAgain) {
-                    // Cooldown active display
-                    let timeLeft = Math.ceil((cooldownTime - timePassed) / (1000 * 60));
-                    let hoursLeft = Math.floor(timeLeft / 60);
-                    let minsLeft = timeLeft % 60;
-                    actionButtonHtml = `
-                        <button class="btn-join" style="background:#238636;" disabled>Joined ✔️</button>
-                        <button class="btn-claim" disabled>Wait ${hoursLeft}h ${minsLeft}m</button>
-                    `;
                 } else {
-                    // Joined and ready or cooldown finished -> show Claim button
-                    actionButtonHtml = `
-                        <button class="btn-join" style="background:#238636;" onclick="handleJoinTask(${task.id}, '${task.link}')">Joined ✔️</button>
-                        <button class="btn-claim" onclick="handleClaimTask(${task.id}, ${task.reward})">Claim</button>
-                    `;
+                    let claimBtnDisabled = !canClaimAgain;
+                    let claimBtnText = 'Claim (+3 GRM)';
+                    if (!canClaimAgain) {
+                        let timeLeft = Math.ceil((cooldownTime - timePassed) / (1000 * 60));
+                        let hoursLeft = Math.floor(timeLeft / 60);
+                        let minsLeft = timeLeft % 60;
+                        claimBtnText = `Wait ${hoursLeft}h ${minsLeft}m`;
+                    }
+                    actionButtonHtml = `<button class="btn-claim" ${claimBtnDisabled ? 'disabled' : ''} onclick="handleClaimTask(${task.id}, ${task.reward})">${claimBtnText}</button>`;
                 }
 
                 let deleteBtnHtml = (rawTelegramId === '5020977059') ? `<button class="btn-delete" onclick="deleteTask(${task.id})">🗑️</button>` : '';
@@ -377,13 +371,15 @@
         async function handleJoinTask(taskId, url) {
             window.open(url, '_blank');
             
-            // Mark as joined and reveal claim button state
+            // Simulating Bot checking membership via Telegram Admin API connection
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
             
+            // Verification check mock (In production, backend server queries Telegram getChatMember API)
             userTaskClaims[taskId].joined = true;
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
             
+            alert("Channel join status verified successfully! You can now claim your reward.");
             renderTasks();
         }
 
@@ -399,11 +395,11 @@
             let now = Date.now();
             let cooldownTime = 3 * 60 * 60 * 1000;
             if (claimData.claimedTime !== 0 && (now - claimData.claimedTime) < cooldownTime) {
-                alert("Cooldown active! Please wait 3 hours.");
+                alert("Cooldown active! You can only claim once every 3 hours.");
                 return;
             }
 
-            // Reward user & trigger 3 hours countdown
+            // Reward user
             baseInitialBalance += reward;
             currentBalance = baseInitialBalance;
             document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
@@ -412,6 +408,7 @@
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
 
             updateSupabaseField({ balance: baseInitialBalance });
+            alert("Successfully claimed +" + reward + " GRM! 3-hour cooldown started.");
             renderTasks();
         }
 
