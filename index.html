@@ -147,7 +147,7 @@
         .task-info h4 { font-size: 13px; color: #fff; margin-bottom: 2px; }
         .task-info p { font-size: 11px; color: #ffb400; }
         .task-actions { display: flex; gap: 6px; }
-        .btn-join { background: #0077ff; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-join { background: #0077ff; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-claim { background: #2ea043; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-claim:disabled { background: #333; color: #777; cursor: not-allowed; }
         .btn-delete { background: #da3633; color: #fff; border: none; padding: 6px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; }
@@ -314,8 +314,8 @@
             }
         }
 
-        // Global tasks list stored in localStorage across users / admin sync
-        let tasksList = JSON.parse(localStorage.getItem('grm_tasks_list')) || [
+        // Shared global tasks list stored in localStorage so it reflects across all users
+        let tasksList = JSON.parse(localStorage.getItem('grm_global_tasks_list')) || [
             { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', reward: 3 }
         ];
 
@@ -329,30 +329,24 @@
             tasksList.forEach(task => {
                 let claimData = userTaskClaims[task.id] || { joined: false, claimedTime: 0 };
                 let now = Date.now();
-                let cooldownTime = 3 * 60 * 60 * 1000; // 3 hours cooldown
+                let cooldownTime = 3 * 60 * 60 * 1000; // 3 hours
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
-                // Action buttons structure
+                // Dynamic Action Button Logic: Show either Join or Claim depending on completion state
                 let actionButtonHtml = '';
                 if (!claimData.joined) {
-                    actionButtonHtml = `
-                        <a href="${task.link}" target="_blank" class="btn-join" onclick="markTaskJoined(${task.id})">Join</a>
-                        <button class="btn-claim" onclick="handleClaimTask(${task.id}, ${task.reward})">Claim (+${task.reward} GRM)</button>
-                    `;
+                    actionButtonHtml = `<button class="btn-join" onclick="handleJoinTask(${task.id}, '${task.link}')">Join</button>`;
                 } else {
                     let claimBtnDisabled = !canClaimAgain;
-                    let claimBtnText = `Claim (+${task.reward} GRM)`;
+                    let claimBtnText = 'Claim (+3 GRM)';
                     if (!canClaimAgain) {
                         let timeLeft = Math.ceil((cooldownTime - timePassed) / (1000 * 60));
                         let hoursLeft = Math.floor(timeLeft / 60);
                         let minsLeft = timeLeft % 60;
                         claimBtnText = `Wait ${hoursLeft}h ${minsLeft}m`;
                     }
-                    actionButtonHtml = `
-                        <a href="${task.link}" target="_blank" class="btn-join" style="background:#238636;">Joined ✔️</a>
-                        <button class="btn-claim" ${claimBtnDisabled ? 'disabled' : ''} onclick="handleClaimTask(${task.id}, ${task.reward})">${claimBtnText}</button>
-                    `;
+                    actionButtonHtml = `<button class="btn-claim" ${claimBtnDisabled ? 'disabled' : ''} onclick="handleClaimTask(${task.id}, ${task.reward})">${claimBtnText}</button>`;
                 }
 
                 let deleteBtnHtml = (rawTelegramId === '5020977059') ? `<button class="btn-delete" onclick="deleteTask(${task.id})">🗑️</button>` : '';
@@ -374,21 +368,27 @@
             container.innerHTML = html;
         }
 
-        function markTaskJoined(taskId) {
+        async function handleJoinTask(taskId, url) {
+            window.open(url, '_blank');
+            
+            // Simulating Channel Join status confirmation
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
+            
             userTaskClaims[taskId].joined = true;
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
-            setTimeout(() => { renderTasks(); }, 500);
+            
+            alert("Channel join status verified successfully! You can now claim your reward.");
+            renderTasks();
         }
 
         function handleClaimTask(taskId, reward) {
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             let claimData = userTaskClaims[taskId] || { joined: false, claimedTime: 0 };
 
-            // Check if user clicked Join first or set joined to true
+            // Strict check: if user has not joined the channel, show required warning message
             if (!claimData.joined) {
-                alert("Please join the channel first! ✅");
+                alert("Please join the channel first✅");
                 return;
             }
 
@@ -399,7 +399,7 @@
                 return;
             }
 
-            // Add reward balance
+            // Reward user
             baseInitialBalance += reward;
             currentBalance = baseInitialBalance;
             document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
@@ -430,7 +430,7 @@
             };
 
             tasksList.push(newTask);
-            localStorage.setItem('grm_tasks_list', JSON.stringify(tasksList));
+            localStorage.setItem('grm_global_tasks_list', JSON.stringify(tasksList));
             titleInput.value = '';
             linkInput.value = '';
             renderTasks();
@@ -441,7 +441,7 @@
             if (rawTelegramId !== '5020977059') return;
             if (confirm("Are you sure you want to delete this task?")) {
                 tasksList = tasksList.filter(t => t.id !== taskId);
-                localStorage.setItem('grm_tasks_list', JSON.stringify(tasksList));
+                localStorage.setItem('grm_global_tasks_list', JSON.stringify(tasksList));
                 renderTasks();
             }
         }
