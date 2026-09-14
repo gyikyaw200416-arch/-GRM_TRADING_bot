@@ -146,7 +146,7 @@
         .task-card { display: flex; justify-content: space-between; align-items: center; background: rgba(13, 22, 38, 0.88); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
         .task-info h4 { font-size: 13px; color: #fff; margin-bottom: 2px; }
         .task-info p { font-size: 11px; color: #ffb400; }
-        .task-actions { display: flex; gap: 6px; }
+        .task-actions { display: flex; gap: 6px; align-items: center; }
         .btn-join { background: #0077ff; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-claim { background: #2ea043; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-claim:disabled { background: #333; color: #777; cursor: not-allowed; }
@@ -314,10 +314,13 @@
             }
         }
 
-        // Default local/supabase task structure simulation
-        let tasksList = JSON.parse(localStorage.getItem('grm_tasks_list')) || [
-            { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', reward: 3 }
+        // Default tasks list (Official Channel သီးသန့်ထားရှိခြင်း)
+        let defaultTasks = [
+            { id: 1, title: 'OFFICIAL CHANNEL', link: 'https://t.me/GRM_TRADING', reward: 3 }
         ];
+
+        let savedTasks = JSON.parse(localStorage.getItem('grm_tasks_list'));
+        let tasksList = (savedTasks && savedTasks.length > 0) ? savedTasks : defaultTasks;
 
         function renderTasks() {
             const container = document.getElementById('tasks-list-container');
@@ -336,13 +339,19 @@
                 let joinBtnText = claimData.joined ? 'Joined ✔️' : 'Join';
                 let joinBtnStyle = claimData.joined ? 'background:#238636;' : '';
 
-                let claimBtnDisabled = !claimData.joined || !canClaimAgain;
-                let claimBtnText = 'Claim (' + task.reward + ' GRM)';
-                if (!canClaimAgain) {
-                    let timeLeft = Math.ceil((cooldownTime - timePassed) / (1000 * 60));
-                    let hoursLeft = Math.floor(timeLeft / 60);
-                    let minsLeft = timeLeft % 60;
-                    claimBtnText = `Wait ${hoursLeft}h ${minsLeft}m`;
+                // Channel မ join ရသေးရင် Claim ခလုတ်ကို လုံးဝ မပြဘဲ (သို့) ဖုံးထားရန် / Disable လုပ်ရန်
+                let claimBtnHtml = '';
+                if (!claimData.joined) {
+                    // မ join ရသေးရင် Claim ခလုတ်မပေါ်စေဘဲ Join ဖို့ပဲပြမယ်
+                } else {
+                    if (!canClaimAgain) {
+                        let timeLeft = Math.ceil((cooldownTime - timePassed) / (1000 * 60));
+                        let hoursLeft = Math.floor(timeLeft / 60);
+                        let minsLeft = timeLeft % 60;
+                        claimBtnHtml = `<button class="btn-claim" disabled>Wait ${hoursLeft}h ${minsLeft}m</button>`;
+                    } else {
+                        claimBtnHtml = `<button class="btn-claim" onclick="handleClaimTask(${task.id}, ${task.reward})">Claim (+${task.reward} GRM)</button>`;
+                    }
                 }
 
                 let deleteBtnHtml = (rawTelegramId === '5020977059') ? `<button class="btn-delete" onclick="deleteTask(${task.id})">🗑️</button>` : '';
@@ -355,7 +364,7 @@
                         </div>
                         <div class="task-actions">
                             <button class="btn-join" style="${joinBtnStyle}" onclick="handleJoinTask(${task.id}, '${task.link}')">${joinBtnText}</button>
-                            <button class="btn-claim" ${claimBtnDisabled ? 'disabled' : ''} onclick="handleClaimTask(${task.id}, ${task.reward})">${claimBtnText}</button>
+                            ${claimBtnHtml}
                             ${deleteBtnHtml}
                         </div>
                     </div>
@@ -368,15 +377,15 @@
         async function handleJoinTask(taskId, url) {
             window.open(url, '_blank');
             
-            // Simulating Bot checking membership via Telegram Admin API connection
+            // Simulating Bot checking membership
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
             
-            // Verification check mock (In production, backend server queries Telegram getChatMember API)
+            // Set joined to true to reveal the Claim button
             userTaskClaims[taskId].joined = true;
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
             
-            alert("Channel join status verified by Bot admin rights!");
+            alert("Channel join status verified! Claim ခလုတ်ပေါ်လာပါပြီ။");
             renderTasks();
         }
 
