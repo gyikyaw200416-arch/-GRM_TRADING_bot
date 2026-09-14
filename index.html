@@ -139,7 +139,7 @@
         .badge-lock { background-color: #1a2333; color: #8b949e; cursor: not-allowed; }
 
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
-        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; background-color: #da3633; color: #ffffff; }
         .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
 
         /* Task styling */
@@ -155,7 +155,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
-            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+            display: flex; justify-space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
@@ -284,7 +284,8 @@
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
-        
+        const BOT_TOKEN = '8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE';
+
         let _supabase = null;
         try {
             if (typeof supabase !== 'undefined') {
@@ -317,11 +318,9 @@
             { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', channelUsername: '@GRM_TRADING', reward: 3 }
         ];
 
-        // Telegram Bot API Check - Verifies true membership
+        // Telegram Bot API Direct Channel Member Check
         async function checkTelegramMembership(chatId, userId) {
             try {
-                // Ensure bot token is supplied or replace placeholder if needed
-                const BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE';
                 const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${chatId}&user_id=${userId}`);
                 const data = await response.json();
                 
@@ -329,7 +328,7 @@
                     return true;
                 }
             } catch (e) {
-                console.error("Verification error:", e);
+                console.error("Verification API Error:", e);
             }
             return false;
         }
@@ -344,14 +343,12 @@
             tasksList.forEach(task => {
                 let claimData = userTaskClaims[task.id] || { joined: false, claimedTime: 0 };
                 let now = Date.now();
-                let cooldownTime = 3 * 60 * 60 * 1000; // 3 hours
+                let cooldownTime = 3 * 60 * 60 * 1000;
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
                 let actionButtonHtml = '';
                 
-                // CRITICAL REQUIREMENT: Show JOIN button if not joined or missing status.
-                // NEVER display CLAIM button until membership is verified.
                 if (!claimData.joined) {
                     actionButtonHtml = `<button class="btn-join" id="task-btn-${task.id}" onclick="handleJoinTask(${task.id}, '${task.link}', '${task.channelUsername || ''}')">Join</button>`;
                 } else {
@@ -386,13 +383,11 @@
         }
 
         async function handleJoinTask(taskId, url, channelUsername) {
-            // Open link in new tab
             window.open(url, '_blank');
 
             const btn = document.getElementById(`task-btn-${taskId}`);
             if (btn) btn.innerText = 'Verifying...';
 
-            // Extract username if missing
             let targetChat = channelUsername;
             if (!targetChat && url.includes('t.me/')) {
                 targetChat = '@' + url.split('t.me/')[1].replace('/', '');
@@ -402,8 +397,7 @@
             if (targetChat && rawTelegramId && rawTelegramId !== '0') {
                 isMember = await checkTelegramMembership(targetChat, rawTelegramId);
             } else {
-                // Fallback validation prompt for demo or non-telegram environment
-                isMember = confirm("Did you join the official channel?");
+                isMember = false;
             }
 
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
@@ -437,7 +431,6 @@
                 return;
             }
 
-            // Reward user
             baseInitialBalance += reward;
             currentBalance = baseInitialBalance;
             document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
@@ -556,7 +549,6 @@
             setTimeout(hideSplashScreen, 1000);
             startAutoMiningUI();
             
-            // Periodically refresh task state every 30s to update countdowns automatically
             setInterval(renderTasks, 30000);
         });
 
@@ -617,10 +609,18 @@
         }
 
         async function loadUserDataFromSupabase() {
+            const verifiedBadge = document.getElementById('profile-verified-badge');
+            
+            // Set unverified by default
+            if (verifiedBadge) {
+                verifiedBadge.innerText = "Unverified ❌";
+                verifiedBadge.style.backgroundColor = "#da3633";
+                verifiedBadge.style.color = "#ffffff";
+            }
+
             if (!_supabase) return;
             try {
                 const { data } = await _supabase.from('grm_users').select('*').eq('user_id', currentUserId).maybeSingle();
-                const verifiedBadge = document.getElementById('profile-verified-badge');
                 if (data) {
                     baseInitialBalance = parseFloat(data.balance) || 0.860085;
                     currentBalance = baseInitialBalance;
@@ -630,10 +630,6 @@
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
-                        verifiedBadge.style.color = "#ffffff";
-                    } else {
-                        verifiedBadge.innerText = "Unverified ❌";
-                        verifiedBadge.style.backgroundColor = "#da3633";
                         verifiedBadge.style.color = "#ffffff";
                     }
                 }
