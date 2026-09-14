@@ -314,7 +314,7 @@
             }
         }
 
-        // Default local/supabase task structure simulation
+        // Default tasks list
         let tasksList = JSON.parse(localStorage.getItem('grm_tasks_list')) || [
             { id: 1, title: 'Join Official Telegram Channel', link: 'https://t.me/GRM_TRADING', reward: 3 }
         ];
@@ -333,7 +333,7 @@
                 let timePassed = now - claimData.claimedTime;
                 let canClaimAgain = claimData.claimedTime === 0 || timePassed >= cooldownTime;
 
-                // Action button logic: show Join if not joined, or Claim with cooldown/status
+                // Dynamic buttons based on join status
                 let actionButtonHtml = '';
                 if (!claimData.joined) {
                     actionButtonHtml = `<button class="btn-join" onclick="handleJoinTask(${task.id}, '${task.link}')">Join</button>`;
@@ -374,6 +374,7 @@
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             if (!userTaskClaims[taskId]) userTaskClaims[taskId] = { joined: false, claimedTime: 0 };
             
+            // Mark as joined when user clicks the join button
             userTaskClaims[taskId].joined = true;
             localStorage.setItem('grm_task_claims_' + currentUserId, JSON.stringify(userTaskClaims));
             
@@ -385,8 +386,9 @@
             let userTaskClaims = JSON.parse(localStorage.getItem('grm_task_claims_' + currentUserId)) || {};
             let claimData = userTaskClaims[taskId] || { joined: false, claimedTime: 0 };
 
+            // Explicit verification check: if not joined, alert and stop execution
             if (!claimData.joined) {
-                alert("Please join the channel first✅");
+                alert("Please join the channel first! ✅");
                 return;
             }
 
