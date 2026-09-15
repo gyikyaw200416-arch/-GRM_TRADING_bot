@@ -178,7 +178,7 @@
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
-                    <span class="lvl-badge">Lvl 1</span>
+                    <span class="lvl-badge">Lvl 0</span>
                     <span id="telegram-username">Shadow ✈️</span>
                     <span style="font-size: 10px; color: #2ea043;" id="mining-status-badge">MINING AUTO</span>
                 </div>
@@ -214,7 +214,14 @@
                 <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
                 <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
                 <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 3)" value="3">
-                <button class="action-btn" style="width: 100%; background: #ffb400; color: #000;" onclick="adminSaveTask()">Add / Update Task</button>
+                <button class="action-btn" style="width: 100%; background: #ffb400; color: #000; margin-bottom: 15px;" onclick="adminSaveTask()">Add / Update Task</button>
+
+                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
+
+                <h4 style="color: #00f0ff; margin-bottom: 8px;">👑 Admin User Level Control</h4>
+                <input type="text" id="adm-target-user-id" class="admin-input" placeholder="User ID (e.g. tg_5020977059 or 5020977059)">
+                <input type="number" id="adm-target-level" class="admin-input" placeholder="Set Level (0 to 10)" min="0" max="10" value="1">
+                <button class="action-btn" style="width: 100%; background: #00f0ff; color: #000;" onclick="adminUpdateUserLevel()">Update User Level</button>
             </div>
 
             <div id="tasks-list-container">
@@ -222,7 +229,7 @@
         </div>
 
         <div id="tab-miners" class="tab-content">
-            <div class="top-bar"><span>Jet Engine Miner Store (1 - 10)</span></div>
+            <div class="top-bar"><span>Jet Engine Miner Store (0 - 10)</span></div>
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
@@ -306,8 +313,9 @@
         let miningInterval;
         let miningStartTime = Date.now();
         
-        // Level 1 မှ Level 10 အထိ သတ်မှတ်ထားသော Mining Rates
+        // Level 0 မှ Level 10 အထိ သတ်မှတ်ထားသော Mining Rates (Level 0 = 0.000005)
         const levelMiningRates = {
+            0: 0.000005,
             1: 0.000050,
             2: 0.000100,
             3: 0.000150,
@@ -320,7 +328,7 @@
             10: 0.001000
         };
 
-        let currentLevel = 1;
+        let currentLevel = 0;
 
         const COOLDOWN_TIME = 3 * 60 * 60 * 1000; 
 
@@ -333,6 +341,7 @@
             let html = '';
             
             const colorFilters = [
+                'grayscale(100%) brightness(0.8)',      // Level 0 (Grayed out)
                 'hue-rotate(0deg)',                    // Red/Original
                 'hue-rotate(180deg) saturate(1.8)',    // Cyan / Bright Blue
                 'hue-rotate(90deg) brightness(1.2)',   // Green
@@ -345,16 +354,15 @@
                 'hue-rotate(250deg) saturate(1.7)'     // Indigo / Violet
             ];
 
-            // Level 10 ထိသာ ထားရှိရန် Loop ကို 10 အထိ ပြင်ဆင်ထားသည်
-            for (let i = 1; i <= 10; i++) {
-                let price = (i * 1.00).toFixed(2);
-                let speedRate = levelMiningRates[i] || 0.000050;
+            for (let i = 0; i <= 10; i++) {
+                let price = i === 0 ? "0.00" : (i * 1.00).toFixed(2);
+                let speedRate = levelMiningRates[i] || 0.000005;
                 let borderClass = i === currentLevel ? 'active-border' : (i === currentLevel + 1 ? 'unlock-border' : 'locked-border');
                 let btnClass = i === currentLevel ? 'badge-active' : (i === currentLevel + 1 ? 'badge-need' : 'badge-lock');
                 let btnText = i === currentLevel ? 'ACTIVE' : (i === currentLevel + 1 ? 'BUY NOW' : 'LOCKED');
 
                 let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-                let filterStyle = colorFilters[(i - 1) % colorFilters.length];
+                let filterStyle = colorFilters[i % colorFilters.length];
 
                 html += `
                     <div class="miner-card ${borderClass}">
@@ -514,6 +522,60 @@
             }
         }
 
+        /* ----------------------------------------------------
+           Admin Function: User Level Management
+        ------------------------------------------------------- */
+        async function adminUpdateUserLevel() {
+            let targetUserId = document.getElementById('adm-target-user-id').value.trim();
+            const targetLevel = parseInt(document.getElementById('adm-target-level').value);
+
+            if (!targetUserId) {
+                alert("Please enter a User ID!");
+                return;
+            }
+
+            if (isNaN(targetLevel) || targetLevel < 0 || targetLevel > 10) {
+                alert("Level must be between 0 and 10!");
+                return;
+            }
+
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) {
+                alert("Supabase connection not initialized!");
+                return;
+            }
+
+            try {
+                const { data, error } = await _supabase
+                    .from('grm_users')
+                    .update({ level: targetLevel, updated_at: new Date().toISOString() })
+                    .eq('user_id', targetUserId)
+                    .select();
+
+                if (error) {
+                    alert("Error updating level: " + error.message);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    alert(`Success! Set level to ${targetLevel} for user ${targetUserId}`);
+                    document.getElementById('adm-target-user-id').value = '';
+                    if (targetUserId === currentUserId) {
+                        await loadUserDataFromSupabase();
+                        renderMinersStore();
+                    }
+                } else {
+                    alert("User ID not found in database!");
+                }
+            } catch (err) {
+                console.error("Admin update level error:", err);
+                alert("Exception occurred: " + err.message);
+            }
+        }
+
         tonConnectUI.onStatusChange(async (walletInfo) => {
             let addressToSave = null;
             try {
@@ -588,6 +650,7 @@
                     fields.balance = baseInitialBalance;
                     fields.mined_amount = 0;
                     fields.mining_state = 'mining';
+                    fields.level = 0; // Default စသုံးသူ Level 0
                     fields.is_verified = false;
                     
                     if (!fields.wallet_address) {
@@ -617,7 +680,7 @@
                     baseInitialBalance = parseFloat(data.balance) || 0.860085;
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
-                    currentLevel = parseInt(data.level) || 1;
+                    currentLevel = (data.level !== undefined && data.level !== null) ? parseInt(data.level) : 0;
                     
                     const lvlBadge = document.querySelector('.lvl-badge');
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
@@ -633,6 +696,10 @@
                         verifiedBadge.style.backgroundColor = "#da3633";
                         verifiedBadge.style.color = "#ffffff";
                     }
+                } else {
+                    currentLevel = 0;
+                    const lvlBadge = document.querySelector('.lvl-badge');
+                    if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
                 }
             } catch (err) {
                 console.error('Load user data exception:', err);
@@ -653,7 +720,7 @@
                 return;
             }
 
-            const currentRate = levelMiningRates[currentLevel] || 0.000050;
+            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000005;
 
             if (btn.innerText === "START MINING") {
                 isMining = true;
@@ -706,7 +773,7 @@
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
-            const currentRate = levelMiningRates[currentLevel] || 0.000050;
+            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000005;
 
             btn.innerText = "CLAIM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
