@@ -220,7 +220,7 @@
             </div>
 
             <div id="tasks-list-container">
-                <!-- Dynamic Tasks Will Render Here -->
+                <!-- Dynamic Tasks Will Render Here from Supabase -->
             </div>
         </div>
 
@@ -311,16 +311,7 @@
 
         const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours Cooldown
 
-        let activeTasksList = JSON.parse(localStorage.getItem('grm_dynamic_tasks')) || [
-            {
-                id: 'task_main_channel',
-                title: 'Join Official Channel & Group',
-                channelLink: 'https://t.me/grm_channel',
-                groupLink: '',
-                reward: 3
-            }
-        ];
-
+        let activeTasksList = [];
         let taskStates = {}; 
 
         function renderMinersStore() {
@@ -403,7 +394,7 @@
             renderMinersStore();
             await loadUserDataFromSupabase();
             checkAdminPermissions();
-            renderTasksList();
+            await fetchTasksFromSupabase();
             setTimeout(hideSplashScreen, 1000);
             startAutoMiningUI();
         });
@@ -417,7 +408,37 @@
             }
         }
 
-        function adminSaveTask() {
+        /* Fetch Tasks from Supabase */
+        async function fetchTasksFromSupabase() {
+            if (!_supabase) return;
+            try {
+                const { data, error } = await _supabase
+                    .from('grm_tasks')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (error) {
+                    console.error("Error fetching tasks:", error);
+                    return;
+                }
+
+                if (data) {
+                    activeTasksList = data.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        channelLink: t.channel_link,
+                        groupLink: t.group_link || '',
+                        reward: parseFloat(t.reward) || 3
+                    }));
+                    renderTasksList();
+                }
+            } catch (err) {
+                console.error("Supabase fetch tasks exception:", err);
+            }
+        }
+
+        /* Save Task to Supabase */
+        async function adminSaveTask() {
             const title = document.getElementById('adm-task-title').value.trim();
             const channelLink = document.getElementById('adm-channel-link').value.trim();
             const groupLink = document.getElementById('adm-group-link').value.trim();
@@ -431,27 +452,38 @@
             const newTask = {
                 id: 'task_' + Date.now(),
                 title: title,
-                channelLink: channelLink,
-                groupLink: groupLink,
+                channel_link: channelLink,
+                group_link: groupLink,
                 reward: reward
             };
 
-            activeTasksList.push(newTask);
-            localStorage.setItem('grm_dynamic_tasks', JSON.stringify(activeTasksList));
-            
+            if (_supabase) {
+                const { error } = await _supabase.from('grm_tasks').insert([newTask]);
+                if (error) {
+                    alert("Error saving task: " + error.message);
+                    return;
+                }
+            }
+
             document.getElementById('adm-task-title').value = '';
             document.getElementById('adm-channel-link').value = '';
             document.getElementById('adm-group-link').value = '';
 
-            renderTasksList();
+            await fetchTasksFromSupabase();
             alert("Task added successfully!");
         }
 
-        function adminDeleteTask(taskId) {
+        /* Delete Task from Supabase */
+        async function adminDeleteTask(taskId) {
             if (confirm("Are you sure you want to remove this task?")) {
-                activeTasksList = activeTasksList.filter(t => t.id !== taskId);
-                localStorage.setItem('grm_dynamic_tasks', JSON.stringify(activeTasksList));
-                renderTasksList();
+                if (_supabase) {
+                    const { error } = await _supabase.from('grm_tasks').delete().eq('id', taskId);
+                    if (error) {
+                        alert("Error deleting task: " + error.message);
+                        return;
+                    }
+                }
+                await fetchTasksFromSupabase();
             }
         }
 
@@ -490,6 +522,10 @@
             const targetTab = document.getElementById('tab-' + tabName);
             if (targetTab) targetTab.classList.add('active');
             if (element) element.classList.add('active');
+            
+            if (tabName === 'tasks') {
+                fetchTasksFromSupabase();
+            }
         }
 
         function checkWalletAndButtonState() {
@@ -661,7 +697,6 @@
            Task Management System (Real Telegram Verification)
         ------------------------------------------------------- */
 
-        // Function to extract @username or Chat ID from link
         function parseTelegramChatId(link) {
             if (!link) return null;
             let cleaned = link.trim();
@@ -676,11 +711,10 @@
             return cleaned;
         }
 
-        // Function to verify channel/group membership using getChatMember API
         async function checkMembership(chatIdentifier) {
             if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') {
                 console.warn("Please specify a valid BOT_TOKEN.");
-                return true; // Fallback for local testing if token is missing
+                return true; 
             }
             if (!rawUserId) return false;
 
@@ -710,6 +744,11 @@
             
             let html = '';
             const isAdmin = (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID);
+
+            if (activeTasksList.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #8b949e; padding: 20px;">No active tasks available right now.</div>';
+                return;
+            }
 
             activeTasksList.forEach(task => {
                 const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
@@ -786,10 +825,8 @@
                 btn.innerText = "Verifying...";
                 btn.disabled = true;
 
-                // 1. Verify Channel Membership
                 const isChannelMember = await checkMembership(task.channelLink);
                 
-                // 2. Verify Group Membership (If provided by Admin)
                 let isGroupMember = true;
                 if (task.groupLink) {
                     isGroupMember = await checkMembership(task.groupLink);
