@@ -135,7 +135,7 @@
             display: flex; justify-content: center; align-items: center; margin-bottom: 8px;
             overflow: hidden; border: 1px solid rgba(0, 240, 255, 0.2);
         }
-        .engine-img-box img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px #00f0ff); }
+        .engine-img-box img { width: 50px; height: 50px; object-fit: contain; }
 
         .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; text-align: left; }
         .miner-price-box { font-size: 16px; font-weight: bold; color: #2ea043; margin-bottom: 4px; text-align: left; }
@@ -316,6 +316,20 @@
             if (!grid) return;
             let html = '';
             
+            // Avatar အင်္ကျီများအတွက် Level အလိုက် အရောင် 10 မျိုး ခွဲခြားရန် Filter Palettes
+            const colorFilters = [
+                'hue-rotate(0deg)',                    // Red/Original
+                'hue-rotate(180deg) saturate(1.8)',    // Cyan / Bright Blue
+                'hue-rotate(90deg) brightness(1.2)',   // Green
+                'hue-rotate(270deg) brightness(1.3)',  // Purple / Violet
+                'hue-rotate(45deg) saturate(2)',       // Yellow / Gold
+                'hue-rotate(140deg) saturate(1.5)',    // Emerald / Teal
+                'hue-rotate(310deg) brightness(1.2)',  // Pink / Magenta
+                'hue-rotate(220deg) saturate(2)',      // Deep Blue
+                'hue-rotate(30deg) brightness(1.4)',   // Orange
+                'hue-rotate(250deg) saturate(1.7)'     // Indigo / Violet
+            ];
+
             for (let i = 1; i <= 30; i++) {
                 let price = (i * 1.00).toFixed(2);
                 let speed = (i * 0.5).toFixed(2);
@@ -323,12 +337,16 @@
                 let btnClass = i === 1 ? 'badge-active' : (i === 2 ? 'badge-need' : 'badge-lock');
                 let btnText = i === 1 ? 'ACTIVE' : (i === 2 ? 'BUY NOW' : 'LOCKED');
 
+                // ပုံထဲက အင်္ကျီပါသော Avatar Icon URL
                 let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+                
+                // Level အပေါ်မူတည်ပြီး အင်္ကျီအရောင်မတူအောင် ပြောင်းလဲခြင်း
+                let filterStyle = colorFilters[(i - 1) % colorFilters.length];
 
                 html += `
                     <div class="miner-card ${borderClass}">
                         <div class="engine-img-box">
-                            <img src="${engineImg}" alt="Jet Engine">
+                            <img src="${engineImg}" alt="Miner Level ${i}" style="filter: ${filterStyle};">
                         </div>
                         <div class="lvl-text">Lvl ${i} Engine</div>
                         <div class="miner-price-box">${price}$</div>
@@ -688,7 +706,7 @@
         }
 
         /* ----------------------------------------------------
-           Task Management & Telegram Verification Engine (Updated)
+           Task Management & Telegram Verification Engine
         ------------------------------------------------------- */
 
         function parseTelegramChatId(link) {
@@ -709,16 +727,14 @@
         async function checkMembership(chatIdentifier) {
             if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') {
                 console.warn("Please insert a valid BOT_TOKEN.");
-                // Graceful fallback: return true if API token is unconfigured during front-end dev testing
                 return true; 
             }
             if (!rawUserId) return false;
 
             const targetChat = parseTelegramChatId(chatIdentifier);
-            if (!targetChat) return true; // Fallback for private or unparseable links
+            if (!targetChat) return true;
 
             try {
-                // Route via CORS Proxy to prevent WebApp browser blocks
                 const targetUrl = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(targetChat)}&user_id=${rawUserId}`;
                 const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
@@ -730,12 +746,11 @@
                     return ['member', 'administrator', 'creator'].includes(status);
                 } else {
                     console.warn("Telegram API response error:", data.description);
-                    // Fallback to true if bot lacks admin rights or channel name is protected
                     return true;
                 }
             } catch (err) {
                 console.error("Network check error:", err);
-                return true; // Fallback on fetch failure
+                return true;
             }
         }
 
