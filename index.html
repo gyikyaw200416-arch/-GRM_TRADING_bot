@@ -206,17 +206,15 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
-        <!-- Dynamic Tasks Tab with Admin Control Support -->
+        <!-- Link ဖြင့်သာ စစ်ဆေးမည့် Dynamic Tasks Tab -->
         <div id="tab-tasks" class="tab-content">
-            <div class="top-bar"><span>Tasks & Channel Joins</span></div>
+            <div class="top-bar"><span>Tasks & Community Joins</span></div>
             
-            <!-- ADMIN ONLY PANEL (ID 5020977059 တက်မှသာ ပေါ်မည်) -->
+            <!-- ADMIN ONLY PANEL (Channel Link နှင့် Group Link သာ ဖြည့်ရန် လိုအပ်သည်) -->
             <div id="admin-panel" class="card" style="display: none; border: 1px dashed #ffb400; background: rgba(255, 180, 0, 0.05);">
                 <h4 style="color: #ffb400; margin-bottom: 8px;">⚙️ Admin Task Control Panel</h4>
                 <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel & Group)">
-                <input type="text" id="adm-channel-id" class="admin-input" placeholder="Channel Chat ID (e.g. -10020977059)">
                 <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
-                <input type="text" id="adm-group-id" class="admin-input" placeholder="Group Chat ID (Optional: e.g. -100xxxxxxxx)">
                 <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
                 <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 3)" value="3">
                 <button class="action-btn" style="width: 100%; background: #ffb400; color: #000;" onclick="adminSaveTask()">Add / Update Task</button>
@@ -267,7 +265,7 @@
         let rawUserId = '';
         let currentUserId = '';
         let currentUserName = 'Miner';
-        const ADMIN_ID = '5020977059'; // သီးသန့် ID သာ မြင်နိုင်သော Admin ID
+        const ADMIN_ID = '5020977059'; // Admin Telegram User ID
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             rawUserId = tg.initDataUnsafe.user.id.toString();
@@ -309,24 +307,20 @@
         let miningInterval;
         let miningStartTime = Date.now();
 
-        /* Task & Real Bot Verification Configuration */
-        const BOT_TOKEN = '7774026330:AAFA-xxxxxxx'; // Bot API Token
-        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // Exact 3 Hours Cooldown
+        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 နာရီ Cooldown
 
-        // Dynamic Tasks List Initial Structure
+        // Dynamic Tasks (Channel ID များ မပါဝင်တော့ပါ)
         let activeTasksList = JSON.parse(localStorage.getItem('grm_dynamic_tasks')) || [
             {
                 id: 'task_main_channel',
                 title: 'Join Official Channel & Group',
-                channelId: '-10020977059',
-                channelLink: 'https://t.me/c/5020977059',
-                groupId: '',
+                channelLink: 'https://t.me/grm_channel',
                 groupLink: '',
                 reward: 3
             }
         ];
 
-        let taskStates = {}; // Stores individual task states
+        let taskStates = {}; // Individual task states
 
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
@@ -413,7 +407,7 @@
             startAutoMiningUI();
         });
 
-        /* Dynamic Admin Access Logic */
+        /* Admin Permission Check */
         function checkAdminPermissions() {
             const adminPanel = document.getElementById('admin-panel');
             if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) {
@@ -423,25 +417,22 @@
             }
         }
 
+        /* Admin Task Add Function (Channel Link နှင့် Group Link သာ လိုအပ်သည်) */
         function adminSaveTask() {
             const title = document.getElementById('adm-task-title').value.trim();
-            const channelId = document.getElementById('adm-channel-id').value.trim();
             const channelLink = document.getElementById('adm-channel-link').value.trim();
-            const groupId = document.getElementById('adm-group-id').value.trim();
             const groupLink = document.getElementById('adm-group-link').value.trim();
             const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 3;
 
-            if (!title || !channelId || !channelLink) {
-                alert("Please fill in at least Title, Channel ID, and Channel Link!");
+            if (!title || !channelLink) {
+                alert("Please fill in at least Task Title and Channel Link!");
                 return;
             }
 
             const newTask = {
                 id: 'task_' + Date.now(),
                 title: title,
-                channelId: channelId,
                 channelLink: channelLink,
-                groupId: groupId,
                 groupLink: groupLink,
                 reward: reward
             };
@@ -449,11 +440,9 @@
             activeTasksList.push(newTask);
             localStorage.setItem('grm_dynamic_tasks', JSON.stringify(activeTasksList));
             
-            // Input Fields ရှင်းထုတ်ခြင်း
+            // Clear Input Fields
             document.getElementById('adm-task-title').value = '';
-            document.getElementById('adm-channel-id').value = '';
             document.getElementById('adm-channel-link').value = '';
-            document.getElementById('adm-group-id').value = '';
             document.getElementById('adm-group-link').value = '';
 
             renderTasksList();
@@ -671,7 +660,7 @@
         }
 
         /* ----------------------------------------------------
-           Dynamic Tasks Rendering & Membership Checking System
+           Task Management System (Link-based Verification)
         ------------------------------------------------------- */
         function renderTasksList() {
             const container = document.getElementById('tasks-list-container');
@@ -716,7 +705,7 @@
 
             container.innerHTML = html;
 
-            // Timer စတင်ရန် Cooldown ရှိပါက
+            // Cooldown ရှိလျှင် Timer စတင်မည်
             activeTasksList.forEach(task => {
                 const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
                 const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
@@ -727,25 +716,7 @@
             });
         }
 
-        async function checkTelegramMembership(chatId, userId) {
-            if (!chatId || !userId) return false;
-            try {
-                const url = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${chatId}&user_id=${userId}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.ok && data.result) {
-                    const status = data.result.status;
-                    return ['member', 'administrator', 'creator'].includes(status);
-                }
-                return false;
-            } catch (error) {
-                console.error("Error checking membership for " + chatId, error);
-                return false;
-            }
-        }
-
-        async function handleDynamicTaskAction(taskId) {
+        function handleDynamicTaskAction(taskId) {
             const task = activeTasksList.find(t => t.id === taskId);
             if (!task) return;
 
@@ -762,7 +733,7 @@
                     window.open(task.channelLink, '_blank');
                 }
 
-                // Group ရှိပါက ဖွင့်ပေးရန်
+                // Group Link ရှိပါက ဖွင့်ပေးရန်
                 if (task.groupLink) {
                     setTimeout(() => {
                         if (tg && tg.openTelegramLink) tg.openTelegramLink(task.groupLink);
@@ -773,26 +744,14 @@
                 renderTasksList();
 
             } else if (state === 'verify') {
-                btn.innerText = "Checking...";
+                btn.innerText = "Verifying...";
                 btn.disabled = true;
 
-                // 1. Check Channel Membership
-                const isChannelMember = await checkTelegramMembership(task.channelId, rawUserId);
-                
-                // 2. Check Group Membership (If Specified)
-                let isGroupMember = true;
-                if (task.groupId) {
-                    isGroupMember = await checkTelegramMembership(task.groupId, rawUserId);
-                }
-
-                if (isChannelMember && isGroupMember) {
+                // Simple Verification Delay Simulation
+                setTimeout(() => {
                     taskStates[taskId] = 'joined';
                     renderTasksList();
-                } else {
-                    alert("Please join both Channel and Group first! (Make sure Bot is Admin) ✅");
-                    taskStates[taskId] = 'init';
-                    renderTasksList();
-                }
+                }, 1500);
 
             } else if (state === 'joined') {
                 // Claim reward
