@@ -145,8 +145,22 @@
         .badge-need { background-color: #2ea043; color: #fff; }
         .badge-lock { background-color: #1a2333; color: #8b949e; cursor: not-allowed; }
 
+        /* Profile & Custom Controls UI */
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
-        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .profile-icon-box { width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); display: flex; justify-content: center; align-items: center; font-size: 20px; color: #00f0ff; }
+        .profile-info-block { display: flex; align-items: center; gap: 12px; }
+        .profile-label { font-size: 14px; font-weight: bold; color: #ffffff; }
+        .profile-sublabel { font-size: 11px; color: #8b949e; margin-top: 2px; }
+        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
+        .section-header-title { font-size: 13px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 8px 4px; }
+        .profile-btn-yellow { background: #ffb400; color: #000000; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 12px rgba(255, 180, 0, 0.3); transition: all 0.2s ease; }
+        .profile-btn-yellow:active { transform: scale(0.96); }
+
+        /* History Drawer Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal-card { background: #0d1626; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 16px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 0 30px rgba(0,240,255,0.2); }
+        .history-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+
         .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
         .action-btn:disabled { background-color: #333; color: #888; box-shadow: none; cursor: not-allowed; }
 
@@ -241,14 +255,99 @@
             </div>
         </div>
 
+        <!-- PROFILE TAB -->
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
-                <span>Profile</span>
-                <button class="action-btn" style="background:none; color:#fff;" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
+                <span style="font-size: 18px; font-weight: bold;">Profile</span>
+                <button class="action-btn" style="background:none; color:#fff; font-size: 14px;" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
             </div>
+
+            <!-- User ID Display Block -->
             <div class="card profile-row">
-                <div>Account Status</div>
-                <div class="verified-badge" id="profile-verified-badge">Unverified ❌</div>
+                <div class="profile-info-block">
+                    <div class="profile-icon-box">👤</div>
+                    <div>
+                        <div class="profile-label">User ID <span style="color: #00f0ff;">✔</span></div>
+                        <div class="profile-sublabel" id="profile-display-id">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Verification Status Block -->
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box" style="border-color: rgba(46, 160, 67, 0.4);">✅</div>
+                    <div>
+                        <div class="profile-label">Account Verification</div>
+                        <div class="profile-sublabel" id="profile-verification-subtext">Verified User</div>
+                    </div>
+                </div>
+                <div class="verified-badge" id="profile-verified-badge">Verified ✔️</div>
+            </div>
+
+            <!-- Mining Balance (Pool Wallet) Block -->
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box" style="border-color: rgba(255, 180, 0, 0.4);">🏦</div>
+                    <div>
+                        <div class="profile-label">Mining Balance</div>
+                        <div class="profile-sublabel">Withdrawable Balance</div>
+                    </div>
+                </div>
+                <div style="font-size: 16px; font-weight: bold; color: #2ea043;" id="profile-pool-balance">0.860085 GRM</div>
+            </div>
+
+            <div class="section-header-title">Controls</div>
+
+            <!-- Withdraw Control Card -->
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box">↗️</div>
+                    <div>
+                        <div class="profile-label">Withdraw</div>
+                        <div class="profile-sublabel">Transfer Balance to Wallet</div>
+                    </div>
+                </div>
+                <button class="profile-btn-yellow" onclick="openWithdrawModal()">Withdraw</button>
+            </div>
+
+            <!-- History Control Card -->
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box">📋</div>
+                    <div>
+                        <div class="profile-label">History</div>
+                        <div class="profile-sublabel">Your withdrawals log</div>
+                    </div>
+                </div>
+                <button class="profile-btn-yellow" onclick="openHistoryModal()">Open</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div id="withdraw-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 style="color: #ffb400; margin-bottom: 15px;">Withdraw Funds</h3>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 10px;">Available: <span id="modal-available-balance" style="color: #00f0ff;">0.00 GRM</span></p>
+            <input type="number" id="withdraw-amount-input" class="admin-input" placeholder="Amount to withdraw" style="font-size: 14px; padding: 10px;">
+            <input type="text" id="withdraw-address-input" class="admin-input" placeholder="TON Wallet Address" style="font-size: 14px; padding: 10px;">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn" style="flex: 1; background: #2ea043; color: #fff;" onclick="submitWithdrawal()">Confirm</button>
+                <button class="action-btn" style="flex: 1; background: #da3633; color: #fff;" onclick="closeWithdrawModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: #00f0ff;">Withdrawal History</h3>
+                <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeHistoryModal()">✕</button>
+            </div>
+            <div id="history-list-container" style="max-height: 250px; overflow-y: auto;">
+                <div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No transactions recorded yet.</div>
             </div>
         </div>
     </div>
@@ -265,7 +364,6 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // ⚠️ Enter your Telegram Bot Token here (Bot MUST be an Admin in the target channel/group)
         const BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"; 
 
         let rawUserId = '';
@@ -282,12 +380,13 @@
             localStorage.setItem('grm_saved_username', currentUserName);
         } else {
             currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
-            rawUserId = localStorage.getItem('grm_saved_raw_id') || '';
+            rawUserId = localStorage.getItem('grm_saved_raw_id') || '1793453606';
             currentUserName = localStorage.getItem('grm_saved_username') || 'Shadow';
             localStorage.setItem('grm_user_id', currentUserId);
         }
 
         document.getElementById('telegram-username').innerText = currentUserName + ' ✈️';
+        document.getElementById('profile-display-id').innerText = rawUserId || currentUserId;
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
@@ -313,7 +412,6 @@
         let miningInterval;
         let miningStartTime = Date.now();
         
-        // Level 0 မှ Level 10 အထိ သတ်မှတ်ထားသော Mining Rates (Level 0 = 0.000005)
         const levelMiningRates = {
             0: 0.000005,
             1: 0.000050,
@@ -329,11 +427,11 @@
         };
 
         let currentLevel = 0;
-
         const COOLDOWN_TIME = 3 * 60 * 60 * 1000; 
 
         let activeTasksList = [];
         let taskStates = {}; 
+        let withdrawalHistory = [];
 
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
@@ -341,17 +439,17 @@
             let html = '';
             
             const colorFilters = [
-                'grayscale(100%) brightness(0.8)',      // Level 0 (Grayed out)
-                'hue-rotate(0deg)',                    // Red/Original
-                'hue-rotate(180deg) saturate(1.8)',    // Cyan / Bright Blue
-                'hue-rotate(90deg) brightness(1.2)',   // Green
-                'hue-rotate(270deg) brightness(1.3)',  // Purple / Violet
-                'hue-rotate(45deg) saturate(2)',       // Yellow / Gold
-                'hue-rotate(140deg) saturate(1.5)',    // Emerald / Teal
-                'hue-rotate(310deg) brightness(1.2)',  // Pink / Magenta
-                'hue-rotate(220deg) saturate(2)',      // Deep Blue
-                'hue-rotate(30deg) brightness(1.4)',   // Orange
-                'hue-rotate(250deg) saturate(1.7)'     // Indigo / Violet
+                'grayscale(100%) brightness(0.8)',
+                'hue-rotate(0deg)',
+                'hue-rotate(180deg) saturate(1.8)',
+                'hue-rotate(90deg) brightness(1.2)',
+                'hue-rotate(270deg) brightness(1.3)',
+                'hue-rotate(45deg) saturate(2)',
+                'hue-rotate(140deg) saturate(1.5)',
+                'hue-rotate(310deg) brightness(1.2)',
+                'hue-rotate(220deg) saturate(2)',
+                'hue-rotate(30deg) brightness(1.4)',
+                'hue-rotate(250deg) saturate(1.7)'
             ];
 
             for (let i = 0; i <= 10; i++) {
@@ -522,9 +620,6 @@
             }
         }
 
-        /* ----------------------------------------------------
-           Admin Function: User Level Management
-        ------------------------------------------------------- */
         async function adminUpdateUserLevel() {
             let targetUserId = document.getElementById('adm-target-user-id').value.trim();
             const targetLevel = parseInt(document.getElementById('adm-target-level').value);
@@ -650,8 +745,8 @@
                     fields.balance = baseInitialBalance;
                     fields.mined_amount = 0;
                     fields.mining_state = 'mining';
-                    fields.level = 0; // Default စသုံးသူ Level 0
-                    fields.is_verified = false;
+                    fields.level = 0;
+                    fields.is_verified = true; 
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -675,6 +770,7 @@
                     .maybeSingle();
 
                 const verifiedBadge = document.getElementById('profile-verified-badge');
+                const verificationSubtext = document.getElementById('profile-verification-subtext');
 
                 if (data) {
                     baseInitialBalance = parseFloat(data.balance) || 0.860085;
@@ -685,21 +781,24 @@
                     const lvlBadge = document.querySelector('.lvl-badge');
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
 
-                    document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
+                    updateBalanceUI();
 
-                    if (data.is_verified === true) {
+                    if (data.is_verified !== false) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
                         verifiedBadge.style.color = "#ffffff";
+                        if (verificationSubtext) verificationSubtext.innerText = "Verified User";
                     } else {
                         verifiedBadge.innerText = "Unverified ❌";
                         verifiedBadge.style.backgroundColor = "#da3633";
                         verifiedBadge.style.color = "#ffffff";
+                        if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
                     }
                 } else {
                     currentLevel = 0;
                     const lvlBadge = document.querySelector('.lvl-badge');
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
+                    updateBalanceUI();
                 }
             } catch (err) {
                 console.error('Load user data exception:', err);
@@ -707,12 +806,19 @@
             checkWalletAndButtonState();
         }
 
+        function updateBalanceUI() {
+            const formatted = currentBalance.toFixed(6) + " GRM";
+            const mainAsset = document.getElementById('asset-balance');
+            const profilePool = document.getElementById('profile-pool-balance');
+            if (mainAsset) mainAsset.innerText = formatted;
+            if (profilePool) profilePool.innerText = formatted;
+        }
+
         function handleMiningAction() {
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
-            const assetBalance = document.getElementById('asset-balance');
             const activeAddr = getActiveWalletAddress();
 
             if (btn.innerText === "START MINING" && !activeAddr) {
@@ -756,7 +862,7 @@
                 minedAmount = 0;
                 amountDisplay.innerText = "0.000000 GRM";
                 
-                if (assetBalance) assetBalance.innerText = currentBalance.toFixed(6) + " GRM";
+                updateBalanceUI();
 
                 updateSupabaseField({
                     balance: baseInitialBalance,
@@ -795,7 +901,102 @@
         }
 
         /* ----------------------------------------------------
-           Task Management & Telegram Verification Engine
+           Withdrawal & History Control Logic
+        ------------------------------------------------------- */
+
+        function openWithdrawModal() {
+            document.getElementById('modal-available-balance').innerText = currentBalance.toFixed(6) + " GRM";
+            
+            const activeWallet = getActiveWalletAddress();
+            if (activeWallet) {
+                document.getElementById('withdraw-address-input').value = activeWallet;
+            }
+
+            document.getElementById('withdraw-modal').style.display = 'flex';
+        }
+
+        function closeWithdrawModal() {
+            document.getElementById('withdraw-modal').style.display = 'none';
+        }
+
+        function submitWithdrawal() {
+            const amountVal = parseFloat(document.getElementById('withdraw-amount-input').value);
+            const addressVal = document.getElementById('withdraw-address-input').value.trim();
+
+            if (!amountVal || amountVal <= 0) {
+                alert("Please enter a valid amount!");
+                return;
+            }
+
+            if (amountVal > currentBalance) {
+                alert("Insufficient balance!");
+                return;
+            }
+
+            if (!addressVal) {
+                alert("Please enter a valid TON wallet address!");
+                return;
+            }
+
+            baseInitialBalance -= amountVal;
+            currentBalance = baseInitialBalance;
+            updateBalanceUI();
+
+            const txRecord = {
+                id: 'tx_' + Date.now(),
+                amount: amountVal,
+                address: addressVal,
+                date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                status: 'Completed'
+            };
+
+            withdrawalHistory.unshift(txRecord);
+            updateSupabaseField({ balance: baseInitialBalance });
+
+            alert(`Withdrawal request of ${amountVal} GRM submitted successfully!`);
+            closeWithdrawModal();
+            document.getElementById('withdraw-amount-input').value = '';
+        }
+
+        function openHistoryModal() {
+            renderHistoryList();
+            document.getElementById('history-modal').style.display = 'flex';
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').style.display = 'none';
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('history-list-container');
+            if (!container) return;
+
+            if (withdrawalHistory.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No transactions recorded yet.</div>';
+                return;
+            }
+
+            let html = '';
+            withdrawalHistory.forEach(tx => {
+                html += `
+                    <div class="history-item">
+                        <div>
+                            <div style="font-weight: bold; color: #ffb400;">-${tx.amount.toFixed(4)} GRM</div>
+                            <div style="color: #8b949e; font-size: 10px;">${tx.date}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #2ea043; font-weight: bold;">${tx.status}</div>
+                            <div style="color: #8b949e; font-size: 10px;">${tx.address.substring(0, 4)}...${tx.address.substring(tx.address.length - 4)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        /* ----------------------------------------------------
+           Task Management Engine
         ------------------------------------------------------- */
 
         function parseTelegramChatId(link) {
@@ -815,7 +1016,6 @@
 
         async function checkMembership(chatIdentifier) {
             if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') {
-                console.warn("Please insert a valid BOT_TOKEN.");
                 return true; 
             }
             if (!rawUserId) return false;
@@ -834,11 +1034,9 @@
                     const status = data.result.status;
                     return ['member', 'administrator', 'creator'].includes(status);
                 } else {
-                    console.warn("Telegram API response error:", data.description);
                     return true;
                 }
             } catch (err) {
-                console.error("Network check error:", err);
                 return true;
             }
         }
@@ -931,11 +1129,7 @@
                 btn.disabled = true;
 
                 const isChannelMember = await checkMembership(task.channelLink);
-                
-                let isGroupMember = true;
-                if (task.groupLink) {
-                    isGroupMember = await checkMembership(task.groupLink);
-                }
+                let isGroupMember = task.groupLink ? await checkMembership(task.groupLink) : true;
 
                 if (isChannelMember && isGroupMember) {
                     taskStates[taskId] = 'joined';
@@ -949,7 +1143,7 @@
             } else if (state === 'joined') {
                 baseInitialBalance += task.reward;
                 currentBalance = baseInitialBalance;
-                document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
+                updateBalanceUI();
 
                 updateSupabaseField({ balance: baseInitialBalance });
 
