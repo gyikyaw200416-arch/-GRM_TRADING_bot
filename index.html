@@ -222,7 +222,7 @@
         </div>
 
         <div id="tab-miners" class="tab-content">
-            <div class="top-bar"><span>Jet Engine Miner Store (1 - 30)</span></div>
+            <div class="top-bar"><span>Jet Engine Miner Store (1 - 10)</span></div>
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
@@ -305,6 +305,22 @@
         let isMining = true;
         let miningInterval;
         let miningStartTime = Date.now();
+        
+        // Level 1 မှ Level 10 အထိ သတ်မှတ်ထားသော Mining Rates
+        const levelMiningRates = {
+            1: 0.000050,
+            2: 0.000100,
+            3: 0.000150,
+            4: 0.000250,
+            5: 0.000300,
+            6: 0.000400,
+            7: 0.000500,
+            8: 0.000650,
+            9: 0.000800,
+            10: 0.001000
+        };
+
+        let currentLevel = 1;
 
         const COOLDOWN_TIME = 3 * 60 * 60 * 1000; 
 
@@ -316,7 +332,6 @@
             if (!grid) return;
             let html = '';
             
-            // Avatar အင်္ကျီများအတွက် Level အလိုက် အရောင် 10 မျိုး ခွဲခြားရန် Filter Palettes
             const colorFilters = [
                 'hue-rotate(0deg)',                    // Red/Original
                 'hue-rotate(180deg) saturate(1.8)',    // Cyan / Bright Blue
@@ -330,17 +345,15 @@
                 'hue-rotate(250deg) saturate(1.7)'     // Indigo / Violet
             ];
 
-            for (let i = 1; i <= 30; i++) {
+            // Level 10 ထိသာ ထားရှိရန် Loop ကို 10 အထိ ပြင်ဆင်ထားသည်
+            for (let i = 1; i <= 10; i++) {
                 let price = (i * 1.00).toFixed(2);
-                let speed = (i * 0.5).toFixed(2);
-                let borderClass = i === 1 ? 'active-border' : (i === 2 ? 'unlock-border' : 'locked-border');
-                let btnClass = i === 1 ? 'badge-active' : (i === 2 ? 'badge-need' : 'badge-lock');
-                let btnText = i === 1 ? 'ACTIVE' : (i === 2 ? 'BUY NOW' : 'LOCKED');
+                let speedRate = levelMiningRates[i] || 0.000050;
+                let borderClass = i === currentLevel ? 'active-border' : (i === currentLevel + 1 ? 'unlock-border' : 'locked-border');
+                let btnClass = i === currentLevel ? 'badge-active' : (i === currentLevel + 1 ? 'badge-need' : 'badge-lock');
+                let btnText = i === currentLevel ? 'ACTIVE' : (i === currentLevel + 1 ? 'BUY NOW' : 'LOCKED');
 
-                // ပုံထဲက အင်္ကျီပါသော Avatar Icon URL
                 let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-                
-                // Level အပေါ်မူတည်ပြီး အင်္ကျီအရောင်မတူအောင် ပြောင်းလဲခြင်း
                 let filterStyle = colorFilters[(i - 1) % colorFilters.length];
 
                 html += `
@@ -350,7 +363,7 @@
                         </div>
                         <div class="lvl-text">Lvl ${i} Engine</div>
                         <div class="miner-price-box">${price}$</div>
-                        <div class="miner-speed">Speed ${speed} TH/s</div>
+                        <div class="miner-speed">${speedRate.toFixed(6)} GRM/s</div>
                         <button class="status-badge ${btnClass}" onclick="buyMiner(${i}, ${price})">${btnText}</button>
                     </div>
                 `;
@@ -359,10 +372,12 @@
         }
 
         function buyMiner(level, price) {
-            if (level === 1) {
-                alert("Level 1 Engine is already active!");
-            } else if (level === 2) {
-                alert("Purchasing Level 2 Jet Engine for $" + price);
+            if (level === currentLevel) {
+                alert(`Level ${level} Engine is already active!`);
+            } else if (level === currentLevel + 1) {
+                alert(`Purchasing Level ${level} Jet Engine for $${price}`);
+            } else if (level < currentLevel) {
+                alert(`You have already passed Level ${level}!`);
             } else {
                 alert("Please unlock previous levels first!");
             }
@@ -406,8 +421,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            renderMinersStore();
             await loadUserDataFromSupabase();
+            renderMinersStore();
             checkAdminPermissions();
             await fetchTasksFromSupabase();
             setTimeout(hideSplashScreen, 1000);
@@ -602,7 +617,11 @@
                     baseInitialBalance = parseFloat(data.balance) || 0.860085;
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
+                    currentLevel = parseInt(data.level) || 1;
                     
+                    const lvlBadge = document.querySelector('.lvl-badge');
+                    if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
+
                     document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
 
                     if (data.is_verified === true) {
@@ -634,6 +653,8 @@
                 return;
             }
 
+            const currentRate = levelMiningRates[currentLevel] || 0.000050;
+
             if (btn.innerText === "START MINING") {
                 isMining = true;
                 miningStartTime = Date.now();
@@ -653,13 +674,13 @@
                 if (miningInterval) clearInterval(miningInterval);
                 miningInterval = setInterval(() => {
                     const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                    minedAmount = elapsed * 0.000005;
+                    minedAmount = elapsed * currentRate;
                     amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
                 }, 1000);
 
             } else if (btn.innerText === "CLAIM") {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                const earnedMined = elapsed * 0.000005;
+                const earnedMined = elapsed * currentRate;
 
                 baseInitialBalance += earnedMined; 
                 currentBalance = baseInitialBalance;
@@ -685,6 +706,7 @@
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
+            const currentRate = levelMiningRates[currentLevel] || 0.000050;
 
             btn.innerText = "CLAIM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
@@ -700,7 +722,7 @@
             if (miningInterval) clearInterval(miningInterval);
             miningInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                minedAmount = elapsed * 0.000005;
+                minedAmount = elapsed * currentRate;
                 amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
             }, 1000);
         }
