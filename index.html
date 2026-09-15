@@ -206,11 +206,10 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
-        <!-- Link ဖြင့်သာ စစ်ဆေးမည့် Dynamic Tasks Tab -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Community Joins</span></div>
             
-            <!-- ADMIN ONLY PANEL (Channel Link နှင့် Group Link သာ ဖြည့်ရန် လိုအပ်သည်) -->
+            <!-- ADMIN ONLY PANEL -->
             <div id="admin-panel" class="card" style="display: none; border: 1px dashed #ffb400; background: rgba(255, 180, 0, 0.05);">
                 <h4 style="color: #ffb400; margin-bottom: 8px;">⚙️ Admin Task Control Panel</h4>
                 <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel & Group)">
@@ -262,6 +261,9 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // ⚠️ Enter your Telegram Bot Token here (Bot must be an Admin in the channel/group)
+        const BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"; 
+
         let rawUserId = '';
         let currentUserId = '';
         let currentUserName = 'Miner';
@@ -307,9 +309,8 @@
         let miningInterval;
         let miningStartTime = Date.now();
 
-        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 နာရီ Cooldown
+        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours Cooldown
 
-        // Dynamic Tasks (Channel ID များ မပါဝင်တော့ပါ)
         let activeTasksList = JSON.parse(localStorage.getItem('grm_dynamic_tasks')) || [
             {
                 id: 'task_main_channel',
@@ -320,7 +321,7 @@
             }
         ];
 
-        let taskStates = {}; // Individual task states
+        let taskStates = {}; 
 
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
@@ -407,7 +408,6 @@
             startAutoMiningUI();
         });
 
-        /* Admin Permission Check */
         function checkAdminPermissions() {
             const adminPanel = document.getElementById('admin-panel');
             if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) {
@@ -417,7 +417,6 @@
             }
         }
 
-        /* Admin Task Add Function (Channel Link နှင့် Group Link သာ လိုအပ်သည်) */
         function adminSaveTask() {
             const title = document.getElementById('adm-task-title').value.trim();
             const channelLink = document.getElementById('adm-channel-link').value.trim();
@@ -440,7 +439,6 @@
             activeTasksList.push(newTask);
             localStorage.setItem('grm_dynamic_tasks', JSON.stringify(activeTasksList));
             
-            // Clear Input Fields
             document.getElementById('adm-task-title').value = '';
             document.getElementById('adm-channel-link').value = '';
             document.getElementById('adm-group-link').value = '';
@@ -660,8 +658,52 @@
         }
 
         /* ----------------------------------------------------
-           Task Management System (Link-based Verification)
+           Task Management System (Real Telegram Verification)
         ------------------------------------------------------- */
+
+        // Function to extract @username or Chat ID from link
+        function parseTelegramChatId(link) {
+            if (!link) return null;
+            let cleaned = link.trim();
+            if (cleaned.includes('t.me/')) {
+                let parts = cleaned.split('t.me/')[1].split('/');
+                let target = parts[0].startsWith('+') ? parts[0] : '@' + parts[0];
+                return target.replace('?', '');
+            }
+            if (!cleaned.startsWith('@') && !cleaned.startsWith('-')) {
+                return '@' + cleaned;
+            }
+            return cleaned;
+        }
+
+        // Function to verify channel/group membership using getChatMember API
+        async function checkMembership(chatIdentifier) {
+            if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') {
+                console.warn("Please specify a valid BOT_TOKEN.");
+                return true; // Fallback for local testing if token is missing
+            }
+            if (!rawUserId) return false;
+
+            const targetChat = parseTelegramChatId(chatIdentifier);
+            if (!targetChat) return false;
+
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${targetChat}&user_id=${rawUserId}`);
+                const data = await response.json();
+
+                if (data.ok) {
+                    const status = data.result.status;
+                    return ['member', 'administrator', 'creator'].includes(status);
+                } else {
+                    console.error("Telegram API Error:", data.description);
+                    return false;
+                }
+            } catch (err) {
+                console.error("Network Error during membership check:", err);
+                return false;
+            }
+        }
+
         function renderTasksList() {
             const container = document.getElementById('tasks-list-container');
             if (!container) return;
@@ -705,7 +747,6 @@
 
             container.innerHTML = html;
 
-            // Cooldown ရှိလျှင် Timer စတင်မည်
             activeTasksList.forEach(task => {
                 const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
                 const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
@@ -716,7 +757,7 @@
             });
         }
 
-        function handleDynamicTaskAction(taskId) {
+        async function handleDynamicTaskAction(taskId) {
             const task = activeTasksList.find(t => t.id === taskId);
             if (!task) return;
 
@@ -726,14 +767,12 @@
             if (state === 'init') {
                 taskStates[taskId] = 'verify';
                 
-                // Channel Open
                 if (tg && tg.openTelegramLink) {
                     tg.openTelegramLink(task.channelLink);
                 } else {
                     window.open(task.channelLink, '_blank');
                 }
 
-                // Group Link ရှိပါက ဖွင့်ပေးရန်
                 if (task.groupLink) {
                     setTimeout(() => {
                         if (tg && tg.openTelegramLink) tg.openTelegramLink(task.groupLink);
@@ -747,14 +786,25 @@
                 btn.innerText = "Verifying...";
                 btn.disabled = true;
 
-                // Simple Verification Delay Simulation
-                setTimeout(() => {
+                // 1. Verify Channel Membership
+                const isChannelMember = await checkMembership(task.channelLink);
+                
+                // 2. Verify Group Membership (If provided by Admin)
+                let isGroupMember = true;
+                if (task.groupLink) {
+                    isGroupMember = await checkMembership(task.groupLink);
+                }
+
+                if (isChannelMember && isGroupMember) {
                     taskStates[taskId] = 'joined';
                     renderTasksList();
-                }, 1500);
+                } else {
+                    alert("Please join the channel first✅");
+                    btn.innerText = "Verify Check";
+                    btn.disabled = false;
+                }
 
             } else if (state === 'joined') {
-                // Claim reward
                 baseInitialBalance += task.reward;
                 currentBalance = baseInitialBalance;
                 document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + " GRM";
