@@ -150,7 +150,6 @@
         .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
         .action-btn:disabled { background-color: #333; color: #888; box-shadow: none; cursor: not-allowed; }
 
-        /* Admin UI Form Inputs */
         .admin-input { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; background: #070d18; border: 1px solid rgba(0,240,255,0.4); border-radius: 6px; color: #fff; font-size: 12px; }
 
         .bottom-nav {
@@ -209,7 +208,6 @@
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Community Joins</span></div>
             
-            <!-- ADMIN ONLY PANEL -->
             <div id="admin-panel" class="card" style="display: none; border: 1px dashed #ffb400; background: rgba(255, 180, 0, 0.05);">
                 <h4 style="color: #ffb400; margin-bottom: 8px;">⚙️ Admin Task Control Panel</h4>
                 <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel & Group)">
@@ -220,7 +218,6 @@
             </div>
 
             <div id="tasks-list-container">
-                <!-- Dynamic Tasks Will Render Here from Supabase -->
             </div>
         </div>
 
@@ -261,13 +258,13 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // ⚠️ Enter your Telegram Bot Token here (Bot must be an Admin in the channel/group)
+        // ⚠️ Enter your Telegram Bot Token here (Bot MUST be an Admin in the target channel/group)
         const BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"; 
 
         let rawUserId = '';
         let currentUserId = '';
         let currentUserName = 'Miner';
-        const ADMIN_ID = '5020977059'; // Admin Telegram User ID
+        const ADMIN_ID = '5020977059'; 
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             rawUserId = tg.initDataUnsafe.user.id.toString();
@@ -309,7 +306,7 @@
         let miningInterval;
         let miningStartTime = Date.now();
 
-        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; // 3 Hours Cooldown
+        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; 
 
         let activeTasksList = [];
         let taskStates = {}; 
@@ -408,7 +405,6 @@
             }
         }
 
-        /* Fetch Tasks from Supabase */
         async function fetchTasksFromSupabase() {
             if (!_supabase) return;
             try {
@@ -437,7 +433,6 @@
             }
         }
 
-        /* Save Task to Supabase */
         async function adminSaveTask() {
             const title = document.getElementById('adm-task-title').value.trim();
             const channelLink = document.getElementById('adm-channel-link').value.trim();
@@ -473,7 +468,6 @@
             alert("Task added successfully!");
         }
 
-        /* Delete Task from Supabase */
         async function adminDeleteTask(taskId) {
             if (confirm("Are you sure you want to remove this task?")) {
                 if (_supabase) {
@@ -694,7 +688,7 @@
         }
 
         /* ----------------------------------------------------
-           Task Management System (Real Telegram Verification)
+           Task Management & Telegram Verification Engine
         ------------------------------------------------------- */
 
         function parseTelegramChatId(link) {
@@ -702,8 +696,9 @@
             let cleaned = link.trim();
             if (cleaned.includes('t.me/')) {
                 let parts = cleaned.split('t.me/')[1].split('/');
-                let target = parts[0].startsWith('+') ? parts[0] : '@' + parts[0];
-                return target.replace('?', '');
+                let target = parts[0].replace('+', '');
+                if (target.startsWith('joinchat')) return null;
+                return target.startsWith('@') ? target : '@' + target;
             }
             if (!cleaned.startsWith('@') && !cleaned.startsWith('-')) {
                 return '@' + cleaned;
@@ -713,8 +708,8 @@
 
         async function checkMembership(chatIdentifier) {
             if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') {
-                console.warn("Please specify a valid BOT_TOKEN.");
-                return true; 
+                console.warn("Please add your valid BOT_TOKEN.");
+                return false; 
             }
             if (!rawUserId) return false;
 
@@ -722,18 +717,18 @@
             if (!targetChat) return false;
 
             try {
-                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${targetChat}&user_id=${rawUserId}`);
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(targetChat)}&user_id=${rawUserId}`);
                 const data = await response.json();
 
-                if (data.ok) {
+                if (data.ok && data.result) {
                     const status = data.result.status;
                     return ['member', 'administrator', 'creator'].includes(status);
                 } else {
-                    console.error("Telegram API Error:", data.description);
+                    console.warn("Telegram API response:", data.description);
                     return false;
                 }
             } catch (err) {
-                console.error("Network Error during membership check:", err);
+                console.error("Network / CORS error on membership check:", err);
                 return false;
             }
         }
