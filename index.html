@@ -195,7 +195,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
-            display: flex; justify-around: space-around; align-items: center; z-index: 1000;
+            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
@@ -578,8 +578,11 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            // ၁။ User record ရယူမည်
             await loadUserDataFromSupabase();
+            // ၂။ Referral Data ကို အတိအကျ သေချာအောင် ရေးသွင်းမည်
             await handleReferralRegistration();
+            // ၃။ Referral Stats နှင့် အခြား data များ ခေါ်ယူမည်
             await fetchWithdrawalHistory();
             await fetchReferralStats();
             renderMinersStore();
@@ -588,7 +591,7 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // 🟢 Referral System Fix: Direct Update & Database Synchronization
+        // 🟢 FIXED REFERRAL REGISTRATION (Save to Database explicitly)
         async function handleReferralRegistration() {
             const urlParams = new URLSearchParams(window.location.search);
             let startParam = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || urlParams.get('tgWebAppStartParam') || urlParams.get('start');
@@ -601,7 +604,7 @@
             if (referrerRawId && referrerUserId !== currentUserId) {
                 if (!_supabase) return;
                 try {
-                    // Check existing referral record in grm_referrals
+                    // 1. grm_referrals table ထဲမှာ referral relationship သေချာ စစ်ဆေးပြီး သိမ်းဆည်းမည်
                     const { data: existingRef } = await _supabase
                         .from('grm_referrals')
                         .select('*')
@@ -609,7 +612,6 @@
                         .maybeSingle();
 
                     if (!existingRef) {
-                        // Insert new referral relationship
                         await _supabase.from('grm_referrals').insert([{
                             id: 'ref_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
                             referrer_id: referrerUserId,
@@ -619,7 +621,7 @@
                         }]);
                     }
 
-                    // Explicitly update or insert referrer_id in grm_users table
+                    // 2. grm_users table ထဲတွင် referrer_id ကို အတိအကျ Direct Update သို့မဟုတ် Insert ပြုလုပ်မည်
                     const { data: userExists } = await _supabase
                         .from('grm_users')
                         .select('user_id, referrer_id')
@@ -646,57 +648,86 @@
                             updated_at: new Date().toISOString()
                         }]);
                     }
-                } catch (e) { console.error("Referral reg error:", e); }
+                } catch (e) { 
+                    console.error("Referral reg error:", e); 
+                }
             }
         }
 
+        // 🟢 FIXED FETCH REFERRAL STATS & DISPLAY
         async function fetchReferralStats() {
             if (!_supabase) return;
             try {
-                const { data } = await _supabase
+                // ၁။ grm_referrals Table မှ Data ယူမည်
+                const { data: refData } = await _supabase
                     .from('grm_referrals')
                     .select('*')
                     .eq('referrer_id', currentUserId);
 
-                if (data) {
-                    const totalCount = data.length;
-                    const successfulCount = data.filter(r => r.status === 'verified' || r.status === 'claimed').length;
-                    availableClaimCount = data.filter(r => r.status === 'verified').length;
+                // ၂။ grm_users Table မှ direct referrer_id ဖြင့် ချိတ်ထားသော User များပါ ပါမပါ စစ်ဆေးမည်
+                const { data: directUsers } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, username, is_verified')
+                    .eq('referrer_id', currentUserId);
 
-                    document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
-                    document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
+                let combinedMap = new Map();
 
-                    const claimBtn = document.getElementById('claim-referral-btn');
-                    if (availableClaimCount > 0) {
-                        claimBtn.classList.add('active-claim');
-                    } else {
-                        claimBtn.classList.remove('active-claim');
-                    }
-
-                    await renderReferredUsersList(data);
+                if (refData) {
+                    refData.forEach(r => combinedMap.set(r.referred_id, { status: r.status }));
                 }
+
+                if (directUsers) {
+                    directUsers.forEach(u => {
+                        if (!combinedMap.has(u.user_id)) {
+                            combinedMap.set(u.user_id, { status: 'pending' });
+                        }
+                    });
+                }
+
+                const totalCount = combinedMap.size;
+                let successfulCount = 0;
+                let pendingCount = 0;
+
+                combinedMap.forEach(val => {
+                    if (val.status === 'verified' || val.status === 'claimed') successfulCount++;
+                    else pendingCount++;
+                });
+
+                availableClaimCount = Array.from(combinedMap.values()).filter(v => v.status === 'verified').length;
+
+                document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
+                document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
+
+                const claimBtn = document.getElementById('claim-referral-btn');
+                if (availableClaimCount > 0) {
+                    claimBtn.classList.add('active-claim');
+                } else {
+                    claimBtn.classList.remove('active-claim');
+                }
+
+                await renderReferredUsersList(combinedMap);
             } catch (e) { console.error("Error fetching ref stats:", e); }
         }
 
-        async function renderReferredUsersList(referralData) {
+        async function renderReferredUsersList(combinedMap) {
             const container = document.getElementById('referrals-user-list-container');
             if (!container) return;
 
-            if (!referralData || referralData.length === 0) {
+            if (!combinedMap || combinedMap.size === 0) {
                 container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No referrals yet. Share your link to invite friends!</div>';
                 return;
             }
 
             let html = '';
-            for (const ref of referralData) {
-                let displayName = ref.referred_id.replace('tg_', '');
+            for (const [refUserId, refData] of combinedMap.entries()) {
+                let displayName = refUserId.replace('tg_', '');
                 let isVerified = false;
 
                 if (_supabase) {
                     const { data: usr } = await _supabase
                         .from('grm_users')
                         .select('username, is_verified')
-                        .eq('user_id', ref.referred_id)
+                        .eq('user_id', refUserId)
                         .maybeSingle();
 
                     if (usr) {
