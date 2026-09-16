@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRM Mining Core</title>
-    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- TON Connect UI SDK -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -229,7 +226,6 @@
     </div>
 
     <div class="main-container">
-        <!-- MINE TAB -->
         <div id="tab-mine" class="tab-content active">
             <div class="top-bar">
                 <div class="user-info">
@@ -260,7 +256,6 @@
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
         </div>
 
-        <!-- TASKS TAB -->
         <div id="tab-tasks" class="tab-content">
             <div class="top-bar"><span>Tasks & Community Joins</span></div>
             
@@ -301,13 +296,11 @@
             <div id="tasks-list-container"></div>
         </div>
 
-        <!-- MINERS TAB -->
         <div id="tab-miners" class="tab-content">
             <div class="top-bar"><span>Jet Engine Miner Store (0 - 10)</span></div>
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
-        <!-- FRIENDS TAB -->
         <div id="tab-friends" class="tab-content">
             <div class="top-bar"><span>Friends & Referrals</span></div>
             <p style="text-align: center; font-size: 13px; color: #8b949e; margin-bottom: 15px;">Invite friends to boost mining speed!</p>
@@ -345,7 +338,6 @@
             </div>
         </div>
 
-        <!-- PROFILE TAB -->
         <div id="tab-profile" class="tab-content">
             <div class="top-bar">
                 <span style="font-size: 18px; font-weight: bold;">Profile</span>
@@ -410,7 +402,6 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="withdraw-modal" class="modal-overlay">
         <div class="modal-card">
             <h3 style="color: #ffb400; margin-bottom: 5px;">Withdraw Funds</h3>
@@ -601,7 +592,9 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // 🛠️ Updated Referral Registration Logic to securely catch and bind referral ID
+        // -------------------------------------------------------------
+        // FIXED & IMPROVED REFERRAL REGISTRATION SYSTEM
+        // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
 
@@ -625,9 +618,8 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // If user already has a referrer registered, skip update
                 if (userRecord && userRecord.referrer_id) {
-                    return; 
+                    return; // Already registered with a referrer
                 }
 
                 if (!startParam) {
@@ -650,7 +642,32 @@
                 const referrerRawId = startParam.toString().trim();
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                // Prevent self-referral
+                // Validate if the referrer actually exists in the database before linking!
+                let { data: referrerRecord } = await _supabase
+                    .from('grm_users')
+                    .select('user_id')
+                    .eq('user_id', referrerUserId)
+                    .maybeSingle();
+
+                // If referrer ID does not exist in the database, ignore it to prevent invalid data errors
+                if (!referrerRecord) {
+                    console.warn("Referrer ID not found in database:", referrerUserId);
+                    if (!userRecord) {
+                        await _supabase.from('grm_users').upsert([{
+                            user_id: currentUserId,
+                            username: currentUserName,
+                            referrer_id: null,
+                            balance: baseInitialBalance,
+                            mined_amount: 0,
+                            mining_state: 'stopped',
+                            level: 0,
+                            is_verified: false,
+                            updated_at: new Date().toISOString()
+                        }], { onConflict: 'user_id' });
+                    }
+                    return;
+                }
+
                 if (referrerUserId === currentUserId) {
                     if (!userRecord) {
                         await _supabase.from('grm_users').upsert([{
@@ -668,7 +685,6 @@
                     return;
                 }
 
-                // Update or Insert user with valid referrer
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -688,7 +704,6 @@
                     }], { onConflict: 'user_id' });
                 }
 
-                // Check and insert into grm_referrals table
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -702,7 +717,7 @@
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
-                        status: 'active', // Set to active immediately so it shows up
+                        status: 'active', // Ensure it registers as active immediately
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
 
@@ -717,7 +732,6 @@
         async function fetchReferralStats() {
             if (!_supabase) return;
             try {
-                // Fetch referrals where current user is the referrer
                 const { data: refData } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -794,7 +808,7 @@
                     displayName = '@' + displayName;
                 }
 
-                const statusLabel = refData.status === 'claimed' ? 'Claimed' : 'Active';
+                const statusLabel = 'Active';
                 const statusDotClass = 'status-active-dot';
                 const statusTextClass = 'text-active';
 
@@ -887,6 +901,11 @@
                             <div><strong>Referrer:</strong> ${ref.referrer_id} ${stBadge}</div>
                             <div><strong>Referred User:</strong> ${ref.referred_id}</div>
                             <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
+                            ${ref.status === 'pending' ? `
+                            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminVerifyReferral('${ref.id}')">Verify Referral</button>
+                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminRejectReferral('${ref.id}')">Reject</button>
+                            </div>` : ''}
                         </div>
                     `;
                 });
@@ -917,7 +936,7 @@
                 } catch (e) { console.error(e); }
             }
 
-            const message = `✅ <b>A new referral has joined via your link and is Active!</b> 🎉\n\n` +
+            const message = `✅ <b>A referral has been confirmed and is now Active!</b> 🎉\n\n` +
                             `👤 <b>Name:</b> ${referredName}\n` +
                             `🔗 <b>Username:</b> ${referredUsername}\n` +
                             `🆔 <b>Telegram ID:</b> <code>${referredUserRawId}</code>\n\n` +
@@ -937,6 +956,42 @@
             } catch (err) {
                 console.error("Error sending Telegram Notification:", err);
             }
+        }
+
+        async function adminVerifyReferral(refId) {
+            if (!_supabase) return;
+            try {
+                const { data: refData } = await _supabase
+                    .from('grm_referrals')
+                    .select('*')
+                    .eq('id', refId)
+                    .maybeSingle();
+
+                await _supabase
+                    .from('grm_referrals')
+                    .update({ status: 'active' })
+                    .eq('id', refId);
+
+                if (refData) {
+                    await notifyReferrerBonus(refData.referrer_id, refData.referred_id);
+                }
+
+                alert("Referral verified & Message sent to user chat!");
+                fetchAdminReferralRequests();
+            } catch (err) { console.error("Error verifying referral:", err); }
+        }
+
+        async function adminRejectReferral(refId) {
+            if (!_supabase) return;
+            try {
+                await _supabase
+                    .from('grm_referrals')
+                    .update({ status: 'rejected' })
+                    .eq('id', refId);
+
+                alert("Referral rejected!");
+                fetchAdminReferralRequests();
+            } catch (err) { console.error("Error rejecting referral:", err); }
         }
 
         async function fetchTasksFromSupabase() {
@@ -1553,7 +1608,7 @@
                             <div style="word-break: break-all;"><strong>Address:</strong> ${req.address}</div>
                             <div style="display: flex; gap: 8px; margin-top: 6px;">
                                 <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Completed')">Mark Completed</button>
-                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Rejected')">Reject</button>
+                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Rejected')">Reject</i></button>
                             </div>
                         </div>
                     `;
