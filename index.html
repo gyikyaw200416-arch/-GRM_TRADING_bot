@@ -195,7 +195,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
-            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+            display: flex; justify-around: space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
@@ -450,7 +450,7 @@
         if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             rawUserId = tg.initDataUnsafe.user.id.toString();
             currentUserId = 'tg_' + rawUserId;
-            currentUserName = tg.initDataUnsafe.user.username ? ('@' + tg.initDataUnsafe.user.username) : (tg.initDataUnsafe.user.first_name || 'Miner');
+            currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
             localStorage.setItem('grm_saved_user_id', currentUserId);
             localStorage.setItem('grm_saved_raw_id', rawUserId);
             localStorage.setItem('grm_saved_username', currentUserName);
@@ -578,9 +578,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            await autoSyncTelegramUserData();
-            await handleReferralRegistration();
             await loadUserDataFromSupabase();
+            await handleReferralRegistration();
             await fetchWithdrawalHistory();
             await fetchReferralStats();
             renderMinersStore();
@@ -589,41 +588,7 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // Sync User Data to Supabase automatically on startup
-        async function autoSyncTelegramUserData() {
-            if (!_supabase) return;
-            try {
-                const { data: existing } = await _supabase
-                    .from('grm_users')
-                    .select('*')
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
-
-                if (!existing) {
-                    await _supabase.from('grm_users').insert([{
-                        user_id: currentUserId,
-                        username: currentUserName,
-                        balance: 0,
-                        mined_amount: 0,
-                        mining_state: 'stopped',
-                        level: 0,
-                        is_verified: false,
-                        wallet_address: getActiveWalletAddress(),
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }]);
-                } else if (existing.username !== currentUserName) {
-                    await _supabase.from('grm_users').update({
-                        username: currentUserName,
-                        updated_at: new Date().toISOString()
-                    }).eq('user_id', currentUserId);
-                }
-            } catch (e) {
-                console.error("Auto sync error:", e);
-            }
-        }
-
-        // Referral System Fix: Database update & Sync logic
+        // 🟢 Referral System Fix: Direct Update & Database Synchronization
         async function handleReferralRegistration() {
             const urlParams = new URLSearchParams(window.location.search);
             let startParam = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || urlParams.get('tgWebAppStartParam') || urlParams.get('start');
@@ -636,15 +601,15 @@
             if (referrerRawId && referrerUserId !== currentUserId) {
                 if (!_supabase) return;
                 try {
-                    // Check existing referral
-                    const { data: existing } = await _supabase
+                    // Check existing referral record in grm_referrals
+                    const { data: existingRef } = await _supabase
                         .from('grm_referrals')
                         .select('*')
                         .eq('referred_id', currentUserId)
                         .maybeSingle();
 
-                    if (!existing) {
-                        // Insert to grm_referrals
+                    if (!existingRef) {
+                        // Insert new referral relationship
                         await _supabase.from('grm_referrals').insert([{
                             id: 'ref_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
                             referrer_id: referrerUserId,
@@ -652,9 +617,34 @@
                             status: 'pending',
                             created_at: new Date().toISOString()
                         }]);
+                    }
 
-                        // Also set referrer_id in grm_users table for user tracking
-                        await updateSupabaseField({ referrer_id: referrerUserId });
+                    // Explicitly update or insert referrer_id in grm_users table
+                    const { data: userExists } = await _supabase
+                        .from('grm_users')
+                        .select('user_id, referrer_id')
+                        .eq('user_id', currentUserId)
+                        .maybeSingle();
+
+                    if (userExists) {
+                        if (!userExists.referrer_id) {
+                            await _supabase
+                                .from('grm_users')
+                                .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
+                                .eq('user_id', currentUserId);
+                        }
+                    } else {
+                        await _supabase.from('grm_users').insert([{
+                            user_id: currentUserId,
+                            username: currentUserName,
+                            referrer_id: referrerUserId,
+                            balance: baseInitialBalance,
+                            mined_amount: 0,
+                            mining_state: 'stopped',
+                            level: 0,
+                            is_verified: false,
+                            updated_at: new Date().toISOString()
+                        }]);
                     }
                 } catch (e) { console.error("Referral reg error:", e); }
             }
@@ -1198,7 +1188,6 @@
             if (profilePool) profilePool.innerText = formatted;
         }
 
-        // Wallet Connection Required to Start Mining Logic
         function handleMiningAction() {
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
