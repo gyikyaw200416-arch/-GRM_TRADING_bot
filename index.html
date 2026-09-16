@@ -473,7 +473,10 @@
         let _supabase = null;
         try {
             if (typeof supabase !== 'undefined') {
-                _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: { persistSession: false },
+                    global: { headers: { 'apikey': SUPABASE_ANON_KEY } }
+                });
             }
         } catch (e) {
             console.warn("Supabase init error:", e);
@@ -588,13 +591,9 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // -------------------------------------------------------------
-        // ROBUST REFERRAL REGISTRATION LOGIC (FIXED)
-        // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
 
-            // Extract start_param from Telegram WebApp SDK, URL query parameters, or URL Hash
             let startParam = null;
             if (tg && tg.initDataUnsafe) {
                 startParam = tg.initDataUnsafe.start_param;
@@ -609,22 +608,19 @@
             }
 
             try {
-                // Check if user already exists in database
                 let { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // If user already has a referrer registered, do not re-assign
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
 
-                // If no startParam provided in link
                 if (!startParam) {
                     if (!userRecord) {
-                        await _supabase.from('grm_users').insert([{
+                        await _supabase.from('grm_users').upsert([{
                             user_id: currentUserId,
                             username: currentUserName,
                             referrer_id: null,
@@ -634,7 +630,7 @@
                             level: 0,
                             is_verified: false,
                             updated_at: new Date().toISOString()
-                        }]);
+                        }], { onConflict: 'user_id' });
                     }
                     return;
                 }
@@ -642,10 +638,9 @@
                 const referrerRawId = startParam.toString().trim();
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                // Self-referral prevention
                 if (referrerUserId === currentUserId) {
                     if (!userRecord) {
-                        await _supabase.from('grm_users').insert([{
+                        await _supabase.from('grm_users').upsert([{
                             user_id: currentUserId,
                             username: currentUserName,
                             referrer_id: null,
@@ -655,19 +650,18 @@
                             level: 0,
                             is_verified: false,
                             updated_at: new Date().toISOString()
-                        }]);
+                        }], { onConflict: 'user_id' });
                     }
                     return;
                 }
 
-                // Update or insert user with referrer_id
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
                         .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
                         .eq('user_id', currentUserId);
                 } else {
-                    await _supabase.from('grm_users').insert([{
+                    await _supabase.from('grm_users').upsert([{
                         user_id: currentUserId,
                         username: currentUserName,
                         referrer_id: referrerUserId,
@@ -677,10 +671,9 @@
                         level: 0,
                         is_verified: false,
                         updated_at: new Date().toISOString()
-                    }]);
+                    }], { onConflict: 'user_id' });
                 }
 
-                // Check if referral entry already exists in grm_referrals
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -690,13 +683,13 @@
                 if (!existingRef) {
                     const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
                     
-                    await _supabase.from('grm_referrals').insert([{
+                    await _supabase.from('grm_referrals').upsert([{
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
                         status: 'verified',
                         created_at: new Date().toISOString()
-                    }]);
+                    }], { onConflict: 'id' });
 
                     await notifyReferrerBonus(referrerUserId, currentUserId);
                 }
@@ -1010,7 +1003,7 @@
             };
 
             if (_supabase) {
-                const { error } = await _supabase.from('grm_tasks').insert([newTask]);
+                const { error } = await _supabase.from('grm_tasks').upsert([newTask], { onConflict: 'id' });
                 if (error) {
                     alert("Error saving task: " + error.message);
                     return;
@@ -1062,6 +1055,24 @@
             }
 
             try {
+                // First check if user exists, if not create user record to prevent missing row error
+                let { data: existingUser } = await _supabase
+                    .from('grm_users')
+                    .select('user_id')
+                    .eq('user_id', targetUserId)
+                    .maybeSingle();
+
+                if (!existingUser) {
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: targetUserId,
+                        username: 'User_' + targetUserId.replace('tg_', ''),
+                        balance: 0,
+                        level: targetLevel,
+                        is_verified: false,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+                }
+
                 const { data, error } = await _supabase
                     .from('grm_users')
                     .update({ level: targetLevel, updated_at: new Date().toISOString() })
@@ -1073,14 +1084,10 @@
                     return;
                 }
 
-                if (data && data.length > 0) {
-                    alert(`Success! Set level to ${targetLevel} for user ${targetUserId}`);
-                    if (targetUserId === currentUserId) {
-                        await loadUserDataFromSupabase();
-                        renderMinersStore();
-                    }
-                } else {
-                    alert("User ID not found in database!");
+                alert(`Success! Set level to ${targetLevel} for user ${targetUserId}`);
+                if (targetUserId === currentUserId) {
+                    await loadUserDataFromSupabase();
+                    renderMinersStore();
                 }
             } catch (err) { alert("Exception occurred: " + err.message); }
         }
@@ -1099,6 +1106,24 @@
             if (!_supabase) return;
 
             try {
+                // Ensure user exists in table before updating to avoid failed update
+                let { data: existingUser } = await _supabase
+                    .from('grm_users')
+                    .select('user_id')
+                    .eq('user_id', targetUserId)
+                    .maybeSingle();
+
+                if (!existingUser) {
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: targetUserId,
+                        username: 'User_' + targetUserId.replace('tg_', ''),
+                        balance: 0,
+                        level: 0,
+                        is_verified: status,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+                }
+
                 const { data, error } = await _supabase
                     .from('grm_users')
                     .update({ is_verified: status, updated_at: new Date().toISOString() })
@@ -1202,7 +1227,7 @@
                         if (activeAddr) fields.wallet_address = activeAddr;
                     }
 
-                    await _supabase.from('grm_users').insert([fields]);
+                    await _supabase.from('grm_users').upsert([fields], { onConflict: 'user_id' });
                 }
             } catch (err) { console.error('Supabase update general error:', err); }
         }
@@ -1449,13 +1474,13 @@
             withdrawalHistory.unshift(txRecord);
 
             if (_supabase) {
-                await _supabase.from('grm_withdrawals').insert([{
+                await _supabase.from('grm_withdrawals').upsert([{
                     id: txRecord.id,
                     user_id: currentUserId,
                     amount: amountVal,
                     address: addressVal,
                     status: 'Pending'
-                }]);
+                }], { onConflict: 'id' });
             }
 
             updateSupabaseField({ balance: baseInitialBalance });
@@ -1730,7 +1755,7 @@
             let remaining = Math.floor(durationMs / 1000);
 
             const timer = setInterval(() => {
-                if (remaining <= 0) {
+                if, (remaining <= 0) {
                     clearInterval(timer);
                     localStorage.removeItem(`grm_task_cd_${taskId}_${currentUserId}`);
                     renderTasksList();
