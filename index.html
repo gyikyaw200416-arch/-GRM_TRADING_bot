@@ -484,11 +484,10 @@
             buttonRootId: 'ton-connect-button'
         });
 
-        // ပြင်ဆင်ချက် - အကောင့်သစ် Initial Balance ကို 0.000000 ဟု သတ်မှတ်ပေးခြင်း
         let baseInitialBalance = 0.000000; 
         let currentBalance = baseInitialBalance;
         let minedAmount = 0;
-        let isMining = true;
+        let isMining = false;
         let miningInterval;
         let miningStartTime = Date.now();
         
@@ -587,10 +586,9 @@
             checkAdminPermissions();
             await fetchTasksFromSupabase();
             setTimeout(hideSplashScreen, 1000);
-            startAutoMiningUI();
         });
 
-        // ပြင်ဆင်ချက် - Referral Link ဝင်လာပါက Supabase တွင် Registration သေချာ ပြုလုပ်ပေးခြင်း
+        // 🟢 Referral System Fix: Database update & Sync logic
         async function handleReferralRegistration() {
             const urlParams = new URLSearchParams(window.location.search);
             let startParam = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || urlParams.get('tgWebAppStartParam') || urlParams.get('start');
@@ -603,6 +601,7 @@
             if (referrerRawId && referrerUserId !== currentUserId) {
                 if (!_supabase) return;
                 try {
+                    // Check existing referral
                     const { data: existing } = await _supabase
                         .from('grm_referrals')
                         .select('*')
@@ -610,6 +609,7 @@
                         .maybeSingle();
 
                     if (!existing) {
+                        // Insert to grm_referrals
                         await _supabase.from('grm_referrals').insert([{
                             id: 'ref_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
                             referrer_id: referrerUserId,
@@ -617,6 +617,9 @@
                             status: 'pending',
                             created_at: new Date().toISOString()
                         }]);
+
+                        // Also set referrer_id in grm_users table for user tracking
+                        await updateSupabaseField({ referrer_id: referrerUserId });
                     }
                 } catch (e) { console.error("Referral reg error:", e); }
             }
@@ -677,7 +680,7 @@
                     }
                 }
 
-                const statusLabel = isVerified ? 'Active (Verified)' : 'Not Active (Unverified)';
+                const statusLabel = isVerified ? 'Active' : 'Not Active';
                 const statusDotClass = isVerified ? 'status-active-dot' : 'status-inactive-dot';
                 const statusTextClass = isVerified ? 'text-active' : 'text-inactive';
 
@@ -745,7 +748,6 @@
             }
         }
 
-        // ပြင်ဆင်ချက် - Admin Referral Control & Tree List ရယူခြင်း
         async function fetchAdminReferralRequests() {
             const container = document.getElementById('admin-referrals-list');
             if (!container || !_supabase) return;
@@ -981,7 +983,6 @@
             } catch (err) { alert("Exception occurred: " + err.message); }
         }
 
-        // ပြင်ဆင်ချက် - Admin မှ User Verification status ကို ပြောင်းလဲပေးနိုင်သည့် Function
         async function adminSetUserVerification(status) {
             let targetUserId = document.getElementById('adm-target-user-id').value.trim();
             if (!targetUserId) {
@@ -1060,16 +1061,17 @@
             const btn = document.getElementById('mining-action-btn');
             const activeAddr = getActiveWalletAddress();
             
-            if (!isMining && btn.innerText === "START MINING" && !activeAddr) {
-                btn.disabled = true;
-                btn.title = "Please connect your wallet first!";
-            } else if (!isMining && btn.innerText === "START MINING" && activeAddr) {
-                btn.disabled = false;
-                btn.title = "";
+            if (!activeAddr) {
+                btn.innerText = "START MINING";
+                btn.style.background = "linear-gradient(135deg, #555 0%, #333 100%)";
+                btn.style.color = "#aaa";
+            } else if (!isMining) {
+                btn.innerText = "START MINING";
+                btn.style.background = "linear-gradient(135deg, #00f0ff 0%, #0055ff 100%)";
+                btn.style.color = "#fff";
             }
         }
 
-        // ပြင်ဆင်ချက် - User အသစ်များကို အလိုအလျောက် Unverified (is_verified: false) ဖြင့် သိမ်းဆည်းခြင်း
         async function updateSupabaseField(fields) {
             if (!_supabase) return;
             try {
@@ -1089,9 +1091,9 @@
                     fields.username = currentUserName;
                     fields.balance = baseInitialBalance;
                     fields.mined_amount = 0;
-                    fields.mining_state = 'mining';
+                    fields.mining_state = 'stopped';
                     fields.level = 0;
-                    fields.is_verified = false; // Default: Admin မပေးမချင်း Unverified ဖြစ်ရမည်
+                    fields.is_verified = false;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -1103,7 +1105,6 @@
             } catch (err) { console.error('Supabase update general error:', err); }
         }
 
-        // ပြင်ဆင်ချက် - Profile Verification Status ပြသမှုစနစ်
         async function loadUserDataFromSupabase() {
             if (!_supabase) return;
             try {
@@ -1127,6 +1128,12 @@
 
                     updateBalanceUI();
 
+                    if (data.mining_state === 'mining') {
+                        startAutoMiningUI();
+                    } else {
+                        checkWalletAndButtonState();
+                    }
+
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
@@ -1143,9 +1150,9 @@
                     const lvlBadge = document.querySelector('.lvl-badge');
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
                     updateBalanceUI();
+                    checkWalletAndButtonState();
                 }
             } catch (err) { console.error('Load user data exception:', err); }
-            checkWalletAndButtonState();
         }
 
         function updateBalanceUI() {
@@ -1156,6 +1163,7 @@
             if (profilePool) profilePool.innerText = formatted;
         }
 
+        // 🟢 Wallet Connection Required to Start Mining Logic
         function handleMiningAction() {
             const btn = document.getElementById('mining-action-btn');
             const statusBadge = document.getElementById('mining-status-badge');
@@ -1163,8 +1171,9 @@
             const amountDisplay = document.getElementById('mining-amount-display');
             const activeAddr = getActiveWalletAddress();
 
-            if (btn.innerText === "START MINING" && !activeAddr) {
-                alert("Please connect your wallet first!");
+            // Wallet မချိတ်ထားပါက တားဆီးခြင်း
+            if (!activeAddr) {
+                alert("Please connect your TON wallet first to start mining!");
                 return;
             }
 
@@ -1176,7 +1185,6 @@
                 btn.innerText = "CLAIM";
                 btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
                 btn.style.color = "#fff";
-                btn.disabled = false;
                 
                 if (statusBadge) {
                     statusBadge.innerText = "MINING AUTO";
@@ -1226,7 +1234,6 @@
             btn.innerText = "CLAIM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
             btn.style.color = "#fff";
-            btn.disabled = false;
 
             if (statusBadge) {
                 statusBadge.innerText = "MINING AUTO";
