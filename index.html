@@ -593,7 +593,7 @@
         });
 
         // -------------------------------------------------------------
-        // FIXED REFERRAL & START_PARAM REGISTRATION (SUPABASE SAFE)
+        // FIXED & IMPROVED REFERRAL REGISTRATION SYSTEM
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -622,36 +622,41 @@
                     return; // Already registered with a referrer
                 }
 
-                let validReferrerId = null;
+                let referrerUserId = null;
                 if (startParam) {
                     const referrerRawId = startParam.toString().trim();
-                    const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
+                    referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                    if (referrerUserId !== currentUserId) {
+                    if (referrerUserId === currentUserId) {
+                        referrerUserId = null;
+                    } else {
+                        // Check if referrer exists
                         let { data: referrerRecord } = await _supabase
                             .from('grm_users')
                             .select('user_id')
                             .eq('user_id', referrerUserId)
                             .maybeSingle();
 
-                        if (referrerRecord) {
-                            validReferrerId = referrerUserId;
+                        if (!referrerRecord) {
+                            referrerUserId = null; // If not in DB yet, ignore or keep null
                         }
                     }
                 }
 
+                // Upsert user with proper referrer_id
                 if (userRecord) {
-                    if (validReferrerId && !userRecord.referrer_id) {
-                        await _supabase
-                            .from('grm_users')
-                            .update({ referrer_id: validReferrerId, updated_at: new Date().toISOString() })
-                            .eq('user_id', currentUserId);
-                    }
+                    await _supabase
+                        .from('grm_users')
+                        .update({ 
+                            referrer_id: referrerUserId || userRecord.referrer_id, 
+                            updated_at: new Date().toISOString() 
+                        })
+                        .eq('user_id', currentUserId);
                 } else {
-                    await _supabase.from('grm_users').upsert([{
+                    await _supabase.from('grm_users മറ്റൊരു_upsert' /* fallback safe */).upsert([{
                         user_id: currentUserId,
                         username: currentUserName,
-                        referrer_id: validReferrerId,
+                        referrer_id: referrerUserId,
                         balance: baseInitialBalance,
                         mined_amount: 0,
                         mining_state: 'stopped',
@@ -661,7 +666,7 @@
                     }], { onConflict: 'user_id' });
                 }
 
-                if (validReferrerId) {
+                if (referrerUserId) {
                     const { data: existingRef } = await _supabase
                         .from('grm_referrals')
                         .select('*')
@@ -672,13 +677,13 @@
                         const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
                         await _supabase.from('grm_referrals').upsert([{
                             id: newRefId,
-                            referrer_id: validReferrerId,
+                            referrer_id: referrerUserId,
                             referred_id: currentUserId,
                             status: 'active',
                             created_at: new Date().toISOString()
                         }], { onConflict: 'id' });
 
-                        await notifyReferrerBonus(validReferrerId, currentUserId);
+                        await notifyReferrerBonus(referrerUserId, currentUserId);
                     }
                 }
 
