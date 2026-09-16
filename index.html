@@ -605,7 +605,7 @@
             if (!_supabase) return;
 
             let startParam = null;
-            if (tg && tg.initDataUnsafe) {
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
                 startParam = tg.initDataUnsafe.start_param;
             }
             if (!startParam) {
@@ -614,7 +614,7 @@
             }
             if (!startParam) {
                 const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                startParam = hashParams.get('tgWebAppStartParam') || hashParams.get('startapp');
+                startParam = hashParams.get('tgWebAppStartParam') || hashParams.get('startapp') || hashParams.get('start');
             }
 
             try {
