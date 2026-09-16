@@ -353,8 +353,8 @@
             </div>
 
             <div class="card profile-row">
-                <div class="profile-info-block">
-                    <div class="profile-icon-box" style="border-color: rgba(218, 54, 51, 0.4);">❌</div>
+                <div class="profile-info-block" id="profile-verification-icon-box">
+                    <div class="profile-icon-box" style="border-color: rgba(218, 54, 51, 0.4);" id="profile-verify-icon">❌</div>
                     <div>
                         <div class="profile-label">Account Verification</div>
                         <div class="profile-sublabel" id="profile-verification-subtext">Unverified User</div>
@@ -608,21 +608,17 @@
             }
 
             try {
-                // ၁။ မိမိ User သည် Supabase ထဲတွင် ရှိမရှိ စစ်ဆေးခြင်း
                 let { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // အကယ်၍ User ရှိပြီးသားဖြစ်ပြီး referrer_id ပါရှိပြီးဖြစ်ပါက Referral ထပ်မံပြောင်းလဲ၍မရပါ (Lock)
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
 
-                // အကယ်၍ startParam မပါလျှင် သို့မဟုတ် မိမိ ID ကို မိမိ Refer ပြန်လုပ်ပါက ရပ်တန့်မည်
                 if (!startParam) {
-                    // အကယ်၍ User လုံးဝမရှိသေးပါက အသစ်ထည့်မည် (Unverified ဖြင့်)
                     if (!userRecord) {
                         await _supabase.from('grm_users').insert([{
                             user_id: currentUserId,
@@ -644,7 +640,6 @@
 
                 if (referrerUserId === currentUserId) return; // Self-referral protection
 
-                // ၂။ User ဇယားတွင် referrer_id ကို အခိုင်အမာ update သို့မဟုတ် insert ပြုလုပ်ခြင်း
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -664,7 +659,6 @@
                     }]);
                 }
 
-                // ၃။ Referral ဇယား (grm_referrals) ထဲသို့ အသစ်ဝင်လာသူ မရောက်သေးပါက အလိုအလျောက် သေချာထည့်သွင်းခြင်း
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -678,7 +672,7 @@
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
-                        status: 'verified', // active / verified status
+                        status: 'verified',
                         created_at: new Date().toISOString()
                     }]);
 
@@ -1179,7 +1173,7 @@
                     fields.mined_amount = 0;
                     fields.mining_state = 'stopped';
                     fields.level = 0;
-                    fields.is_verified = false; // Default unverified for new users
+                    fields.is_verified = false;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -1202,6 +1196,7 @@
 
                 const verifiedBadge = document.getElementById('profile-verified-badge');
                 const verificationSubtext = document.getElementById('profile-verification-subtext');
+                const verifyIcon = document.getElementById('profile-verify-icon');
 
                 if (data) {
                     baseInitialBalance = parseFloat(data.balance) || 0.000000;
@@ -1220,16 +1215,27 @@
                         checkWalletAndButtonState();
                     }
 
+                    // FIXED: UI Verification status correctly bound to Supabase data.is_verified
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
                         verifiedBadge.style.color = "#ffffff";
                         if (verificationSubtext) verificationSubtext.innerText = "Verified User";
+                        if (verifyIcon) {
+                            verifyIcon.innerText = "✔";
+                            verifyIcon.style.borderColor = "rgba(35, 134, 54, 0.4)";
+                            verifyIcon.style.color = "#2ea043";
+                        }
                     } else {
                         verifiedBadge.innerText = "Unverified ❌";
                         verifiedBadge.style.backgroundColor = "#da3633";
                         verifiedBadge.style.color = "#ffffff";
                         if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
+                        if (verifyIcon) {
+                            verifyIcon.innerText = "❌";
+                            verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
+                            verifyIcon.style.color = "#da3633";
+                        }
                     }
                 } else {
                     currentLevel = 0;
@@ -1238,12 +1244,16 @@
                     updateBalanceUI();
                     checkWalletAndButtonState();
                     
-                    // Set default unverified badge for brand new load
                     if (verifiedBadge) {
                         verifiedBadge.innerText = "Unverified ❌";
                         verifiedBadge.style.backgroundColor = "#da3633";
                         verifiedBadge.style.color = "#ffffff";
                         if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
+                        if (verifyIcon) {
+                            verifyIcon.innerText = "❌";
+                            verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
+                            verifyIcon.style.color = "#da3633";
+                        }
                     }
                 }
             } catch (err) { console.error('Load user data exception:', err); }
