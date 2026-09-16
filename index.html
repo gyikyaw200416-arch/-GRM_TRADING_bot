@@ -167,10 +167,12 @@
             border: 2px solid #070d18;
         }
         .status-active-dot { background-color: #2ea043; box-shadow: 0 0 8px #2ea043; }
+        .status-inactive-dot { background-color: #8b949e; }
 
         .ref-username { font-size: 14px; font-weight: bold; color: #ffffff; letter-spacing: 0.3px; }
         .ref-status-text { font-size: 12px; margin-top: 3px; display: flex; align-items: center; gap: 5px; }
         .text-active { color: #2ea043; font-weight: 600; }
+        .text-inactive { color: #8b949e; }
 
         .ref-coin-badge {
             width: 36px; height: 36px; border-radius: 50%;
@@ -189,12 +191,15 @@
         .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
         .section-header-title { font-size: 13px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 8px 4px; }
         .profile-btn-yellow { background: #ffb400; color: #000000; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 12px rgba(255, 180, 0, 0.3); transition: all 0.2s ease; }
+        .profile-btn-yellow:active { transform: scale(0.96); }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal-card { background: #0d1626; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 16px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 0 30px rgba(0,240,255,0.2); }
         .history-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
 
         .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        .action-btn:disabled { background-color: #333; color: #888; box-shadow: none; cursor: not-allowed; }
+
         .admin-input { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; background: #070d18; border: 1px solid rgba(0,240,255,0.4); border-radius: 6px; color: #fff; font-size: 12px; }
 
         .bottom-nav {
@@ -596,9 +601,6 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // ==========================================
-        // 🚀 UPDATED REFERRAL REGISTRATION LOGIC
-        // ==========================================
         async function handleReferralRegistration() {
             if (!_supabase) return;
 
@@ -616,19 +618,16 @@
             }
 
             try {
-                // Database ထဲမှာ လက်ရှိ User ရှိမရှိ စစ်ဆေးခြင်း
                 let { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // အကယ်၍ User က Database ထဲမှာ ရှိပြီးသားဖြစ်ပြီး referrer_id ရှိနှင့်ပြီးသားဆိုရင် ဘာမှထပ်မလုပ်ပါ (အဟောင်းအတိုင်းအတည်ဖြစ်သည်)
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
 
-                // အကယ်၍ link ကနေ start_param မပါလာဘူးဆိုရင်
                 if (!startParam) {
                     if (!userRecord) {
                         await _supabase.from('grm_users').upsert([{
@@ -649,7 +648,6 @@
                 const referrerRawId = startParam.toString().trim();
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                // ကိုယ့်လင့်နဲ့ကိုယ် ပြန်ဝင်တာမျိုးကို ရှောင်ရှားရန်
                 if (referrerUserId === currentUserId) {
                     if (!userRecord) {
                         await _supabase.from('grm_users').upsert([{
@@ -667,7 +665,6 @@
                     return;
                 }
 
-                // လူအသစ်ဖြစ်ပြီး referrer_id မရှိသေးလျှင် (သို့) DB ထဲလုံးဝမရှိသေးလျှင် ပထမဆုံးအကြိမ် တွဲပေးမည်
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -687,7 +684,6 @@
                     }], { onConflict: 'user_id' });
                 }
 
-                // grm_referrals စာရင်းထဲမှာ လူအသစ်အဖြစ် ပထမဆုံးတစ်ကြိမ်သာ သွားထည့်မည်
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
