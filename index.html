@@ -138,13 +138,11 @@
         .badge-need { background-color: #2ea043; color: #fff; }
         .badge-lock { background-color: #1a2333; color: #8b949e; cursor: not-allowed; }
 
-        /* Referral Custom UI Styles */
         .ref-box-card { background: rgba(13, 22, 38, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 14px; padding: 15px; margin-bottom: 12px; }
         .ref-link-input-group { display: flex; background: rgba(7, 13, 24, 0.8); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 10px; padding: 6px 10px; align-items: center; margin-top: 10px; }
         .ref-link-text { flex: 1; font-size: 11px; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .copy-btn-yellow { background: #ffb400; color: #000; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 10px rgba(255, 180, 0, 0.3); }
 
-        /* Referral List Item Custom Styles */
         .ref-user-item {
             background: rgba(13, 22, 38, 0.9);
             border: 1px solid rgba(0, 240, 255, 0.15);
@@ -175,7 +173,6 @@
         .text-active { color: #2ea043; }
         .text-inactive { color: #8b949e; }
 
-        /* Profile & Custom Controls UI */
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
         .profile-icon-box { width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); display: flex; justify-content: center; align-items: center; font-size: 20px; color: #00f0ff; }
         .profile-info-block { display: flex; align-items: center; gap: 12px; }
@@ -186,7 +183,6 @@
         .profile-btn-yellow { background: #ffb400; color: #000000; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 12px rgba(255, 180, 0, 0.3); transition: all 0.2s ease; }
         .profile-btn-yellow:active { transform: scale(0.96); }
 
-        /* History Drawer Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal-card { background: #0d1626; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 16px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 0 30px rgba(0,240,255,0.2); }
         .history-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
@@ -228,7 +224,7 @@
             <div class="top-bar">
                 <div class="user-info">
                     <span class="lvl-badge">Lvl 0</span>
-                    <span id="telegram-username">Shadow ✈️</span>
+                    <span id="telegram-username">Miner</span>
                     <span style="font-size: 10px; color: #2ea043;" id="mining-status-badge">MINING AUTO</span>
                 </div>
                 <div id="ton-connect-button"></div>
@@ -260,7 +256,7 @@
             
             <div id="admin-panel" class="card" style="display: none; border: 1px dashed #ffb400; background: rgba(255, 180, 0, 0.05);">
                 <h4 style="color: #ffb400; margin-bottom: 8px;">⚙️ Admin Task Control Panel</h4>
-                <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel & Group)">
+                <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel)">
                 <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
                 <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
                 <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 3)" value="3">
@@ -302,16 +298,14 @@
             <div class="top-bar"><span>Friends & Referrals</span></div>
             <p style="text-align: center; font-size: 13px; color: #8b949e; margin-bottom: 15px;">Invite friends to boost mining speed!</p>
             
-            <!-- Link Card -->
             <div class="ref-box-card">
                 <div style="font-size: 13px; font-weight: bold; color: #fff;">Your Invite Link</div>
                 <div class="ref-link-input-group">
-                    <span class="ref-link-text" id="referral-link-display">https://t.me/_GRM_TRADING_bot?start=1793453606</span>
+                    <span class="ref-link-text" id="referral-link-display">Loading invite link...</span>
                     <button class="copy-btn-yellow" onclick="copyReferralLink()">Copy</button>
                 </div>
             </div>
 
-            <!-- Stats Card -->
             <div class="ref-box-card" style="display: flex; align-items: center; gap: 15px;">
                 <div style="font-size: 24px;">👥</div>
                 <div>
@@ -320,7 +314,6 @@
                 </div>
             </div>
 
-            <!-- Reward Card -->
             <div class="ref-box-card" style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <div style="font-size: 24px;">🎁</div>
@@ -332,7 +325,6 @@
                 <button class="claim-reward-btn" id="claim-referral-btn" onclick="claimReferralRewards()">Claim</button>
             </div>
 
-            <!-- Referred Users Detailed List (PHOTO STYLE) -->
             <div class="section-header-title">Invited Friends</div>
             <div id="referrals-user-list-container">
                 <div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">Loading referrals...</div>
@@ -404,7 +396,7 @@
         </div>
     </div>
 
-    <!-- Withdraw Modal -->
+    <!-- Modals -->
     <div id="withdraw-modal" class="modal-overlay">
         <div class="modal-card">
             <h3 style="color: #ffb400; margin-bottom: 5px;">Withdraw Funds</h3>
@@ -419,7 +411,6 @@
         </div>
     </div>
 
-    <!-- History Modal -->
     <div id="history-modal" class="modal-overlay">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -445,7 +436,8 @@
         tg.expand();
 
         const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
-        const BOT_USERNAME = "_GRM_TRADING_bot"; 
+        // ⚠️ အရေးကြီး: Bot Username မှ ရှေ့ဆုံး `_` ကို ဖယ်ထုတ်ပေးထားပါသည်
+        const BOT_USERNAME = "GRM_TRADING_bot"; 
 
         let rawUserId = '';
         let currentUserId = '';
@@ -469,7 +461,7 @@
         document.getElementById('telegram-username').innerText = currentUserName + ' ✈️';
         document.getElementById('profile-display-id').innerText = rawUserId || currentUserId;
 
-        // Dynamic Telegram Invite Link Setup
+        // Dynamic Telegram Invite Link (Bot Username အမှန်ဖြင့် ပြင်ဆင်ထားပါသည်)
         const userInviteLink = `https://t.me/${BOT_USERNAME}?start=${rawUserId}`;
         document.getElementById('referral-link-display').innerText = userInviteLink;
 
@@ -595,11 +587,16 @@
             startAutoMiningUI();
         });
 
-        /* Referral System Core Engine */
+        /* Refer Real Engine Fix */
         async function handleReferralRegistration() {
-            if (!tg.initDataUnsafe || !tg.initDataUnsafe.start_param) return;
-            const referrerRawId = tg.initDataUnsafe.start_param.trim();
-            const referrerUserId = 'tg_' + referrerRawId;
+            // WebApp / Direct URL က လာတဲ့ start_param နှစ်မျိုးလုံးကို စစ်ဆေးသည်
+            const urlParams = new URLSearchParams(window.location.search);
+            const startParam = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || urlParams.get('tgWebAppStartParam') || urlParams.get('start');
+
+            if (!startParam) return;
+
+            const referrerRawId = startParam.trim();
+            const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
             if (referrerRawId && referrerUserId !== currentUserId) {
                 if (!_supabase) return;
@@ -612,10 +609,11 @@
 
                     if (!existing) {
                         await _supabase.from('grm_referrals').insert([{
-                            id: 'ref_' + Date.now(),
+                            id: 'ref_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
                             referrer_id: referrerUserId,
                             referred_id: currentUserId,
-                            status: 'pending'
+                            status: 'pending',
+                            created_at: new Date().toISOString()
                         }]);
                     }
                 } catch (e) { console.error("Referral reg error:", e); }
@@ -645,7 +643,6 @@
                         claimBtn.classList.remove('active-claim');
                     }
 
-                    // Render Detailed Referred Users List
                     await renderReferredUsersList(data);
                 }
             } catch (e) { console.error("Error fetching ref stats:", e); }
@@ -1135,7 +1132,6 @@
             }, 1000);
         }
 
-        /* Withdrawal & Notification Engine */
         function openWithdrawModal() {
             document.getElementById('modal-available-balance').innerText = currentBalance.toFixed(6) + " GRM";
             const activeWallet = getActiveWalletAddress();
@@ -1342,7 +1338,6 @@
             } catch (err) { console.error("Error processing withdrawal:", err); }
         }
 
-        /* Task Verification Functions */
         function parseTelegramChatId(link) {
             if (!link) return null;
             let cleaned = link.trim();
