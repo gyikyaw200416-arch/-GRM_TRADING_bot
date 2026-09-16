@@ -593,7 +593,7 @@
         });
 
         // -------------------------------------------------------------
-        // ROBUST REFERRAL REGISTRATION LOGIC
+        // FIXED & CLEANED REFERRAL REGISTRATION SYSTEM
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -665,16 +665,16 @@
                 }
 
                 if (referrerUserId) {
-                    const refRelationId = 'ref_' + rawUserId;
                     const { data: existingRef } = await _supabase
                         .from('grm_referrals')
                         .select('*')
-                        .eq('id', refRelationId)
+                        .eq('referred_id', currentUserId)
                         .maybeSingle();
 
                     if (!existingRef) {
+                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
                         await _supabase.from('grm_referrals').upsert([{
-                            id: refRelationId,
+                            id: newRefId,
                             referrer_id: referrerUserId,
                             referred_id: currentUserId,
                             status: 'active',
@@ -871,6 +871,7 @@
 
         async function notifyReferrerBonus(referrerId, referredId) {
             if (!BOT_TOKEN) return;
+
             let targetChatId = referrerId.replace('tg_', '').replace('user_', '');
             let referredUserRawId = referredId.replace('tg_', '').replace('user_', '');
 
@@ -902,9 +903,15 @@
                 await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: targetChatId, text: message, parse_mode: 'HTML' })
+                    body: JSON.stringify({
+                        chat_id: targetChatId,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
                 });
-            } catch (err) { console.error("Error sending Telegram Notification:", err); }
+            } catch (err) {
+                console.error("Error sending Telegram Notification:", err);
+            }
         }
 
         async function fetchTasksFromSupabase() {
@@ -1234,6 +1241,18 @@
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
                     updateBalanceUI();
                     checkWalletAndButtonState();
+                    
+                    if (verifiedBadge) {
+                        verifiedBadge.innerText = "Unverified ❌";
+                        verifiedBadge.style.backgroundColor = "#da3633";
+                        verifiedBadge.style.color = "#ffffff";
+                        if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
+                        if (verifyIcon) {
+                            verifyIcon.innerText = "❌";
+                            verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
+                            verifyIcon.style.color = "#da3633";
+                        }
+                    }
                 }
             } catch (err) { console.error('Load user data exception:', err); }
         }
@@ -1343,6 +1362,7 @@
 
         async function notifyAdminWithdrawal(txRecord) {
             if (!BOT_TOKEN) return;
+            
             const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
                             `👤 <b>User:</b> ${currentUserName}\n` +
                             `🆔 <b>User ID:</b> <code>${rawUserId || currentUserId}</code>\n` +
@@ -1355,7 +1375,11 @@
                 await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: ADMIN_ID, text: message, parse_mode: 'HTML' })
+                    body: JSON.stringify({
+                        chat_id: ADMIN_ID,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
                 });
             } catch (e) { console.error("Error sending Telegram Notification:", e); }
         }
