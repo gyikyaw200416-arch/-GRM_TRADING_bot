@@ -593,7 +593,7 @@
         });
 
         // -------------------------------------------------------------
-        // FIXED & IMPROVED REFERRAL REGISTRATION SYSTEM
+        // ROBUST REFERRAL REGISTRATION LOGIC
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -619,7 +619,7 @@
                     .maybeSingle();
 
                 if (userRecord && userRecord.referrer_id) {
-                    return; // Already registered with a referrer
+                    return; 
                 }
 
                 let referrerUserId = null;
@@ -630,7 +630,6 @@
                     if (referrerUserId === currentUserId) {
                         referrerUserId = null;
                     } else {
-                        // Check if referrer exists
                         let { data: referrerRecord } = await _supabase
                             .from('grm_users')
                             .select('user_id')
@@ -638,12 +637,11 @@
                             .maybeSingle();
 
                         if (!referrerRecord) {
-                            referrerUserId = null; // If not in DB yet, ignore or keep null
+                            referrerUserId = null; 
                         }
                     }
                 }
 
-                // Upsert user with proper referrer_id
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -653,7 +651,7 @@
                         })
                         .eq('user_id', currentUserId);
                 } else {
-                    await _supabase.from('grm_users മറ്റൊരു_upsert' /* fallback safe */).upsert([{
+                    await _supabase.from('grm_users').upsert([{
                         user_id: currentUserId,
                         username: currentUserName,
                         referrer_id: referrerUserId,
@@ -667,16 +665,16 @@
                 }
 
                 if (referrerUserId) {
+                    const refRelationId = 'ref_' + rawUserId;
                     const { data: existingRef } = await _supabase
                         .from('grm_referrals')
                         .select('*')
-                        .eq('referred_id', currentUserId)
+                        .eq('id', refRelationId)
                         .maybeSingle();
 
                     if (!existingRef) {
-                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
                         await _supabase.from('grm_referrals').upsert([{
-                            id: newRefId,
+                            id: refRelationId,
                             referrer_id: referrerUserId,
                             referred_id: currentUserId,
                             status: 'active',
@@ -873,7 +871,6 @@
 
         async function notifyReferrerBonus(referrerId, referredId) {
             if (!BOT_TOKEN) return;
-
             let targetChatId = referrerId.replace('tg_', '').replace('user_', '');
             let referredUserRawId = referredId.replace('tg_', '').replace('user_', '');
 
@@ -905,15 +902,9 @@
                 await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: targetChatId,
-                        text: message,
-                        parse_mode: 'HTML'
-                    })
+                    body: JSON.stringify({ chat_id: targetChatId, text: message, parse_mode: 'HTML' })
                 });
-            } catch (err) {
-                console.error("Error sending Telegram Notification:", err);
-            }
+            } catch (err) { console.error("Error sending Telegram Notification:", err); }
         }
 
         async function fetchTasksFromSupabase() {
@@ -1243,18 +1234,6 @@
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
                     updateBalanceUI();
                     checkWalletAndButtonState();
-                    
-                    if (verifiedBadge) {
-                        verifiedBadge.innerText = "Unverified ❌";
-                        verifiedBadge.style.backgroundColor = "#da3633";
-                        verifiedBadge.style.color = "#ffffff";
-                        if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
-                        if (verifyIcon) {
-                            verifyIcon.innerText = "❌";
-                            verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
-                            verifyIcon.style.color = "#da3633";
-                        }
-                    }
                 }
             } catch (err) { console.error('Load user data exception:', err); }
         }
@@ -1364,7 +1343,6 @@
 
         async function notifyAdminWithdrawal(txRecord) {
             if (!BOT_TOKEN) return;
-            
             const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
                             `👤 <b>User:</b> ${currentUserName}\n` +
                             `🆔 <b>User ID:</b> <code>${rawUserId || currentUserId}</code>\n` +
@@ -1377,11 +1355,7 @@
                 await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: ADMIN_ID,
-                        text: message,
-                        parse_mode: 'HTML'
-                    })
+                    body: JSON.stringify({ chat_id: ADMIN_ID, text: message, parse_mode: 'HTML' })
                 });
             } catch (e) { console.error("Error sending Telegram Notification:", e); }
         }
