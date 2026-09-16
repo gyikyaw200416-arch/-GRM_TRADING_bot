@@ -594,30 +594,34 @@
         async function handleReferralRegistration() {
             if (!_supabase) return;
 
+            // Extract start_param from Telegram WebApp SDK, URL query parameters, or URL Hash
             let startParam = null;
             if (tg && tg.initDataUnsafe) {
-                startParam = tg.initDataUnsafe.start_param || null;
+                startParam = tg.initDataUnsafe.start_param;
             }
             if (!startParam) {
                 const urlParams = new URLSearchParams(window.location.search);
-                startParam = urlParams.get('tgWebAppStartParam') || urlParams.get('start');
+                startParam = urlParams.get('tgWebAppStartParam') || urlParams.get('start') || urlParams.get('startapp');
             }
             if (!startParam) {
                 const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                startParam = hashParams.get('tgWebAppStartParam');
+                startParam = hashParams.get('tgWebAppStartParam') || hashParams.get('startapp');
             }
 
             try {
+                // Check if user already exists in database
                 let { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
+                // If user already has a referrer registered, do not re-assign
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
 
+                // If no startParam provided in link
                 if (!startParam) {
                     if (!userRecord) {
                         await _supabase.from('grm_users').insert([{
@@ -638,8 +642,25 @@
                 const referrerRawId = startParam.toString().trim();
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                if (referrerUserId === currentUserId) return; // Self-referral protection
+                // Self-referral prevention
+                if (referrerUserId === currentUserId) {
+                    if (!userRecord) {
+                        await _supabase.from('grm_users').insert([{
+                            user_id: currentUserId,
+                            username: currentUserName,
+                            referrer_id: null,
+                            balance: baseInitialBalance,
+                            mined_amount: 0,
+                            mining_state: 'stopped',
+                            level: 0,
+                            is_verified: false,
+                            updated_at: new Date().toISOString()
+                        }]);
+                    }
+                    return;
+                }
 
+                // Update or insert user with referrer_id
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -659,6 +680,7 @@
                     }]);
                 }
 
+                // Check if referral entry already exists in grm_referrals
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -760,7 +782,7 @@
                     }
                 }
 
-                const statusLabel = 'Active';
+                const statusLabel = refData.status === 'claimed' ? 'Claimed' : 'Active';
                 const statusDotClass = 'status-active-dot';
                 const statusTextClass = 'text-active';
 
@@ -1215,7 +1237,6 @@
                         checkWalletAndButtonState();
                     }
 
-                    // FIXED: UI Verification status correctly bound to Supabase data.is_verified
                     if (data.is_verified === true) {
                         verifiedBadge.innerText = "Verified ✔️";
                         verifiedBadge.style.backgroundColor = "#238636";
