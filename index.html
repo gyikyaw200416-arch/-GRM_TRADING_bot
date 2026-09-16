@@ -195,7 +195,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
-            display: flex; justify-space-around; align-items: center; z-index: 1000;
+            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
@@ -450,13 +450,13 @@
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             rawUserId = tg.initDataUnsafe.user.id.toString();
             currentUserId = 'tg_' + rawUserId;
-            currentUserName = tg.initDataUnsafe.user.first_name || 'Miner';
+            currentUserName = tg.initDataUnsafe.user.first_name || (tg.initDataUnsafe.user.username ? '@' + tg.initDataUnsafe.user.username : 'Miner');
             localStorage.setItem('grm_saved_user_id', currentUserId);
             localStorage.setItem('grm_saved_raw_id', rawUserId);
             localStorage.setItem('grm_saved_username', currentUserName);
         } else {
             currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
-            rawUserId = localStorage.getItem('grm_saved_raw_id') || '1793453606';
+            rawUserId = localStorage.getItem('grm_saved_raw_id') || currentUserId.replace('tg_', '').replace('user_', '');
             currentUserName = localStorage.getItem('grm_saved_username') || 'Shadow';
             localStorage.setItem('grm_user_id', currentUserId);
         }
@@ -577,22 +577,12 @@
             return null;
         }
 
-        function getReferrerIdFromContext() {
-            const urlParams = new URLSearchParams(window.location.search);
-            let rawParam = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || 
-                           urlParams.get('tgWebAppStartParam') || 
-                           urlParams.get('start') || 
-                           urlParams.get('tgWebAppStartParam');
-
-            if (!rawParam) return null;
-            let cleaned = rawParam.trim();
-            if (!cleaned) return null;
-            return cleaned.startsWith('tg_') ? cleaned : 'tg_' + cleaned;
-        }
-
         window.addEventListener('DOMContentLoaded', async () => {
+            // 1. Process Referral parameter first
             await handleReferralRegistration();
+            // 2. Fetch User Record
             await loadUserDataFromSupabase();
+            // 3. Load referrals stats, tasks & miners
             await fetchWithdrawalHistory();
             await fetchReferralStats();
             renderMinersStore();
@@ -601,58 +591,98 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
+        // 🟢 ULTIMATE FIXED REFERRAL REGISTRATION
         async function handleReferralRegistration() {
-            if (!_supabase) return;
+            let startParam = null;
+            
+            // Extract from Telegram WebApp SDK
+            if (tg && tg.initDataUnsafe) {
+                startParam = tg.initDataUnsafe.start_param || null;
+            }
+            
+            // Extract from URL location search/hash fallback
+            if (!startParam) {
+                const urlParams = new URLSearchParams(window.location.search);
+                startParam = urlParams.get('tgWebAppStartParam') || urlParams.get('start');
+            }
 
-            const referrerUserId = getReferrerIdFromContext();
-            if (!referrerUserId || referrerUserId === currentUserId) return;
+            if (!startParam) {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                startParam = hashParams.get('tgWebAppStartParam');
+            }
 
-            try {
-                const { data: existingUser } = await _supabase
-                    .from('grm_users')
-                    .select('user_id, referrer_id')
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
+            if (!startParam) return;
 
-                if (!existingUser) {
-                    await _supabase.from('grm_users').insert([{
-                        user_id: currentUserId,
-                        username: currentUserName,
-                        referrer_id: referrerUserId,
-                        balance: baseInitialBalance,
-                        mined_amount: 0,
-                        mining_state: 'stopped',
-                        level: 0,
-                        is_verified: false,
-                        updated_at: new Date().toISOString()
-                    }]);
-                } else if (!existingUser.referrer_id) {
-                    await _supabase
+            const referrerRawId = startParam.toString().trim();
+            const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
+
+            // Prevent self-referral
+            if (referrerRawId && referrerUserId !== currentUserId) {
+                if (!_supabase) return;
+                try {
+                    // Check if current user already exists in DB
+                    const { data: userExists } = await _supabase
                         .from('grm_users')
-                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
-                        .eq('user_id', currentUserId);
-                }
+                        .select('user_id, referrer_id')
+                        .eq('user_id', currentUserId)
+                        .maybeSingle();
 
+                    if (userExists) {
+                        // If user exists but hasn't set referrer, update it
+                        if (!userExists.referrer_id) {
+                            await _supabase
+                                .from('grm_users')
+                                .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
+                                .eq('user_id', currentUserId);
+
+                            await registerReferralRecord(referrerUserId, currentUserId);
+                        }
+                    } else {
+                        // Create brand new user with referrer_id set
+                        await _supabase.from('grm_users').insert([{
+                            user_id: currentUserId,
+                            username: currentUserName,
+                            referrer_id: referrerUserId,
+                            balance: baseInitialBalance,
+                            mined_amount: 0,
+                            mining_state: 'stopped',
+                            level: 0,
+                            is_verified: true, // Mark active immediately
+                            updated_at: new Date().toISOString()
+                        }]);
+
+                        await registerReferralRecord(referrerUserId, currentUserId);
+                    }
+                } catch (e) { 
+                    console.error("Referral reg error:", e); 
+                }
+            }
+        }
+
+        async function registerReferralRecord(referrerUserId, newUserId) {
+            try {
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
-                    .eq('referred_id', currentUserId)
+                    .eq('referred_id', newUserId)
                     .maybeSingle();
 
                 if (!existingRef) {
                     await _supabase.from('grm_referrals').insert([{
                         id: 'ref_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
                         referrer_id: referrerUserId,
-                        referred_id: currentUserId,
-                        status: 'pending',
+                        referred_id: newUserId,
+                        status: 'verified', // Set verified immediately
                         created_at: new Date().toISOString()
                     }]);
+                    await notifyReferrerBonus(referrerUserId, newUserId);
                 }
-            } catch (e) { 
-                console.error("Referral registration error:", e); 
+            } catch (e) {
+                console.error("Error inserting referral log:", e);
             }
         }
 
+        // 🟢 FETCH REFERRAL STATS & DISPLAY ACTIVE STATUS
         async function fetchReferralStats() {
             if (!_supabase) return;
             try {
@@ -675,7 +705,7 @@
                 if (directUsers) {
                     directUsers.forEach(u => {
                         if (!combinedMap.has(u.user_id)) {
-                            combinedMap.set(u.user_id, { status: 'pending' });
+                            combinedMap.set(u.user_id, { status: 'verified' });
                         }
                     });
                 }
@@ -684,10 +714,10 @@
                 let successfulCount = 0;
 
                 combinedMap.forEach(val => {
-                    if (val.status === 'verified' || val.status === 'claimed') successfulCount++;
+                    if (val.status === 'verified' || val.status === 'claimed' || val.status === 'active') successfulCount++;
                 });
 
-                availableClaimCount = Array.from(combinedMap.values()).filter(v => v.status === 'verified').length;
+                availableClaimCount = Array.from(combinedMap.values()).filter(v => v.status === 'verified' || v.status === 'active').length;
 
                 document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
                 document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
@@ -700,7 +730,7 @@
                 }
 
                 await renderReferredUsersList(combinedMap);
-            } catch (e) { console.error("Error fetching referral stats:", e); }
+            } catch (e) { console.error("Error fetching ref stats:", e); }
         }
 
         async function renderReferredUsersList(combinedMap) {
@@ -713,9 +743,9 @@
             }
 
             let html = '';
-            for (const [refUserId] of combinedMap.entries()) {
-                let displayName = refUserId.replace('tg_', '');
-                let isVerified = false;
+            for (const [refUserId, refData] of combinedMap.entries()) {
+                let displayName = refUserId.replace('tg_', '').replace('user_', '');
+                let isActive = true; // Show Active once registered
 
                 if (_supabase) {
                     const { data: usr } = await _supabase
@@ -726,13 +756,12 @@
 
                     if (usr) {
                         if (usr.username) displayName = usr.username.startsWith('@') ? usr.username : '@' + usr.username;
-                        isVerified = (usr.is_verified === true);
                     }
                 }
 
-                const statusLabel = isVerified ? 'Active' : 'Not Active';
-                const statusDotClass = isVerified ? 'status-active-dot' : 'status-inactive-dot';
-                const statusTextClass = isVerified ? 'text-active' : 'text-inactive';
+                const statusLabel = isActive ? 'Active' : 'Inactive';
+                const statusDotClass = isActive ? 'status-active-dot' : 'status-inactive-dot';
+                const statusTextClass = isActive ? 'text-active' : 'text-inactive';
 
                 html += `
                     <div class="ref-user-item">
@@ -763,7 +792,7 @@
 
         async function claimReferralRewards() {
             if (availableClaimCount <= 0) {
-                alert("No available referral rewards to claim yet. Admin must verify referrals first.");
+                alert("No available referral rewards to claim yet.");
                 return;
             }
 
@@ -777,11 +806,11 @@
                     .from('grm_referrals')
                     .update({ status: 'claimed' })
                     .eq('referrer_id', currentUserId)
-                    .eq('status', 'verified');
+                    .in('status', ['verified', 'active']);
             }
 
             await updateSupabaseField({ balance: baseInitialBalance });
-            alert(`Successfully claimed +${rewardTotal} GRM for ${availableClaimCount} verified referral(s)!`);
+            alert(`Successfully claimed +${rewardTotal} GRM for ${availableClaimCount} active referral(s)!`);
             fetchReferralStats();
         }
 
@@ -815,7 +844,7 @@
 
                 let html = '';
                 data.forEach(ref => {
-                    let stBadge = ref.status === 'verified' ? '<span style="color:#2ea043;font-weight:bold;">[Verified]</span>' : (ref.status === 'claimed' ? '<span style="color:#00f0ff;font-weight:bold;">[Claimed]</span>' : '<span style="color:#ffb400;font-weight:bold;">[Pending]</span>');
+                    let stBadge = ref.status === 'verified' || ref.status === 'active' ? '<span style="color:#2ea043;font-weight:bold;">[Active]</span>' : (ref.status === 'claimed' ? '<span style="color:#00f0ff;font-weight:bold;">[Claimed]</span>' : '<span style="color:#ffb400;font-weight:bold;">[Pending]</span>');
                     
                     html += `
                         <div class="withdraw-req-card">
@@ -837,8 +866,8 @@
         async function notifyReferrerBonus(referrerId, referredId) {
             if (!BOT_TOKEN) return;
 
-            let targetChatId = referrerId.replace('tg_', '');
-            let referredUserRawId = referredId.replace('tg_', '');
+            let targetChatId = referrerId.replace('tg_', '').replace('user_', '');
+            let referredUserRawId = referredId.replace('tg_', '').replace('user_', '');
 
             let referredName = "User";
             let referredUsername = "User " + referredUserRawId;
@@ -861,7 +890,7 @@
                             `👤 <b>Name:</b> ${referredName}\n` +
                             `🔗 <b>Username:</b> ${referredUsername}\n` +
                             `🆔 <b>Telegram ID:</b> <code>${referredUserRawId}</code>\n\n` +
-                            `🎁 <b>Go to the Friends section and claim your reward.</b>`;
+                            `🎁 <b>Go to the Friends section and claim your reward (+100 GRM).</b>`;
 
             try {
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -1143,7 +1172,7 @@
                     fields.mined_amount = 0;
                     fields.mining_state = 'stopped';
                     fields.level = 0;
-                    fields.is_verified = false;
+                    fields.is_verified = true;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
