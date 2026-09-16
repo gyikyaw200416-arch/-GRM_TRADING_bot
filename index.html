@@ -589,7 +589,7 @@
         });
 
         // -------------------------------------------------------------
-        // ROBUST & ACCURATE REFERRAL REGISTRATION LOGIC
+        // FIXED & ROBUST REFERRAL REGISTRATION LOGIC
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -608,63 +608,65 @@
             }
 
             try {
-                // ၁။ မိမိအကောင့် Supabase တွင် ရှိမရှိ စစ်ဆေးခြင်း
+                // ၁။ မိမိ User သည် Supabase ထဲတွင် ရှိမရှိ နှင့် referrer_id ရှိမရှိ စစ်ဆေးခြင်း
                 const { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                let existingReferrerId = userRecord ? userRecord.referrer_id : null;
-
-                // ၂။ startParam မပါလျှင် သို့မဟုတ် မိမိကိုယ်ကို Refer လုပ်နေလျှင် ကျော်မည်
-                if (startParam) {
-                    const referrerRawId = startParam.toString().trim();
-                    const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
-
-                    if (referrerUserId !== currentUserId && !existingReferrerId) {
-                        existingReferrerId = referrerUserId;
-                    }
+                // အကယ်၍ User ရှိပြီးသားဖြစ်ပြီး referrer_id ပါရှိပြီးဖြစ်ပါက Referral ထပ်မံပြောင်းလဲ၍မရပါ (Lock)
+                if (userRecord && userRecord.referrer_id) {
+                    return; 
                 }
 
-                // ၃။ grm_users ဇယားတွင် အချက်အလက်များကို အမှန်တကယ် Update သို့မဟုတ် Insert လုပ်ခြင်း
-                const userPayload = {
-                    user_id: currentUserId,
-                    username: currentUserName,
-                    referrer_id: existingReferrerId,
-                    balance: userRecord ? userRecord.balance : baseInitialBalance,
-                    mined_amount: 0,
-                    mining_state: 'stopped',
-                    level: userRecord && userRecord.level !== undefined ? userRecord.level : 0,
-                    is_verified: true,
-                    updated_at: new Date().toISOString()
-                };
+                // မိမိကိုယ်ကို Refer လုပ်ခြင်း သို့မဟုတ် StartParam မပါလျှင် ကျော်မည်
+                if (!startParam) return;
 
-                await _supabase
-                    .from('grm_users')
-                    .upsert([userPayload], { onConflict: 'user_id' });
+                const referrerRawId = startParam.toString().trim();
+                const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                // ၄။ Referral အသစ်တစ်ခုဖြစ်ပါက grm_referrals ဇယားသို့ မှတ်တမ်းတင်ခြင်း
-                if (existingReferrerId) {
-                    const { data: existingRef } = await _supabase
-                        .from('grm_referrals')
-                        .select('*')
-                        .eq('referred_id', currentUserId)
-                        .maybeSingle();
+                if (referrerUserId === currentUserId) return; // Self-referral protection
 
-                    if (!existingRef) {
-                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
-                        
-                        await _supabase.from('grm_referrals').insert([{
-                            id: newRefId,
-                            referrer_id: existingReferrerId,
-                            referred_id: currentUserId,
-                            status: 'verified', 
-                            created_at: new Date().toISOString()
-                        }]);
+                // ၂။ User ဇယားတွင် referrer_id ကို အခိုင်အမာ မှတ်တမ်းတင်ခြင်း (Upsert/Update)
+                if (userRecord) {
+                    await _supabase
+                        .from('grm_users')
+                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+                } else {
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: currentUserId,
+                        username: currentUserName,
+                        referrer_id: referrerUserId,
+                        balance: baseInitialBalance,
+                        mined_amount: 0,
+                        mining_state: 'stopped',
+                        level: 0,
+                        is_verified: true,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+                }
 
-                        await notifyReferrerBonus(existingReferrerId, currentUserId);
-                    }
+                // ၃။ grm_referrals ဇယားထဲသို့ အသစ်ဝင်လာသူ မရောက်သေးပါက အလိုအလျောက် သေချာထည့်သွင်းခြင်း
+                const { data: existingRef } = await _supabase
+                    .from('grm_referrals')
+                    .select('*')
+                    .eq('referred_id', currentUserId)
+                    .maybeSingle();
+
+                if (!existingRef) {
+                    const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
+                    
+                    await _supabase.from('grm_referrals').insert([{
+                        id: newRefId,
+                        referrer_id: referrerUserId,
+                        referred_id: currentUserId,
+                        status: 'verified', 
+                        created_at: new Date().toISOString()
+                    }]);
+
+                    await notifyReferrerBonus(referrerUserId, currentUserId);
                 }
 
             } catch (e) { 
@@ -1168,7 +1170,7 @@
                         if (activeAddr) fields.wallet_address = activeAddr;
                     }
 
-                    await _supabase.from('grm_users').insert([fields]);
+                    await _supabase.from('grm_users').upsert([fields], { onConflict: 'user_id' });
                 }
             } catch (err) { console.error('Supabase update general error:', err); }
         }
