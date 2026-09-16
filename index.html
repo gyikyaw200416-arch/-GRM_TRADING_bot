@@ -592,9 +592,6 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // -------------------------------------------------------------
-        // FIXED & SECURED REFERRAL REGISTRATION (တစ်ကြိမ်သာ + Supabase တွင် အသေမှတ်မည်)
-        // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
 
@@ -612,7 +609,6 @@
             }
 
             try {
-                // လက်ရှိ user ကို Database တွင် ရှိမရှိ စစ်ဆေးမည်
                 let { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
@@ -639,7 +635,6 @@
                     }
                 }
 
-                // အကယ်၍ user က database တွင် မရှိသေးလျှင် (သို့မဟုတ် referrer_id မရှိသေးလျှင်) အသစ်ထည့်မည်
                 if (!userRecord) {
                     await _supabase.from('grm_users').upsert([{
                         user_id: currentUserId,
@@ -653,7 +648,6 @@
                         updated_at: new Date().toISOString()
                     }], { onConflict: 'user_id' });
                 } else if (!userRecord.referrer_id && referrerUserId) {
-                    // အကယ်၍ အရင်က referrer_id မရှိခဲ့လျှင် အခုမှ ထည့်ပေးမည် (တစ်ကြိမ်သာ)
                     await _supabase
                         .from('grm_users')
                         .update({ 
@@ -663,7 +657,6 @@
                         .eq('user_id', currentUserId);
                 }
 
-                // Referral စာရင်း (grm_referrals) ထဲသို့ ထည့်သွင်းခြင်း (တစ်ကြိမ်သာ မှတ်သားမည်)
                 if (referrerUserId && (!userRecord || !userRecord.referrer_id)) {
                     const { data: existingRef } = await _supabase
                         .from('grm_referrals')
