@@ -649,7 +649,6 @@
                     .eq('user_id', referrerUserId)
                     .maybeSingle();
 
-                // If referrer ID does not exist in the database, ignore it to prevent invalid data errors
                 if (!referrerRecord) {
                     console.warn("Referrer ID not found in database:", referrerUserId);
                     if (!userRecord) {
@@ -717,7 +716,7 @@
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
-                        status: 'active', // Ensure it registers as active immediately
+                        status: 'active',
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
 
@@ -901,11 +900,6 @@
                             <div><strong>Referrer:</strong> ${ref.referrer_id} ${stBadge}</div>
                             <div><strong>Referred User:</strong> ${ref.referred_id}</div>
                             <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
-                            ${ref.status === 'pending' ? `
-                            <div style="display: flex; gap: 8px; margin-top: 6px;">
-                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminVerifyReferral('${ref.id}')">Verify Referral</button>
-                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminRejectReferral('${ref.id}')">Reject</button>
-                            </div>` : ''}
                         </div>
                     `;
                 });
@@ -936,11 +930,11 @@
                 } catch (e) { console.error(e); }
             }
 
-            const message = `✅ <b>A referral has been confirmed and is now Active!</b> 🎉\n\n` +
+            const message = `✅ <b>New Referral Joined!</b> 🎉\n\n` +
                             `👤 <b>Name:</b> ${referredName}\n` +
                             `🔗 <b>Username:</b> ${referredUsername}\n` +
                             `🆔 <b>Telegram ID:</b> <code>${referredUserRawId}</code>\n\n` +
-                            `🎁 <b>Go to the Friends section and claim your reward (+100 GRM).</b>`;
+                            `🎁 <b>Go to the Friends section to claim your reward (+100 GRM).</b>`;
 
             try {
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -956,42 +950,6 @@
             } catch (err) {
                 console.error("Error sending Telegram Notification:", err);
             }
-        }
-
-        async function adminVerifyReferral(refId) {
-            if (!_supabase) return;
-            try {
-                const { data: refData } = await _supabase
-                    .from('grm_referrals')
-                    .select('*')
-                    .eq('id', refId)
-                    .maybeSingle();
-
-                await _supabase
-                    .from('grm_referrals')
-                    .update({ status: 'active' })
-                    .eq('id', refId);
-
-                if (refData) {
-                    await notifyReferrerBonus(refData.referrer_id, refData.referred_id);
-                }
-
-                alert("Referral verified & Message sent to user chat!");
-                fetchAdminReferralRequests();
-            } catch (err) { console.error("Error verifying referral:", err); }
-        }
-
-        async function adminRejectReferral(refId) {
-            if (!_supabase) return;
-            try {
-                await _supabase
-                    .from('grm_referrals')
-                    .update({ status: 'rejected' })
-                    .eq('id', refId);
-
-                alert("Referral rejected!");
-                fetchAdminReferralRequests();
-            } catch (err) { console.error("Error rejecting referral:", err); }
         }
 
         async function fetchTasksFromSupabase() {
@@ -1441,7 +1399,7 @@
         }
 
         async function notifyAdminWithdrawal(txRecord) {
-            if (!BOT_TOKEN || BOT_TOKEN === "YOUR_TELEGRAM_BOT_TOKEN_HERE") return;
+            if (!BOT_TOKEN) return;
             
             const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
                             `👤 <b>User:</b> ${currentUserName}\n` +
@@ -1608,7 +1566,7 @@
                             <div style="word-break: break-all;"><strong>Address:</strong> ${req.address}</div>
                             <div style="display: flex; gap: 8px; margin-top: 6px;">
                                 <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Completed')">Mark Completed</button>
-                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Rejected')">Reject</i></button>
+                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Rejected')">Reject</button>
                             </div>
                         </div>
                     `;
@@ -1649,7 +1607,7 @@
         }
 
         async function checkMembership(chatIdentifier) {
-            if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') return true;
+            if (!BOT_TOKEN) return true;
             if (!rawUserId) return false;
 
             const targetChat = parseTelegramChatId(chatIdentifier);
