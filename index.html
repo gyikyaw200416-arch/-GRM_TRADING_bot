@@ -589,7 +589,7 @@
         });
 
         // -------------------------------------------------------------
-        // အသစ်ပြင်ဆင်ထားသော Referral Registration & Supabase Sync Logic
+        // ROBUST REFERRAL REGISTRATION LOGIC (FIXED)
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -608,87 +608,83 @@
             }
 
             try {
-                // ၁။ လက်ရှိ User ကို Supabase grm_users ဇယားတွင် ရှိ/မရှိ စစ်ဆေးခြင်း
-                const { data: userRecord } = await _supabase
+                // ၁။ မိမိ User သည် Supabase ထဲတွင် ရှိမရှိ စစ်ဆေးခြင်း
+                let { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                let referrerUserId = null;
-                if (startParam) {
-                    const referrerRawId = startParam.toString().trim();
-                    referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
-                    if (referrerUserId === currentUserId) referrerUserId = null; // Self-referral ကာကွယ်ရန်
+                // အကယ်၍ User ရှိပြီးသားဖြစ်ပြီး referrer_id ပါရှိပြီးဖြစ်ပါက Referral ထပ်မံပြောင်းလဲ၍မရပါ (Lock)
+                if (userRecord && userRecord.referrer_id) {
+                    return; 
                 }
 
-                // ၂။ အကယ်၍ User အသစ်ဖြစ်ပြီး grm_users ထဲ မရှိသေးပါက
-                if (!userRecord) {
-                    let newUserData = {
+                // အကယ်၍ startParam မပါလျှင် သို့မဟုတ် မိမိ ID ကို မိမိ Refer ပြန်လုပ်ပါက ရပ်တန့်မည်
+                if (!startParam) {
+                    // အကယ်၍ User လုံးဝမရှိသေးပါက အသစ်ထည့်မည် (Unverified ဖြင့်)
+                    if (!userRecord) {
+                        await _supabase.from('grm_users').insert([{
+                            user_id: currentUserId,
+                            username: currentUserName,
+                            referrer_id: null,
+                            balance: baseInitialBalance,
+                            mined_amount: 0,
+                            mining_state: 'stopped',
+                            level: 0,
+                            is_verified: false,
+                            updated_at: new Date().toISOString()
+                        }]);
+                    }
+                    return;
+                }
+
+                const referrerRawId = startParam.toString().trim();
+                const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
+
+                if (referrerUserId === currentUserId) return; // Self-referral protection
+
+                // ၂။ User ဇယားတွင် referrer_id ကို အခိုင်အမာ update သို့မဟုတ် insert ပြုလုပ်ခြင်း
+                if (userRecord) {
+                    await _supabase
+                        .from('grm_users')
+                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+                } else {
+                    await _supabase.from('grm_users').insert([{
                         user_id: currentUserId,
                         username: currentUserName,
+                        referrer_id: referrerUserId,
                         balance: baseInitialBalance,
                         mined_amount: 0,
                         mining_state: 'stopped',
                         level: 0,
-                        is_verified: true,
+                        is_verified: false,
                         updated_at: new Date().toISOString()
-                    };
-
-                    // Referral Link မှ ဝင်လာပြီး referrer_id ရှိမှသာ ထည့်မည်
-                    if (referrerUserId) {
-                        newUserData.referrer_id = referrerUserId;
-                    }
-
-                    await _supabase.from('grm_users').insert([newUserData]);
-
-                    // အကယ်၍ referrer ပါလာပါက grm_referrals ဇယားသို့ မှတ်တမ်းတင်မည်
-                    if (referrerUserId) {
-                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
-                        const { data: existingRef } = await _supabase
-                            .from('grm_referrals')
-                            .select('id')
-                            .eq('referred_id', currentUserId)
-                            .maybeSingle();
-
-                        if (!existingRef) {
-                            await _supabase.from('grm_referrals').insert([{
-                                id: newRefId,
-                                referrer_id: referrerUserId,
-                                referred_id: currentUserId,
-                                status: 'verified',
-                                created_at: new Date().toISOString()
-                            }]);
-                            await notifyReferrerBonus(referrerUserId, currentUserId);
-                        }
-                    }
-                } else {
-                    // User ရှိနှင့်ပြီးသား ဖြစ်ပြီး referrer_id မရှိသေးမှသာ (တစ်ကြိမ်သာ) ထည့်ပေးမည်
-                    if (!userRecord.referrer_id && referrerUserId) {
-                        await _supabase
-                            .from('grm_users')
-                            .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
-                            .eq('user_id', currentUserId);
-
-                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
-                        const { data: existingRef } = await _supabase
-                            .from('grm_referrals')
-                            .select('id')
-                            .eq('referred_id', currentUserId)
-                            .maybeSingle();
-
-                        if (!existingRef) {
-                            await _supabase.from('grm_referrals').insert([{
-                                id: newRefId,
-                                referrer_id: referrerUserId,
-                                referred_id: currentUserId,
-                                status: 'verified',
-                                created_at: new Date().toISOString()
-                            }]);
-                            await notifyReferrerBonus(referrerUserId, currentUserId);
-                        }
-                    }
+                    }]);
                 }
+
+                // ၃။ Referral ဇယား (grm_referrals) ထဲသို့ အသစ်ဝင်လာသူ မရောက်သေးပါက အလိုအလျောက် သေချာထည့်သွင်းခြင်း
+                const { data: existingRef } = await _supabase
+                    .from('grm_referrals')
+                    .select('*')
+                    .eq('referred_id', currentUserId)
+                    .maybeSingle();
+
+                if (!existingRef) {
+                    const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
+                    
+                    await _supabase.from('grm_referrals').insert([{
+                        id: newRefId,
+                        referrer_id: referrerUserId,
+                        referred_id: currentUserId,
+                        status: 'verified', // active / verified status
+                        created_at: new Date().toISOString()
+                    }]);
+
+                    await notifyReferrerBonus(referrerUserId, currentUserId);
+                }
+
             } catch (e) { 
                 console.error("Referral registration error:", e); 
             }
@@ -1183,7 +1179,7 @@
                     fields.mined_amount = 0;
                     fields.mining_state = 'stopped';
                     fields.level = 0;
-                    fields.is_verified = true;
+                    fields.is_verified = false; // Default unverified for new users
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -1241,6 +1237,14 @@
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
                     updateBalanceUI();
                     checkWalletAndButtonState();
+                    
+                    // Set default unverified badge for brand new load
+                    if (verifiedBadge) {
+                        verifiedBadge.innerText = "Unverified ❌";
+                        verifiedBadge.style.backgroundColor = "#da3633";
+                        verifiedBadge.style.color = "#ffffff";
+                        if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
+                    }
                 }
             } catch (err) { console.error('Load user data exception:', err); }
         }
