@@ -601,6 +601,7 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
+        // 🛠️ Updated Referral Registration Logic to securely catch and bind referral ID
         async function handleReferralRegistration() {
             if (!_supabase) return;
 
@@ -624,6 +625,7 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
+                // If user already has a referrer registered, skip update
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
@@ -648,6 +650,7 @@
                 const referrerRawId = startParam.toString().trim();
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
+                // Prevent self-referral
                 if (referrerUserId === currentUserId) {
                     if (!userRecord) {
                         await _supabase.from('grm_users').upsert([{
@@ -665,6 +668,7 @@
                     return;
                 }
 
+                // Update or Insert user with valid referrer
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -684,6 +688,7 @@
                     }], { onConflict: 'user_id' });
                 }
 
+                // Check and insert into grm_referrals table
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -697,7 +702,7 @@
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
-                        status: 'verified',
+                        status: 'active', // Set to active immediately so it shows up
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
 
@@ -712,6 +717,7 @@
         async function fetchReferralStats() {
             if (!_supabase) return;
             try {
+                // Fetch referrals where current user is the referrer
                 const { data: refData } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -731,7 +737,7 @@
                 if (directUsers) {
                     directUsers.forEach(u => {
                         if (!combinedMap.has(u.user_id)) {
-                            combinedMap.set(u.user_id, { status: 'verified' });
+                            combinedMap.set(u.user_id, { status: 'active' });
                         }
                     });
                 }
@@ -788,7 +794,7 @@
                     displayName = '@' + displayName;
                 }
 
-                const statusLabel = 'Active';
+                const statusLabel = refData.status === 'claimed' ? 'Claimed' : 'Active';
                 const statusDotClass = 'status-active-dot';
                 const statusTextClass = 'text-active';
 
@@ -881,11 +887,6 @@
                             <div><strong>Referrer:</strong> ${ref.referrer_id} ${stBadge}</div>
                             <div><strong>Referred User:</strong> ${ref.referred_id}</div>
                             <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
-                            ${ref.status === 'pending' ? `
-                            <div style="display: flex; gap: 8px; margin-top: 6px;">
-                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminVerifyReferral('${ref.id}')">Verify Referral</button>
-                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminRejectReferral('${ref.id}')">Reject</button>
-                            </div>` : ''}
                         </div>
                     `;
                 });
@@ -916,7 +917,7 @@
                 } catch (e) { console.error(e); }
             }
 
-            const message = `✅ <b>A referral has been confirmed and is now Active!</b> 🎉\n\n` +
+            const message = `✅ <b>A new referral has joined via your link and is Active!</b> 🎉\n\n` +
                             `👤 <b>Name:</b> ${referredName}\n` +
                             `🔗 <b>Username:</b> ${referredUsername}\n` +
                             `🆔 <b>Telegram ID:</b> <code>${referredUserRawId}</code>\n\n` +
@@ -936,42 +937,6 @@
             } catch (err) {
                 console.error("Error sending Telegram Notification:", err);
             }
-        }
-
-        async function adminVerifyReferral(refId) {
-            if (!_supabase) return;
-            try {
-                const { data: refData } = await _supabase
-                    .from('grm_referrals')
-                    .select('*')
-                    .eq('id', refId)
-                    .maybeSingle();
-
-                await _supabase
-                    .from('grm_referrals')
-                    .update({ status: 'verified' })
-                    .eq('id', refId);
-
-                if (refData) {
-                    await notifyReferrerBonus(refData.referrer_id, refData.referred_id);
-                }
-
-                alert("Referral verified & Message sent to user chat!");
-                fetchAdminReferralRequests();
-            } catch (err) { console.error("Error verifying referral:", err); }
-        }
-
-        async function adminRejectReferral(refId) {
-            if (!_supabase) return;
-            try {
-                await _supabase
-                    .from('grm_referrals')
-                    .update({ status: 'rejected' })
-                    .eq('id', refId);
-
-                alert("Referral rejected!");
-                fetchAdminReferralRequests();
-            } catch (err) { console.error("Error rejecting referral:", err); }
         }
 
         async function fetchTasksFromSupabase() {
