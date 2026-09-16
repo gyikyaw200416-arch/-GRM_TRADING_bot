@@ -195,7 +195,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
-            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+            display: flex; justify-style: space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
@@ -588,11 +588,14 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
+        // ==========================
+        // REFERRAL SYSTEM REFACTORED
+        // ==========================
         async function handleReferralRegistration() {
             let startParam = null;
             
-            if (tg && tg.initDataUnsafe) {
-                startParam = tg.initDataUnsafe.start_param || null;
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+                startParam = tg.initDataUnsafe.start_param;
             }
             
             if (!startParam) {
@@ -605,47 +608,52 @@
                 startParam = hashParams.get('tgWebAppStartParam');
             }
 
-            if (!startParam) return;
+            if (!_supabase) return;
 
-            const referrerRawId = startParam.toString().trim();
-            const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
+            try {
+                // Check if the current user already exists in DB
+                const { data: userExists } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, referrer_id')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
 
-            if (referrerRawId && referrerUserId !== currentUserId) {
-                if (!_supabase) return;
-                try {
-                    const { data: userExists } = await _supabase
-                        .from('grm_users')
-                        .select('user_id, referrer_id')
-                        .eq('user_id', currentUserId)
-                        .maybeSingle();
-
-                    if (userExists) {
-                        if (!userExists.referrer_id) {
-                            await _supabase
-                                .from('grm_users')
-                                .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
-                                .eq('user_id', currentUserId);
-
-                            await registerReferralRecord(referrerUserId, currentUserId);
-                        }
-                    } else {
-                        await _supabase.from('grm_users').insert([{
-                            user_id: currentUserId,
-                            username: currentUserName,
-                            referrer_id: referrerUserId,
-                            balance: baseInitialBalance,
-                            mined_amount: 0,
-                            mining_state: 'stopped',
-                            level: 0,
-                            is_verified: true,
-                            updated_at: new Date().toISOString()
-                        }]);
-
-                        await registerReferralRecord(referrerUserId, currentUserId);
-                    }
-                } catch (e) { 
-                    console.error("Referral reg error:", e); 
+                if (userExists) {
+                    // User already exists. Rule: Lock referrer permanently, NEVER update referrer again.
+                    return;
                 }
+
+                // If this is a completely NEW user
+                let referrerUserId = null;
+                if (startParam) {
+                    const referrerRawId = startParam.toString().trim();
+                    const formattedRefId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
+                    
+                    // Prevent self-referral
+                    if (formattedRefId !== currentUserId) {
+                        referrerUserId = formattedRefId;
+                    }
+                }
+
+                // Create initial user row with referrer_id if available
+                await _supabase.from('grm_users').insert([{
+                    user_id: currentUserId,
+                    username: currentUserName,
+                    referrer_id: referrerUserId,
+                    balance: baseInitialBalance,
+                    mined_amount: 0,
+                    mining_state: 'stopped',
+                    level: 0,
+                    is_verified: true,
+                    updated_at: new Date().toISOString()
+                }]);
+
+                if (referrerUserId) {
+                    await registerReferralRecord(referrerUserId, currentUserId);
+                }
+
+            } catch (e) { 
+                console.error("Referral reg error:", e); 
             }
         }
 
