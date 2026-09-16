@@ -593,7 +593,7 @@
         });
 
         // -------------------------------------------------------------
-        // FULLY FIXED REFERRAL REGISTRATION SYSTEM
+        // FIXED REFERRAL & START_PARAM REGISTRATION (SUPABASE SAFE)
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -622,71 +622,36 @@
                     return; // Already registered with a referrer
                 }
 
-                if (!startParam) {
-                    if (!userRecord) {
-                        await _supabase.from('grm_users').upsert([{
-                            user_id: currentUserId,
-                            username: currentUserName,
-                            referrer_id: null,
-                            balance: baseInitialBalance,
-                            mined_amount: 0,
-                            mining_state: 'stopped',
-                            level: 0,
-                            is_verified: false,
-                            updated_at: new Date().toISOString()
-                        }], { onConflict: 'user_id' });
+                let validReferrerId = null;
+                if (startParam) {
+                    const referrerRawId = startParam.toString().trim();
+                    const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
+
+                    if (referrerUserId !== currentUserId) {
+                        let { data: referrerRecord } = await _supabase
+                            .from('grm_users')
+                            .select('user_id')
+                            .eq('user_id', referrerUserId)
+                            .maybeSingle();
+
+                        if (referrerRecord) {
+                            validReferrerId = referrerUserId;
+                        }
                     }
-                    return;
-                }
-
-                const referrerRawId = startParam.toString().trim();
-                const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
-
-                if (referrerUserId === currentUserId) {
-                    if (!userRecord) {
-                        await _supabase.from('grm_users').upsert([{
-                            user_id: currentUserId,
-                            username: currentUserName,
-                            referrer_id: null,
-                            balance: baseInitialBalance,
-                            mined_amount: 0,
-                            mining_state: 'stopped',
-                            level: 0,
-                            is_verified: false,
-                            updated_at: new Date().toISOString()
-                        }], { onConflict: 'user_id' });
-                    }
-                    return;
-                }
-
-                // Ensure referrer exists in database or create basic entry so foreign key/link works
-                let { data: referrerRecord } = await _supabase
-                    .from('grm_users')
-                    .select('user_id')
-                    .eq('user_id', referrerUserId)
-                    .maybeSingle();
-
-                if (!referrerRecord) {
-                    await _supabase.from('grm_users').upsert([{
-                        user_id: referrerUserId,
-                        username: 'User_' + referrerRawId,
-                        balance: 0,
-                        level: 0,
-                        is_verified: false,
-                        updated_at: new Date().toISOString()
-                    }], { onConflict: 'user_id' });
                 }
 
                 if (userRecord) {
-                    await _supabase
-                        .from('grm_users')
-                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
-                        .eq('user_id', currentUserId);
+                    if (validReferrerId && !userRecord.referrer_id) {
+                        await _supabase
+                            .from('grm_users')
+                            .update({ referrer_id: validReferrerId, updated_at: new Date().toISOString() })
+                            .eq('user_id', currentUserId);
+                    }
                 } else {
                     await _supabase.from('grm_users').upsert([{
                         user_id: currentUserId,
                         username: currentUserName,
-                        referrer_id: referrerUserId,
+                        referrer_id: validReferrerId,
                         balance: baseInitialBalance,
                         mined_amount: 0,
                         mining_state: 'stopped',
@@ -696,24 +661,25 @@
                     }], { onConflict: 'user_id' });
                 }
 
-                const { data: existingRef } = await _supabase
-                    .from('grm_referrals')
-                    .select('*')
-                    .eq('referred_id', currentUserId)
-                    .maybeSingle();
+                if (validReferrerId) {
+                    const { data: existingRef } = await _supabase
+                        .from('grm_referrals')
+                        .select('*')
+                        .eq('referred_id', currentUserId)
+                        .maybeSingle();
 
-                if (!existingRef) {
-                    const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
-                    
-                    await _supabase.from('grm_referrals').upsert([{
-                        id: newRefId,
-                        referrer_id: referrerUserId,
-                        referred_id: currentUserId,
-                        status: 'active',
-                        created_at: new Date().toISOString()
-                    }], { onConflict: 'id' });
+                    if (!existingRef) {
+                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
+                        await _supabase.from('grm_referrals').upsert([{
+                            id: newRefId,
+                            referrer_id: validReferrerId,
+                            referred_id: currentUserId,
+                            status: 'active',
+                            created_at: new Date().toISOString()
+                        }], { onConflict: 'id' });
 
-                    await notifyReferrerBonus(referrerUserId, currentUserId);
+                        await notifyReferrerBonus(validReferrerId, currentUserId);
+                    }
                 }
 
             } catch (e) { 
