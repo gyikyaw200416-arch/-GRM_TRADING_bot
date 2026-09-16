@@ -468,7 +468,7 @@
         document.getElementById('referral-link-display').innerText = userInviteLink;
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
         let _supabase = null;
         try {
@@ -589,7 +589,7 @@
         });
 
         // -------------------------------------------------------------
-        // FIXED & ROBUST REFERRAL REGISTRATION LOGIC
+        // ROBUST REFERRAL REGISTRATION LOGIC (FIXED)
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -608,19 +608,19 @@
             }
 
             try {
-                // ၁။ မိမိ User သည် Supabase ထဲတွင် ရှိမရှိ နှင့် referrer_id ရှိမရှိ စစ်ဆေးခြင်း
+                // ၁။ မိမိ User သည် Supabase တွင် ရှိမရှိ စစ်ဆေးခြင်း
                 const { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('user_id, referrer_id')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // အကယ်၍ User ရှိပြီးသားဖြစ်ပြီး referrer_id ပါရှိပြီးဖြစ်ပါက Referral ထပ်မံပြောင်းလဲ၍မရပါ (Lock)
+                // အကယ်၍ User ရှိပြီးသားဖြစ်ပြီး referrer_id ပါရှိပြီးသားဖြစ်ပါက ထပ်မံပြောင်းလဲ၍မရပါ (Lock)
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
 
-                // မိမိကိုယ်ကို Refer လုပ်ခြင်း သို့မဟုတ် StartParam မပါလျှင် ကျော်မည်
+                // အကယ်၍ startParam မပါလျှင် သို့မဟုတ် မိမိ ID ကို မိမိ Refer ပြန်လုပ်ပါက ရပ်တန့်မည်
                 if (!startParam) return;
 
                 const referrerRawId = startParam.toString().trim();
@@ -628,14 +628,14 @@
 
                 if (referrerUserId === currentUserId) return; // Self-referral protection
 
-                // ၂။ User ဇယားတွင် referrer_id ကို အခိုင်အမာ မှတ်တမ်းတင်ခြင်း (Upsert/Update)
+                // ၂။ User ဇယားတွင် referrer_id ကို အခိုင်အမာ update သို့မဟုတ် insert ပြုလုပ်ခြင်း (အမှားပြင်ဆင်ပြီး)
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
                         .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
                         .eq('user_id', currentUserId);
                 } else {
-                    await _supabase.from('grm_users').upsert([{
+                    await _supabase.from('grm_users').insert([{
                         user_id: currentUserId,
                         username: currentUserName,
                         referrer_id: referrerUserId,
@@ -645,10 +645,10 @@
                         level: 0,
                         is_verified: true,
                         updated_at: new Date().toISOString()
-                    }], { onConflict: 'user_id' });
+                    }]);
                 }
 
-                // ၃။ grm_referrals ဇယားထဲသို့ အသစ်ဝင်လာသူ မရောက်သေးပါက အလိုအလျောက် သေချာထည့်သွင်းခြင်း
+                // ၃။ Referral ဇယား (grm_referrals) ထဲသို့ အသစ်ဝင်လာသူ မရောက်သေးပါက အလိုအလျောက် သေချာထည့်သွင်းခြင်း
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
@@ -662,7 +662,7 @@
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
-                        status: 'verified', 
+                        status: 'verified', // active / verified status
                         created_at: new Date().toISOString()
                     }]);
 
@@ -1170,7 +1170,7 @@
                         if (activeAddr) fields.wallet_address = activeAddr;
                     }
 
-                    await _supabase.from('grm_users').upsert([fields], { onConflict: 'user_id' });
+                    await _supabase.from('grm_users').insert([fields]);
                 }
             } catch (err) { console.error('Supabase update general error:', err); }
         }
