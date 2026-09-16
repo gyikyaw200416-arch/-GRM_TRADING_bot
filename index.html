@@ -469,7 +469,7 @@
         document.getElementById('referral-link-display').innerText = userInviteLink;
 
         const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIxlzcm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
         
         let _supabase = null;
         try {
@@ -582,8 +582,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            await handleReferralRegistration();
             await loadUserDataFromSupabase();
+            await handleReferralRegistration();
             await fetchWithdrawalHistory();
             await fetchReferralStats();
             renderMinersStore();
@@ -593,7 +593,7 @@
         });
 
         // -------------------------------------------------------------
-        // FIXED & IMPROVED REFERRAL REGISTRATION SYSTEM
+        // ROBUST REFERRAL REGISTRATION SYSTEM (Fixed & Enhanced)
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -619,7 +619,7 @@
                     .maybeSingle();
 
                 if (userRecord && userRecord.referrer_id) {
-                    return; // Already registered with a referrer
+                    return; // Already has a referrer registered
                 }
 
                 if (!startParam) {
@@ -642,31 +642,6 @@
                 const referrerRawId = startParam.toString().trim();
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                // Validate if the referrer actually exists in the database before linking!
-                let { data: referrerRecord } = await _supabase
-                    .from('grm_users')
-                    .select('user_id')
-                    .eq('user_id', referrerUserId)
-                    .maybeSingle();
-
-                if (!referrerRecord) {
-                    console.warn("Referrer ID not found in database:", referrerUserId);
-                    if (!userRecord) {
-                        await _supabase.from('grm_users').upsert([{
-                            user_id: currentUserId,
-                            username: currentUserName,
-                            referrer_id: null,
-                            balance: baseInitialBalance,
-                            mined_amount: 0,
-                            mining_state: 'stopped',
-                            level: 0,
-                            is_verified: false,
-                            updated_at: new Date().toISOString()
-                        }], { onConflict: 'user_id' });
-                    }
-                    return;
-                }
-
                 if (referrerUserId === currentUserId) {
                     if (!userRecord) {
                         await _supabase.from('grm_users').upsert([{
@@ -684,6 +659,26 @@
                     return;
                 }
 
+                // Check if referrer exists in DB
+                let { data: referrerRecord } = await _supabase
+                    .from('grm_users')
+                    .select('user_id')
+                    .eq('user_id', referrerUserId)
+                    .maybeSingle();
+
+                if (!referrerRecord) {
+                    // Create referrer placeholder if missing so foreign key or record checks pass
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: referrerUserId,
+                        username: 'User_' + referrerRawId,
+                        balance: 0,
+                        level: 0,
+                        is_verified: false,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+                }
+
+                // Update or Insert current user with referrer_id
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
