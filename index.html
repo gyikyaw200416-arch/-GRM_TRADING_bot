@@ -589,7 +589,7 @@
         });
 
         // -------------------------------------------------------------
-        // STRICT REFERRAL REGISTRATION LOGIC
+        // ROBUST REFERRAL REGISTRATION LOGIC
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -615,7 +615,7 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // အကယ်၍ User ရှိပြီးသားဖြစ်ပြီး referrer_id ပါရှိပြီးဖြစ်ပါက Referral ထပ်မံ အကျုံးမဝင်ပါ
+                // အကယ်၍ User ရှိပြီးသားဖြစ်ပြီး referrer_id ပါရှိပြီးဖြစ်ပါက Referral ထပ်မံပြောင်းလဲ၍မရပါ (Lock)
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
@@ -628,14 +628,14 @@
 
                 if (referrerUserId === currentUserId) return; // Self-referral protection
 
-                // ၂။ User ထဲတွင် referrer_id ကို အခိုင်အမာ update / insert ပြုလုပ်ခြင်း
+                // ၂။ User ဇယားတွင် referrer_id ကို အခိုင်အမာ update သို့မဟုတ် insert ပြုလုပ်ခြင်း
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
                         .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
                         .eq('user_id', currentUserId);
                 } else {
-                    await _supabase.from('grm_users').insert([{
+                    await _supabase.from('grm_users മറ്റൊരു_insert_table').insert([{
                         user_id: currentUserId,
                         username: currentUserName,
                         referrer_id: referrerUserId,
@@ -648,38 +648,29 @@
                     }]);
                 }
 
-                // ၃။ Referral Log ထဲသို့ Active status ဖြင့် တစ်ကြိမ်သာ သေချာထည့်သွင်းခြင်း
-                await registerReferralRecord(referrerUserId, currentUserId);
-
-            } catch (e) { 
-                console.error("Referral registration error:", e); 
-            }
-        }
-
-        async function registerReferralRecord(referrerUserId, newUserId) {
-            try {
-                // Referral Table ထဲတွင် ရှိပြီးသားလား ထပ်မံစစ်ဆေးမည်
+                // ၃။ Referral ဇယား (grm_referrals) ထဲသို့ အသစ်ဝင်လာသူ မရောက်သေးပါက အလိုအလျောက် သေချာထည့်သွင်းခြင်း
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
-                    .eq('referred_id', newUserId)
+                    .eq('referred_id', currentUserId)
                     .maybeSingle();
 
                 if (!existingRef) {
-                    const newRefId = 'ref_' + newUserId.replace('tg_', '').replace('user_', '');
+                    const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
                     
                     await _supabase.from('grm_referrals').insert([{
                         id: newRefId,
                         referrer_id: referrerUserId,
-                        referred_id: newUserId,
-                        status: 'verified', // Set verified / active status
+                        referred_id: currentUserId,
+                        status: 'verified', // active / verified status
                         created_at: new Date().toISOString()
                     }]);
 
-                    await notifyReferrerBonus(referrerUserId, newUserId);
+                    await notifyReferrerBonus(referrerUserId, currentUserId);
                 }
-            } catch (e) {
-                console.error("Error inserting referral log:", e);
+
+            } catch (e) { 
+                console.error("Referral registration error:", e); 
             }
         }
 
@@ -746,7 +737,6 @@
             for (const [refUserId, refData] of combinedMap.entries()) {
                 let displayName = refUserId.replace('tg_', '').replace('user_', '');
                 let rawIdNum = refUserId.replace('tg_', '').replace('user_', '');
-                let isActive = true;
 
                 if (_supabase) {
                     const { data: usr } = await _supabase
