@@ -143,35 +143,47 @@
         .ref-link-text { flex: 1; font-size: 11px; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .copy-btn-yellow { background: #ffb400; color: #000; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 10px rgba(255, 180, 0, 0.3); }
 
+        /* Updated Referrals List Styling matching user image */
         .ref-user-item {
-            background: rgba(13, 22, 38, 0.9);
-            border: 1px solid rgba(0, 240, 255, 0.15);
-            border-radius: 14px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
+            background: linear-gradient(135deg, rgba(13, 26, 20, 0.95) 0%, rgba(7, 15, 12, 0.95) 100%);
+            border: 1px solid rgba(46, 160, 67, 0.35);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
-        .ref-user-info { display: flex; align-items: center; gap: 12px; }
+        .ref-user-info { display: flex; align-items: center; gap: 14px; }
         .ref-avatar-box {
-            width: 38px; height: 38px; border-radius: 50%;
+            width: 44px; height: 44px; border-radius: 50%;
             background: #112238; border: 1px solid rgba(0, 240, 255, 0.3);
             display: flex; justify-content: center; align-items: center;
-            font-size: 18px; color: #00f0ff; position: relative;
+            font-size: 20px; color: #00f0ff; position: relative;
         }
         .ref-avatar-status {
-            width: 10px; height: 10px; border-radius: 50%;
-            position: absolute; bottom: 0; right: 0;
+            width: 11px; height: 11px; border-radius: 50%;
+            position: absolute; bottom: 1px; right: 1px;
             border: 2px solid #070d18;
         }
-        .status-active-dot { background-color: #2ea043; box-shadow: 0 0 6px #2ea043; }
+        .status-active-dot { background-color: #2ea043; box-shadow: 0 0 8px #2ea043; }
         .status-inactive-dot { background-color: #8b949e; }
 
-        .ref-username { font-size: 13px; font-weight: bold; color: #ffffff; }
-        .ref-status-text { font-size: 11px; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
-        .text-active { color: #2ea043; font-weight: bold; }
+        .ref-username { font-size: 14px; font-weight: bold; color: #ffffff; letter-spacing: 0.3px; }
+        .ref-status-text { font-size: 12px; margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+        .text-active { color: #2ea043; font-weight: 600; }
         .text-inactive { color: #8b949e; }
+
+        /* Coin Badge on the Right similar to photo */
+        .ref-coin-badge {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: radial-gradient(circle, #ffb400 0%, #b37700 100%);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 10px; font-weight: 900; color: #000;
+            box-shadow: 0 0 10px rgba(255, 180, 0, 0.5);
+            border: 1px solid #ffe066;
+        }
 
         .profile-row { display: flex; justify-content: space-between; align-items: center; }
         .profile-icon-box { width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); display: flex; justify-content: center; align-items: center; font-size: 20px; color: #00f0ff; }
@@ -761,7 +773,6 @@
             let html = '';
             for (const [refUserId, refData] of combinedMap.entries()) {
                 let displayName = refUserId.replace('tg_', '').replace('user_', '');
-                let rawIdNum = refUserId.replace('tg_', '').replace('user_', '');
 
                 if (_supabase) {
                     const { data: usr } = await _supabase
@@ -772,10 +783,14 @@
 
                     if (usr && usr.username) {
                         displayName = usr.username.startsWith('@') ? usr.username : '@' + usr.username;
+                    } else {
+                        displayName = '@' + displayName;
                     }
+                } else {
+                    displayName = '@' + displayName;
                 }
 
-                const statusLabel = refData.status === 'claimed' ? 'Claimed' : 'Active';
+                const statusLabel = 'Active';
                 const statusDotClass = 'status-active-dot';
                 const statusTextClass = 'text-active';
 
@@ -787,12 +802,13 @@
                                 <div class="ref-avatar-status ${statusDotClass}"></div>
                             </div>
                             <div>
-                                <div class="ref-username">${displayName} (ID: ${rawIdNum})</div>
+                                <div class="ref-username">${displayName}</div>
                                 <div class="ref-status-text ${statusTextClass}">
                                     <span>●</span> ${statusLabel}
                                 </div>
                             </div>
                         </div>
+                        <div class="ref-coin-badge">GRM</div>
                     </div>
                 `;
             }
@@ -1055,7 +1071,6 @@
             }
 
             try {
-                // First check if user exists, if not create user record to prevent missing row error
                 let { data: existingUser } = await _supabase
                     .from('grm_users')
                     .select('user_id')
@@ -1106,7 +1121,6 @@
             if (!_supabase) return;
 
             try {
-                // Ensure user exists in table before updating to avoid failed update
                 let { data: existingUser } = await _supabase
                     .from('grm_users')
                     .select('user_id')
@@ -1755,7 +1769,7 @@
             let remaining = Math.floor(durationMs / 1000);
 
             const timer = setInterval(() => {
-                if, (remaining <= 0) {
+                if (remaining <= 0) {
                     clearInterval(timer);
                     localStorage.removeItem(`grm_task_cd_${taskId}_${currentUserId}`);
                     renderTasksList();
