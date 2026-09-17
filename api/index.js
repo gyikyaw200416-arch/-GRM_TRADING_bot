@@ -11,7 +11,7 @@ bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
     .webApp("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
     .row()
-    .url("🌐 Community", "https://discord.gg/NwsPcvukX"); // Discord Community link
+    .url("🌐 Community", "https://discord.gg/NwsPcvukX");
 
   const captionText = 
     "👋 *Welcome to GRAM Mining Core!*\n\n" +
@@ -21,7 +21,7 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // 1. Guaranteed Instant Reply (Bot က စာကို ဘာနဲ့မှမစောင့်ဘဲ ချက်ချင်းပြန်ပါမယ်)
+  // 1. Reply to user instantly
   try {
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -39,16 +39,15 @@ bot.command("start", async (ctx) => {
     });
   }
 
-  // 2. Background Referral & Database Logic (Safe from crashing the bot)
+  // 2. Process Referral & Database Logic safely
   if (supabase && ctx.from) {
     try {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
       const userId = 'tg_' + rawUserId;
       const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-      const startPayload = ctx.match; // Referral payload from link
+      const startPayload = ctx.match;
 
-      // Check if user already exists in database
       let { data: existingUser } = await supabase
         .from('grm_users')
         .select('user_id, referrer_id')
@@ -67,7 +66,6 @@ bot.command("start", async (ctx) => {
           }
         }
 
-        // Insert new user
         await supabase.from('grm_users').upsert([{
           user_id: userId,
           username: username,
@@ -80,7 +78,6 @@ bot.command("start", async (ctx) => {
           updated_at: new Date().toISOString()
         }], { onConflict: 'user_id' });
 
-        // Record referral history and notify owner
         if (assignedReferrerId) {
           const refRelationId = 'ref_' + rawUserId;
           
@@ -109,7 +106,7 @@ bot.command("start", async (ctx) => {
         }
       }
     } catch (err) {
-      console.error('Background referral error:', err);
+      console.error('Referral logic error:', err);
     }
   }
 });
@@ -122,14 +119,15 @@ bot.on("message", async (ctx) => {
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
+    // Send 200 OK to Telegram immediately so it stops retrying requests
+    res.status(200).send("OK");
+    
     try {
-      // Removed bot.init() inside request handler to prevent Vercel timeouts and crashes
       await bot.handleUpdate(req.body);
-      return res.status(200).send("OK");
     } catch (error) {
       console.error("Bot update error:", error);
-      return res.status(500).json({ error: error.message });
     }
+    return;
   }
   return res.status(200).send("Telegram bot server is running!");
 }
