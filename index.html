@@ -611,57 +611,33 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                if (userRecord && userRecord.referrer_id) {
-                    return; 
-                }
-
-                if (!startParam) {
-                    if (!userRecord) {
-                        await _supabase.from('grm_users').upsert([{
-                            user_id: currentUserId,
-                            username: currentUserName,
-                            referrer_id: null,
-                            balance: baseInitialBalance,
-                            mined_amount: 0,
-                            mining_state: 'stopped',
-                            level: 0,
-                            is_verified: false,
-                            updated_at: new Date().toISOString()
-                        }], { onConflict: 'user_id' });
-                    }
-                    return;
-                }
-
-                const referrerRawId = startParam.toString().trim();
-                const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
-
-                if (referrerUserId === currentUserId) {
-                    if (!userRecord) {
-                        await _supabase.from('grm_users').upsert([{
-                            user_id: currentUserId,
-                            username: currentUserName,
-                            referrer_id: null,
-                            balance: baseInitialBalance,
-                            mined_amount: 0,
-                            mining_state: 'stopped',
-                            level: 0,
-                            is_verified: false,
-                            updated_at: new Date().toISOString()
-                        }], { onConflict: 'user_id' });
-                    }
-                    return;
-                }
+                const referrerRawId = startParam ? startParam.toString().trim() : null;
+                const referrerUserId = referrerRawId ? (referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId) : null;
+                const validReferrer = (referrerUserId && referrerUserId !== currentUserId) ? referrerUserId : null;
 
                 if (userRecord) {
-                    await _supabase
-                        .from('grm_users')
-                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
-                        .eq('user_id', currentUserId);
+                    if (!userRecord.referrer_id && validReferrer) {
+                        await _supabase
+                            .from('grm_users')
+                            .update({ referrer_id: validReferrer, updated_at: new Date().toISOString() })
+                            .eq('user_id', currentUserId);
+
+                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
+                        await _supabase.from('grm_referrals').upsert([{
+                            id: newRefId,
+                            referrer_id: validReferrer,
+                            referred_id: currentUserId,
+                            status: 'verified',
+                            created_at: new Date().toISOString()
+                        }], { onConflict: 'id' });
+
+                        await notifyReferrerBonus(validReferrer, currentUserId);
+                    }
                 } else {
                     await _supabase.from('grm_users').upsert([{
                         user_id: currentUserId,
                         username: currentUserName,
-                        referrer_id: referrerUserId,
+                        referrer_id: validReferrer,
                         balance: baseInitialBalance,
                         mined_amount: 0,
                         mining_state: 'stopped',
@@ -669,35 +645,20 @@
                         is_verified: false,
                         updated_at: new Date().toISOString()
                     }], { onConflict: 'user_id' });
+
+                    if (validReferrer) {
+                        const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
+                        await _supabase.from('grm_referrals').upsert([{
+                            id: newRefId,
+                            referrer_id: validReferrer,
+                            referred_id: currentUserId,
+                            status: 'verified',
+                            created_at: new Date().toISOString()
+                        }], { onConflict: 'id' });
+
+                        await notifyReferrerBonus(validReferrer, currentUserId);
+                    }
                 }
-
-                const { data: existingRef } = await _supabase
-                    .from('grm_referrals')
-                    .select('*')
-                    .eq('referred_id', currentUserId)
-                    .maybeSingle();
-
-                if (!existingRef) {
-                    const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
-                    
-                    await _supabase.from('grm_referrals').upsert([{
-                        id: newRefId,
-                        referrer_id: referrerUserId,
-                        referred_id: currentUserId,
-                        status: 'verified',
-                        created_at: new Date().toISOString()
-                    }], { onConflict: 'id' });
-
-                    await notifyReferrerBonus(referrerUserId, currentUserId);
-                } else if (existingRef.status === 'pending' || !existingRef.status) {
-                    await _supabase
-                        .from('grm_referrals')
-                        .update({ status: 'verified', referrer_id: referrerUserId })
-                        .eq('id', existingRef.id);
-
-                    await notifyReferrerBonus(referrerUserId, currentUserId);
-                }
-
             } catch (e) { 
                 console.error("Referral registration error:", e); 
             }
