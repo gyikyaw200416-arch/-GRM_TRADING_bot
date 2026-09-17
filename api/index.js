@@ -7,15 +7,6 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// Pre-initialize bot to prevent Vercel timeout issues
-let isBotInitialized = false;
-async function ensureBotInit() {
-  if (!isBotInitialized) {
-    await bot.init();
-    isBotInitialized = true;
-  }
-}
-
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
     .webApp("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
@@ -30,26 +21,44 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // 1. Safe Referral Processing (Runs independently so it never blocks the bot response)
+  // 1. Bot က စာကို ချက်ချင်းပြန်ပေးမှာပါ (Database ကြောင့် စာမပြန်တာမျိုး မဖြစ်စေရပါ)
+  try {
+    await ctx.replyWithPhoto(
+      "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
+      {
+        caption: captionText,
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      }
+    );
+  } catch (error) {
+    console.error("Error sending photo:", error);
+    await ctx.reply(captionText, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+  }
+
+  // 2. Referral Logic (Database ထဲမှာ User အသစ် မှတ်သားခြင်းနဲ့ History သိမ်းခြင်း)
   try {
     if (supabase && ctx.from) {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
       const userId = 'tg_' + rawUserId;
       const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-      const startPayload = ctx.match; // Referral ID payload
+      const startPayload = ctx.match; // Ref ID from link
 
-      // Check if user already exists
+      // Check if user already exists in database
       let { data: existingUser } = await supabase
         .from('grm_users')
         .select('user_id, referrer_id')
         .eq('user_id', userId)
         .maybeSingle();
 
-      let assignedReferrerId = null;
-
-      // If user is brand new (not in database yet)
+      // If user does NOT exist in database (New User)
       if (!existingUser) {
+        let assignedReferrerId = null;
+
         if (startPayload && typeof startPayload === 'string' && startPayload.trim() !== '') {
           let refRaw = startPayload.trim();
           let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
@@ -59,7 +68,7 @@ bot.command("start", async (ctx) => {
           }
         }
 
-        // Insert new user into grm_users
+        // Insert new user to grm_users
         await supabase.from('grm_users').upsert([{
           user_id: userId,
           username: username,
@@ -72,7 +81,7 @@ bot.command("start", async (ctx) => {
           updated_at: new Date().toISOString()
         }], { onConflict: 'user_id' });
 
-        // Record referral history if a valid referrer exists
+        // If referrer exists, save history in grm_referrals and notify owner
         if (assignedReferrerId) {
           const refRelationId = 'ref_' + rawUserId;
           
@@ -91,11 +100,11 @@ bot.command("start", async (ctx) => {
               created_at: new Date().toISOString()
             }], { onConflict: 'id' });
 
-            // Notify Referrer owner
+            // Notify Referrer owner with History details
             let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
             await bot.api.sendMessage(
               targetChatId,
-              `✅ *New Referral Joined!* 🎉\n\n👤 *User:* ${username}\n🆔 *ID:* \`${rawUserId}\``,
+              `✅ *New Referral Joined!* 🎉\n\n👤 *User:* ${username}\n🆔 *ID:* \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
               { parse_mode: 'Markdown' }
             ).catch((e) => console.log('Notification failed:', e.message));
           }
@@ -103,25 +112,7 @@ bot.command("start", async (ctx) => {
       }
     }
   } catch (err) {
-    console.error('Referral logic error (non-fatal):', err);
-  }
-
-  // 2. Guaranteed UI Response
-  try {
-    await ctx.replyWithPhoto(
-      "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
-      {
-        caption: captionText,
-        parse_mode: "Markdown",
-        reply_markup: keyboard,
-      }
-    );
-  } catch (error) {
-    console.error("Error sending photo:", error);
-    await ctx.reply(captionText, {
-      parse_mode: "Markdown",
-      reply_markup: keyboard,
-    });
+    console.error('Referral logic background error:', err);
   }
 });
 
@@ -134,7 +125,7 @@ bot.on("message", async (ctx) => {
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      await ensureBotInit();
+      await bot.init();
       await bot.handleUpdate(req.body);
       return res.status(200).send("OK");
     } catch (error) {
