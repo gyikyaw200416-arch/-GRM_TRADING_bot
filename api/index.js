@@ -1,11 +1,13 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { createClient } from "@supabase/supabase-js";
 
-const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
+// Hardcoded Credentials as requested
+const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
+const SUPABASE_URL = "https://uyblmdckdvqgammrfati.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+const bot = new Bot(BOT_TOKEN);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
@@ -21,7 +23,7 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // 1. Reply to user instantly
+  // 1. Send the UI response immediately to the user
   try {
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -39,8 +41,8 @@ bot.command("start", async (ctx) => {
     });
   }
 
-  // 2. Process Referral & Database Logic safely
-  if (supabase && ctx.from) {
+  // 2. Process Referral & Database Logic
+  if (ctx.from) {
     try {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
@@ -119,15 +121,13 @@ bot.on("message", async (ctx) => {
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    // Send 200 OK to Telegram immediately so it stops retrying requests
-    res.status(200).send("OK");
-    
     try {
       await bot.handleUpdate(req.body);
+      return res.status(200).send("OK");
     } catch (error) {
       console.error("Bot update error:", error);
+      return res.status(500).json({ error: error.message });
     }
-    return;
   }
   return res.status(200).send("Telegram bot server is running!");
 }
