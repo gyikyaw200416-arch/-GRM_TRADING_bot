@@ -6,6 +6,6 @@
   "main": "api/index.js",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "telegraf": "^4.15.3"
+    "grammy": "^1.21.1"
   }
 }
