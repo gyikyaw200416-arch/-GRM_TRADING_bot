@@ -588,9 +588,6 @@
             setTimeout(hideSplashScreen, 1000);
         });
 
-        // -------------------------------------------------------------
-        // UPGRADED ROBUST REFERRAL REGISTRATION LOGIC FOR SUPABASE
-        // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
 
@@ -614,7 +611,6 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // If user already has a referrer saved, skip registration
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
@@ -656,7 +652,6 @@
                     return;
                 }
 
-                // Update or Insert user with referrer_id
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -676,7 +671,6 @@
                     }], { onConflict: 'user_id' });
                 }
 
-                // Check grm_referrals table entry
                 const { data: existingRef } = await _supabase
                     .from('grm_referrals')
                     .select('*')
