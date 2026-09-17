@@ -1,7 +1,7 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { createClient } from "@supabase/supabase-js";
 
-// Hardcoded Credentials as requested
+// Hardcoded Credentials
 const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
 const SUPABASE_URL = "https://uyblmdckdvqgammrfati.supabase.co/rest/v1/";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
@@ -23,7 +23,7 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // 1. Send the UI response immediately to the user
+  // 1. Bot က စာနဲ့ပုံကို အရင်ဆုံး ချက်ချင်းပြန်ပါမယ် (ဒီတော့ Bot က အမြဲ အလုပ်လုပ်နေပါမယ်)
   try {
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -41,14 +41,14 @@ bot.command("start", async (ctx) => {
     });
   }
 
-  // 2. Process Referral & Database Logic
-  if (ctx.from) {
-    try {
+  // 2. Referral & Database Logic (Background မှာ အလုပ်လုပ်ပြီး Bot ကို Error မတက်စေရန်)
+  try {
+    if (ctx.from) {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
       const userId = 'tg_' + rawUserId;
       const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-      const startPayload = ctx.match;
+      const startPayload = ctx.match; // Extracts referral payload
 
       let { data: existingUser } = await supabase
         .from('grm_users')
@@ -107,9 +107,9 @@ bot.command("start", async (ctx) => {
           }
         }
       }
-    } catch (err) {
-      console.error('Referral logic error:', err);
     }
+  } catch (err) {
+    console.error('Referral logic error (non-fatal):', err);
   }
 });
 
