@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 
 // Hardcoded Credentials
 const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
-const SUPABASE_URL = "https://uyblmdckdvqgammrfati.supabase.co/rest/v1/";
+// FIXED: Removed "/rest/v1/" from the end of the Supabase URL so the client connects properly
+const SUPABASE_URL = "https://uyblmdckdvqgammrfati.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
