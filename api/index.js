@@ -7,6 +7,15 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
+// Pre-initialize bot to prevent Vercel timeout issues
+let isBotInitialized = false;
+async function ensureBotInit() {
+  if (!isBotInitialized) {
+    await bot.init();
+    isBotInitialized = true;
+  }
+}
+
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
     .webApp("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
@@ -21,15 +30,16 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
+  // 1. Safe Referral Processing (Runs independently so it never blocks the bot response)
   try {
     if (supabase && ctx.from) {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
       const userId = 'tg_' + rawUserId;
       const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-      const startPayload = ctx.match; // Referrer ID from link (e.g. 5020977059)
+      const startPayload = ctx.match; // Referral ID payload
 
-      // 1. Check if user already exists in database
+      // Check if user already exists
       let { data: existingUser } = await supabase
         .from('grm_users')
         .select('user_id, referrer_id')
@@ -38,19 +48,18 @@ bot.command("start", async (ctx) => {
 
       let assignedReferrerId = null;
 
-      // Process referral only if user is brand new (not in database yet)
+      // If user is brand new (not in database yet)
       if (!existingUser) {
         if (startPayload && typeof startPayload === 'string' && startPayload.trim() !== '') {
           let refRaw = startPayload.trim();
           let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
           
-          // Prevent self-referral
           if (refParsed !== userId) {
             assignedReferrerId = refParsed;
           }
         }
 
-        // Insert new user with their referrer
+        // Insert new user into grm_users
         await supabase.from('grm_users').upsert([{
           user_id: userId,
           username: username,
@@ -63,9 +72,9 @@ bot.command("start", async (ctx) => {
           updated_at: new Date().toISOString()
         }], { onConflict: 'user_id' });
 
-        // 2. If a valid referrer exists, record the history in 'grm_referrals' table
+        // Record referral history if a valid referrer exists
         if (assignedReferrerId) {
-          const refRelationId = 'ref_' + rawUserId; // Unique ID for this referral relation
+          const refRelationId = 'ref_' + rawUserId;
           
           let { data: existingRef } = await supabase
             .from('grm_referrals')
@@ -82,25 +91,22 @@ bot.command("start", async (ctx) => {
               created_at: new Date().toISOString()
             }], { onConflict: 'id' });
 
-            // 3. Send detailed history notification to the referrer owner
+            // Notify Referrer owner
             let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
             await bot.api.sendMessage(
               targetChatId,
-              `✅ *New Referral Joined!* 🎉\n\n👤 *User:* ${username}\n🆔 *ID:* \`${rawUserId}\`\n\n🎁 Your referral history has been updated. Check your Mini App Friends section!`,
+              `✅ *New Referral Joined!* 🎉\n\n👤 *User:* ${username}\n🆔 *ID:* \`${rawUserId}\``,
               { parse_mode: 'Markdown' }
             ).catch((e) => console.log('Notification failed:', e.message));
           }
         }
-      } else {
-        // User already exists in database, do not give referral rewards again
-        console.log(`User ${userId} already exists. Skipping referral reward.`);
       }
     }
   } catch (err) {
-    console.error('Error in referral logic (non-fatal):', err);
+    console.error('Referral logic error (non-fatal):', err);
   }
 
-  // Send UI response to user
+  // 2. Guaranteed UI Response
   try {
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -128,7 +134,7 @@ bot.on("message", async (ctx) => {
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      await bot.init();
+      await ensureBotInit();
       await bot.handleUpdate(req.body);
       return res.status(200).send("OK");
     } catch (error) {
