@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 
-// Initialize Supabase client safely
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
@@ -22,7 +21,7 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // 1. Send UI response first (Ensures bot replies instantly without delay)
+  // 1. Guaranteed Instant Reply (Bot က စာကို ဘာနဲ့မှမစောင့်ဘဲ ချက်ချင်းပြန်ပါမယ်)
   try {
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -40,23 +39,22 @@ bot.command("start", async (ctx) => {
     });
   }
 
-  // 2. Referral & Database Logic (Handles new user checks, referrer tracking, and history)
-  try {
-    if (supabase && ctx.from) {
+  // 2. Background Referral & Database Logic (Safe from crashing the bot)
+  if (supabase && ctx.from) {
+    try {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
       const userId = 'tg_' + rawUserId;
       const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-      const startPayload = ctx.match; // Extracts referral payload from /start command (e.g. /start 123456 -> 123456)
+      const startPayload = ctx.match; // Referral payload from link
 
-      // Check if user already exists in 'grm_users' table
+      // Check if user already exists in database
       let { data: existingUser } = await supabase
         .from('grm_users')
         .select('user_id, referrer_id')
         .eq('user_id', userId)
         .maybeSingle();
 
-      // If user does NOT exist in the database (Brand new user)
       if (!existingUser) {
         let assignedReferrerId = null;
 
@@ -64,13 +62,12 @@ bot.command("start", async (ctx) => {
           let refRaw = startPayload.trim();
           let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
           
-          // Prevent self-referral
           if (refParsed !== userId) {
             assignedReferrerId = refParsed;
           }
         }
 
-        // Insert new user into 'grm_users' with their assigned referrer
+        // Insert new user
         await supabase.from('grm_users').upsert([{
           user_id: userId,
           username: username,
@@ -83,7 +80,7 @@ bot.command("start", async (ctx) => {
           updated_at: new Date().toISOString()
         }], { onConflict: 'user_id' });
 
-        // If a valid referrer exists, record the history in 'grm_referrals' and notify the owner
+        // Record referral history and notify owner
         if (assignedReferrerId) {
           const refRelationId = 'ref_' + rawUserId;
           
@@ -102,7 +99,6 @@ bot.command("start", async (ctx) => {
               created_at: new Date().toISOString()
             }], { onConflict: 'id' });
 
-            // Send notification message to the referrer owner so they get the history log
             let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
             await bot.api.sendMessage(
               targetChatId,
@@ -112,10 +108,9 @@ bot.command("start", async (ctx) => {
           }
         }
       }
-      // If user already exists, do nothing (Referral reward is given only once)
+    } catch (err) {
+      console.error('Background referral error:', err);
     }
-  } catch (err) {
-    console.error('Referral logic error:', err);
   }
 });
 
@@ -128,7 +123,7 @@ bot.on("message", async (ctx) => {
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      await bot.init();
+      // Removed bot.init() inside request handler to prevent Vercel timeouts and crashes
       await bot.handleUpdate(req.body);
       return res.status(200).send("OK");
     } catch (error) {
