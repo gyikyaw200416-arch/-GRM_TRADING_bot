@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-const MINI_APP_URL = process.env.MINI_APP_URL || "https://grm-trading-bot.vercel.app/";
 
 bot.command("start", async (ctx) => {
   try {
@@ -11,9 +10,11 @@ bot.command("start", async (ctx) => {
     const rawUserId = telegramUser.id.toString();
     const userId = 'tg_' + rawUserId;
     const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-    const startPayload = ctx.match; // Referral ID payload passed via /start command
+    
+    // grammy မှာ match က start command ရဲ့ payload (ref id) ကို ဖမ်းပေးပါတယ်
+    const startPayload = ctx.match; 
 
-    // 1. Check or Insert User into Supabase Database
+    // 1. Check or Insert User into Supabase & Process Referral
     let { data: existingUser } = await supabase
       .from('grm_users')
       .select('user_id, referrer_id')
@@ -21,7 +22,6 @@ bot.command("start", async (ctx) => {
       .maybeSingle();
 
     let assignedReferrerId = null;
-
     if (startPayload && startPayload.trim() !== '') {
       let refRaw = startPayload.trim();
       let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
@@ -31,7 +31,6 @@ bot.command("start", async (ctx) => {
     }
 
     if (!existingUser) {
-      // Insert new user
       await supabase.from('grm_users').upsert([{
         user_id: userId,
         username: username,
@@ -44,13 +43,11 @@ bot.command("start", async (ctx) => {
         updated_at: new Date().toISOString()
       }], { onConflict: 'user_id' });
     } else if (!existingUser.referrer_id && assignedReferrerId) {
-      // Update referrer if not set yet
       await supabase.from('grm_users')
         .update({ referrer_id: assignedReferrerId, updated_at: new Date().toISOString() })
         .eq('user_id', userId);
     }
 
-    // 2. Register Referral Relation if valid payload exists
     if (assignedReferrerId) {
       const refRelationId = 'ref_' + rawUserId;
       let { data: existingRef } = await supabase
@@ -72,15 +69,15 @@ bot.command("start", async (ctx) => {
         let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
         await bot.api.sendMessage(
           targetChatId,
-          `✅ *New Referral Joined!* 🎉\n\n👤 *Username:* ${username}\n🆔 *ID:* \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to claim your reward!`,
+          `✅ *New Referral Joined!* 🎉\n\n👤 *Username:* ${username}\n🆔 *ID:* \`${rawUserId}\``,
           { parse_mode: 'Markdown' }
         ).catch((e) => console.log('Notification failed:', e.message));
       }
     }
 
-    // 3. Prepare Keyboard & Welcome Message
+    // 2. Original Keyboard & UI Responses
     const keyboard = new InlineKeyboard()
-      .webApp("🚀 Start Mining", MINI_APP_URL)
+      .webApp("🚀 Start Mining", "https://grm-trading-bot.vercel.app/")
       .row()
       .url("🌐 Community", "https://discord.gg/NwsPcvukX");
 
@@ -110,7 +107,7 @@ bot.command("start", async (ctx) => {
     }
 
   } catch (err) {
-    console.error('Error in bot start command:', err);
+    console.error('Error in referral / start logic:', err);
   }
 });
 
