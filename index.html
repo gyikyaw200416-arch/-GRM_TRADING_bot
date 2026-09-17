@@ -635,6 +635,7 @@
                     }
                 }
 
+                // Prevent changing or re-registering referrer if already recorded (Locks first-time link only)
                 if (!userRecord) {
                     await _supabase.from('grm_users').upsert([{
                         user_id: currentUserId,
@@ -657,6 +658,7 @@
                         .eq('user_id', currentUserId);
                 }
 
+                // Add to grm_referrals table only if first time
                 if (referrerUserId && (!userRecord || !userRecord.referrer_id)) {
                     const { data: existingRef } = await _supabase
                         .from('grm_referrals')
@@ -744,7 +746,8 @@
 
             let html = '';
             for (const [refUserId, refData] of combinedMap.entries()) {
-                let displayName = refUserId.replace('tg_', '').replace('user_', '');
+                let pureId = refUserId.replace('tg_', '').replace('user_', '');
+                let displayName = '@' + pureId;
 
                 if (_supabase) {
                     const { data: usr } = await _supabase
@@ -754,12 +757,13 @@
                         .maybeSingle();
 
                     if (usr && usr.username) {
-                        displayName = usr.username.startsWith('@') ? usr.username : '@' + usr.username;
+                        let nameStr = usr.username.startsWith('@') ? usr.username : '@' + usr.username;
+                        displayName = `${nameStr} (ID: ${pureId})`;
                     } else {
-                        displayName = '@' + displayName;
+                        displayName = `@${pureId} (ID: ${pureId})`;
                     }
                 } else {
-                    displayName = '@' + displayName;
+                    displayName = `@${pureId} (ID: ${pureId})`;
                 }
 
                 const statusLabel = 'Active';
@@ -853,7 +857,7 @@
                     html += `
                         <div class="withdraw-req-card">
                             <div><strong>Referrer:</strong> ${ref.referrer_id} ${stBadge}</div>
-                            <div><strong>Referred User:</strong> ${ref.referred_id}</div>
+                            <div><strong>Referred User ID:</strong> ${ref.referred_id}</div>
                             <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
                         </div>
                     `;
