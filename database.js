@@ -35,7 +35,8 @@ function saveReferral(inviterId, inviteeId) {
         };
 
         fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-        return { success: false, message: "Referral saved successfully." };
+        // FIXED: Changed success from false to true so it correctly reports success
+        return { success: true, message: "Referral saved successfully." };
     } catch (error) {
         console.error("Error saving referral:", error);
         return { success: false, message: "Database error." };
