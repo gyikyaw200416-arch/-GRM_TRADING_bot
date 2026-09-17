@@ -1,9 +1,17 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize Bot & Supabase safely
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+
+// Bot ကို Vercel မှာ Error မတက်အောင် ကြိုတင် Initialize လုပ်ရန်
+let isInitialized = false;
+async function ensureInit() {
+  if (!isInitialized) {
+    await bot.init();
+    isInitialized = true;
+  }
+}
 
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
@@ -19,7 +27,7 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // 1. Bot က စာနဲ့ပုံကို အရင်ဆုံး ချက်ချင်းပြန်ပါမယ် (ဒီတော့ Bot က အမြဲ အလုပ်လုပ်နေပါမယ်)
+  // 1. Bot က စာနဲ့ ပုံကို အရင်ဆုံး ချက်ချင်းပြန်ပါမယ်
   try {
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -37,25 +45,23 @@ bot.command("start", async (ctx) => {
     });
   }
 
-  // 2. Referral Logic (Refer link နဲ့ဝင်လာတာကို စစ်ဆေးပြီး Supabase ထဲ မှတ်သားခြင်း)
+  // 2. Referral Logic (Database မှတ်တမ်းစစ်ဆေးခြင်းနဲ့ History သိမ်းခြင်း)
   try {
     if (ctx.from) {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
       const userId = 'tg_' + rawUserId;
       const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-      
-      // Grammy မှာ start command ရဲ့ payload (ref ID) ကို ctx.match နဲ့ ဖမ်းပါတယ်
-      const startPayload = ctx.match; 
+      const startPayload = ctx.match; // Refer ID from link
 
-      // Check if user already exists in database
+      // Database ထဲမှာ User ရှိပြီးသားလား စစ်ဆေးရန်
       let { data: existingUser } = await supabase
         .from('grm_users')
         .select('user_id, referrer_id')
         .eq('user_id', userId)
         .maybeSingle();
 
-      // အကယ်၍ User က Database ထဲမှာ မရှိသေးရင် (လူသစ်စစ်စစ် ဖြစ်မှသာ Refer သတ်မှတ်မည်)
+      // အကယ်၍ User က Database ထဲမှာ မရှိသေးမှသာ (လူသစ်စစ်စစ်) Refer ကို သတ်မှတ်ပါမည်
       if (!existingUser) {
         let assignedReferrerId = null;
 
@@ -63,13 +69,12 @@ bot.command("start", async (ctx) => {
           let refRaw = startPayload.trim();
           let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
           
-          // ကိုယ့်လင့် ကိုယ်ပြန်နှိပ်တာကို ကာကွယ်ရန်
           if (refParsed !== userId) {
             assignedReferrerId = refParsed;
           }
         }
 
-        // 1. Insert new user to grm_users table
+        // grm_users ထဲသို့ User အသစ် ထည့်သွင်းခြင်း
         await supabase.from('grm_users').upsert([{
           user_id: userId,
           username: username,
@@ -82,7 +87,7 @@ bot.command("start", async (ctx) => {
           updated_at: new Date().toISOString()
         }], { onConflict: 'user_id' });
 
-        // 2. If referrer exists, record history in grm_referrals and notify owner
+        // Referrer ရှိရင် grm_referrals ထဲမှာ History သိမ်းပြီး ပိုင်ရှင်ကို အကြောင်းကြားမည်
         if (assignedReferrerId) {
           const refRelationId = 'ref_' + rawUserId;
           
@@ -101,7 +106,7 @@ bot.command("start", async (ctx) => {
               created_at: new Date().toISOString()
             }], { onConflict: 'id' });
 
-            // Notify Referrer owner about who joined
+            // Notify Referrer owner
             let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
             await bot.api.sendMessage(
               targetChatId,
@@ -113,7 +118,7 @@ bot.command("start", async (ctx) => {
       }
     }
   } catch (err) {
-    console.error('Referral processing background error:', err);
+    console.error('Referral processing error:', err);
   }
 });
 
@@ -123,10 +128,10 @@ bot.on("message", async (ctx) => {
   }
 });
 
-// Vercel Serverless Webhook Handler (Removed bot.init() to prevent timeout)
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
+      await ensureInit(); // Bot ကို ပုံမှန်အလုပ်လုပ်နိုင်ရန် အမြဲစစ်ဆေးပေးပါမည်
       await bot.handleUpdate(req.body);
       return res.status(200).send("OK");
     } catch (error) {
