@@ -440,7 +440,9 @@
         if (tg) tg.expand();
 
         const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
-        const BOT_USERNAME = "GRM_TRADING_bot"; 
+        
+        // 🛠️ Bot Username အမှန်ကို အသေးစာလုံးဖြင့် သတ်မှတ်ပေးထားသည်
+        const BOT_USERNAME = "grm_trading_bot"; 
 
         let rawUserId = '';
         let currentUserId = '';
@@ -464,6 +466,7 @@
         document.getElementById('telegram-username').innerText = currentUserName + ' ✈️';
         document.getElementById('profile-display-id').innerText = rawUserId || currentUserId;
 
+        // 🔗 Referral Link အမှန်ပေါ်လာစေရန် Backtick (\` \`) ပုံစံဖြင့် တိကျစွာ ချိတ်ဆက်ပေးထားသည်
         const userInviteLink = `https://t.me/${BOT_USERNAME}?start=${rawUserId}`;
         document.getElementById('referral-link-display').innerText = userInviteLink;
 
@@ -545,7 +548,7 @@
             if (level === currentLevel) {
                 alert(`Level ${level} Engine is already active!`);
             } else if (level === currentLevel + 1) {
-                alert(`Purchasing Level ${level} Jet Engine for $${price}`);
+                alert(`Purchasing Level ${level} Jet Engine for$${price}`);
             } else if (level < currentLevel) {
                 alert(`You have already passed Level ${level}!`);
             } else {
@@ -791,7 +794,7 @@
                                 <div class="ref-avatar-status ${statusDotClass}"></div>
                             </div>
                             <div>
-                                <div class="ref-username">${displayName} (ID: ${rawIdNum})</div>
+                                <div class="ref-username">${displayName} (ID:${rawIdNum})</div>
                                 <div class="ref-status-text ${statusTextClass}">
                                     <span>●</span> ${statusLabel}
                                 </div>
@@ -830,7 +833,7 @@
             }
 
             await updateSupabaseField({ balance: baseInitialBalance });
-            alert(`Successfully claimed +${rewardTotal} GRM for ${availableClaimCount} active referral(s)!`);
+            alert(`Successfully claimed +${rewardTotal} GRM for${availableClaimCount} active referral(s)!`);
             fetchReferralStats();
         }
 
@@ -868,10 +871,9 @@
                     
                     html += `
                         <div class="withdraw-req-card">
-                            <div><strong>Referrer:</strong> ${ref.referrer_id} ${stBadge}</div>
+                            <div><strong>Referrer:</strong> ${ref.referrer_id}${stBadge}</div>
                             <div><strong>Referred User:</strong> ${ref.referred_id}</div>
-                            <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
-                            ${ref.status === 'pending' ? `
+                            <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>${ref.status === 'pending' ? `
                             <div style="display: flex; gap: 8px; margin-top: 6px;">
                                 <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminVerifyReferral('${ref.id}')">Verify Referral</button>
                                 <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminRejectReferral('${ref.id}')">Reject</button>
@@ -1071,7 +1073,7 @@
                 }
 
                 if (data && data.length > 0) {
-                    alert(`Success! Set level to ${targetLevel} for user ${targetUserId}`);
+                    alert(`Success! Set level to ${targetLevel} for user${targetUserId}`);
                     if (targetUserId === currentUserId) {
                         await loadUserDataFromSupabase();
                         renderMinersStore();
@@ -1645,8 +1647,7 @@
                             <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM</p>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>
-                            ${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
+                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
                         </div>
                     </div>
                 `;
