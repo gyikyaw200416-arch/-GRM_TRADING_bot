@@ -589,7 +589,7 @@
         });
 
         // -------------------------------------------------------------
-        // FIXED & ROBUST REFERRAL REGISTRATION LOGIC
+        // UPGRADED ROBUST REFERRAL REGISTRATION LOGIC FOR SUPABASE
         // -------------------------------------------------------------
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -614,12 +614,11 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // If user already registered with a referrer, do nothing
+                // If user already has a referrer saved, skip registration
                 if (userRecord && userRecord.referrer_id) {
                     return; 
                 }
 
-                // If no start param exists, ensure user record exists without referrer
                 if (!startParam) {
                     if (!userRecord) {
                         await _supabase.from('grm_users').upsert([{
@@ -641,7 +640,6 @@
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
                 if (referrerUserId === currentUserId) {
-                    // Prevent self-referral, just ensure record exists
                     if (!userRecord) {
                         await _supabase.from('grm_users').upsert([{
                             user_id: currentUserId,
@@ -658,7 +656,7 @@
                     return;
                 }
 
-                // Save or Update user with referrer_id
+                // Update or Insert user with referrer_id
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
@@ -695,6 +693,13 @@
                         status: 'verified',
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
+
+                    await notifyReferrerBonus(referrerUserId, currentUserId);
+                } else if (existingRef.status === 'pending' || !existingRef.status) {
+                    await _supabase
+                        .from('grm_referrals')
+                        .update({ status: 'verified', referrer_id: referrerUserId })
+                        .eq('id', existingRef.id);
 
                     await notifyReferrerBonus(referrerUserId, currentUserId);
                 }
