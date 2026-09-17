@@ -1,11 +1,9 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { createClient } from "@supabase/supabase-js";
 
+// Initialize Bot & Supabase safely
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 bot.command("start", async (ctx) => {
   const keyboard = new InlineKeyboard()
@@ -21,7 +19,7 @@ bot.command("start", async (ctx) => {
     "💰 *GRAM to upgrade your miner level!*\n\n" +
     "Click below to start.";
 
-  // 1. Bot က စာကို ချက်ချင်းပြန်ပေးမှာပါ (Database ကြောင့် စာမပြန်တာမျိုး မဖြစ်စေရပါ)
+  // 1. Bot က စာနဲ့ပုံကို အရင်ဆုံး ချက်ချင်းပြန်ပါမယ် (ဒီတော့ Bot က အမြဲ အလုပ်လုပ်နေပါမယ်)
   try {
     await ctx.replyWithPhoto(
       "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -32,21 +30,23 @@ bot.command("start", async (ctx) => {
       }
     );
   } catch (error) {
-    console.error("Error sending photo:", error);
+    console.error("Photo reply error:", error);
     await ctx.reply(captionText, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
   }
 
-  // 2. Referral Logic (Database ထဲမှာ User အသစ် မှတ်သားခြင်းနဲ့ History သိမ်းခြင်း)
+  // 2. Referral Logic (Refer link နဲ့ဝင်လာတာကို စစ်ဆေးပြီး Supabase ထဲ မှတ်သားခြင်း)
   try {
-    if (supabase && ctx.from) {
+    if (ctx.from) {
       const telegramUser = ctx.from;
       const rawUserId = telegramUser.id.toString();
       const userId = 'tg_' + rawUserId;
       const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-      const startPayload = ctx.match; // Ref ID from link
+      
+      // Grammy မှာ start command ရဲ့ payload (ref ID) ကို ctx.match နဲ့ ဖမ်းပါတယ်
+      const startPayload = ctx.match; 
 
       // Check if user already exists in database
       let { data: existingUser } = await supabase
@@ -55,7 +55,7 @@ bot.command("start", async (ctx) => {
         .eq('user_id', userId)
         .maybeSingle();
 
-      // If user does NOT exist in database (New User)
+      // အကယ်၍ User က Database ထဲမှာ မရှိသေးရင် (လူသစ်စစ်စစ် ဖြစ်မှသာ Refer သတ်မှတ်မည်)
       if (!existingUser) {
         let assignedReferrerId = null;
 
@@ -63,12 +63,13 @@ bot.command("start", async (ctx) => {
           let refRaw = startPayload.trim();
           let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
           
+          // ကိုယ့်လင့် ကိုယ်ပြန်နှိပ်တာကို ကာကွယ်ရန်
           if (refParsed !== userId) {
             assignedReferrerId = refParsed;
           }
         }
 
-        // Insert new user to grm_users
+        // 1. Insert new user to grm_users table
         await supabase.from('grm_users').upsert([{
           user_id: userId,
           username: username,
@@ -81,7 +82,7 @@ bot.command("start", async (ctx) => {
           updated_at: new Date().toISOString()
         }], { onConflict: 'user_id' });
 
-        // If referrer exists, save history in grm_referrals and notify owner
+        // 2. If referrer exists, record history in grm_referrals and notify owner
         if (assignedReferrerId) {
           const refRelationId = 'ref_' + rawUserId;
           
@@ -100,19 +101,19 @@ bot.command("start", async (ctx) => {
               created_at: new Date().toISOString()
             }], { onConflict: 'id' });
 
-            // Notify Referrer owner with History details
+            // Notify Referrer owner about who joined
             let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
             await bot.api.sendMessage(
               targetChatId,
               `✅ *New Referral Joined!* 🎉\n\n👤 *User:* ${username}\n🆔 *ID:* \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
               { parse_mode: 'Markdown' }
-            ).catch((e) => console.log('Notification failed:', e.message));
+            ).catch((e) => console.log('Notification error:', e.message));
           }
         }
       }
     }
   } catch (err) {
-    console.error('Referral logic background error:', err);
+    console.error('Referral processing background error:', err);
   }
 });
 
@@ -122,10 +123,10 @@ bot.on("message", async (ctx) => {
   }
 });
 
+// Vercel Serverless Webhook Handler (Removed bot.init() to prevent timeout)
 export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
-      await bot.init();
       await bot.handleUpdate(req.body);
       return res.status(200).send("OK");
     } catch (error) {
