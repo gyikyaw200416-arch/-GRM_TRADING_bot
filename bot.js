@@ -21,7 +21,7 @@ bot.start(async (ctx) => {
 
     if (startPayload && startPayload.trim() !== '') {
       let refRaw = startPayload.trim();
-      let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
+      let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refParsed; // Safe parse
       if (refParsed !== userId) {
         assignedReferrerId = refParsed; // e.g. tg_6908636109
       }
@@ -37,23 +37,23 @@ bot.start(async (ctx) => {
     if (fetchError) console.log('Fetch error:', fetchError.message);
 
     if (!existingUser) {
-      // User အသစ်ဝင်လာလျှင် is_verified ကို false ဖြင့် စတင်သိမ်းဆည်းမည် (reward မပေးသေးပါ)
+      // New user registration: is_verified is strictly false, balance starts at 0 until admin verifies & reward claims
       let { error: insertError } = await supabase.from('grm_users').upsert([{
         user_id: userId,
         username: username,
         referrer_id: assignedReferrerId,
-        balance: 0, 
+        balance: 0,
         mined_amount: 0,
         mining_state: 'stopped',
         level: 0,
-        is_verified: false, // Admin က verify လုပ်မှ true ဖြစ်မည်
+        is_verified: false, // Requires admin verification before counting as successful/claimable
         updated_at: new Date().toISOString()
       }], { onConflict: 'user_id' });
 
       if (insertError) console.log('Insert error:', insertError.message);
 
     } else {
-      // ရှေ့မှာ ရှိပြီးသား user ဖြစ်ပြီး referrer_id မရှိသေးပါက ထည့်သွင်းပေးမည်
+      // Existing user: attach referrer if missing, keep verification state managed by admin
       if (!existingUser.referrer_id && assignedReferrerId) {
         let { error: updateError } = await supabase.from('grm_users')
           .update({ 
@@ -77,12 +77,11 @@ bot.start(async (ctx) => {
         .maybeSingle();
 
       if (!existingRef) {
-        // Referral ဆက်သွယ်မှုကို မှတ်တမ်းတင်မည် (status ကို active သို့မဟုတ် pending ထားနိုင်သည်)
         let { error: refError } = await supabase.from('grm_referrals').upsert([{
           id: refRelationId,
           referrer_id: assignedReferrerId,
           referred_id: userId,
-          status: 'active',
+          status: 'pending', // Set to pending initially until admin verification updates it
           created_at: new Date().toISOString()
         }], { onConflict: 'id' });
 
@@ -92,7 +91,7 @@ bot.start(async (ctx) => {
         let targetChatId = assignedReferrerId.replace('tg_', '');
         await bot.telegram.sendMessage(
           targetChatId,
-          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 Note: This referral will be counted as Successful and reward will be available after admin verification!`,
+          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 **Note:** This user is currently unverified. Successful status and the 100 GRM claim reward will unlock once the admin verifies this account!`,
           { parse_mode: 'Markdown' }
         ).catch((e) => console.log('Notification failed:', e.message));
       }
