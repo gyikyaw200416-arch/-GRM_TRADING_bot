@@ -17,10 +17,10 @@ bot.start(async (ctx) => {
     const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
     const startPayload = ctx.payload; // Referral ID payload (e.g. 5020977059)
 
-    // 1. Check or Insert User into Supabase
+    // 1. Check if user already exists in Supabase
     let { data: existingUser, error: fetchError } = await supabase
       .from('grm_users')
-      .select('user_id, referrer_id')
+      .select('user_id, referrer_id, balance')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -34,27 +34,51 @@ bot.start(async (ctx) => {
       }
     }
 
+    // 2. Handle Reward and Referral Logic Safely
+    const REWARD_AMOUNT = 10; // Define your reward bonus amount here
+
     if (!existingUser) {
-      // Insert new user
+      // New user registration
+      let initialBalance = assignedReferrerId ? REWARD_AMOUNT : 0; // Give reward if joined via referral link
+
       await supabase.from('grm_users').upsert([{
         user_id: userId,
         username: username,
         referrer_id: assignedReferrerId,
-        balance: 0,
+        balance: initialBalance,
         mined_amount: 0,
         mining_state: 'stopped',
         level: 0,
         is_verified: false,
         updated_at: new Date().toISOString()
       }], { onConflict: 'user_id' });
-    } else if (!existingUser.referrer_id && assignedReferrerId) {
-      // Update referrer if not set
-      await supabase.from('grm_users')
-        .update({ referrer_id: assignedReferrerId, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
+
+      if (assignedReferrerId) {
+        console.log(`New user ${userId} registered with referrer ${assignedReferrerId} and received reward.`);
+      }
+
+    } else {
+      // Existing user handling: Check if referrer_id is null and new payload exists
+      if (!existingUser.referrer_id && assignedReferrerId) {
+        // Update referrer and give reward only if they didn't have a referrer before
+        let newBalance = (existingUser.balance || 0) + REWARD_AMOUNT;
+
+        await supabase.from('grm_users')
+          .update({ 
+            referrer_id: assignedReferrerId, 
+            balance: newBalance,
+            updated_at: new Date().toISOString() 
+          })
+          .eq('user_id', userId);
+
+        console.log(`Existing user ${userId} added referrer ${assignedReferrerId} and received reward.`);
+      } else {
+        // User already has a referrer or reward was already claimed
+        console.log(`User ${userId} already has a referrer or reward was already claimed.`);
+      }
     }
 
-    // 2. Register Referral Relation if valid payload exists
+    // 3. Register Referral Relation if valid payload exists
     if (assignedReferrerId) {
       const refRelationId = 'ref_' + rawUserId;
       let { data: existingRef } = await supabase
@@ -82,7 +106,7 @@ bot.start(async (ctx) => {
       }
     }
 
-    // 3. Send Mini App Launch Button
+    // 4. Send Mini App Launch Button
     await ctx.reply('Welcome to GRM Mining Core! Click below to start mining and trading.', {
       reply_markup: {
         inline_keyboard: [
