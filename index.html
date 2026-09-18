@@ -178,7 +178,7 @@
         .profile-info-block { display: flex; align-items: center; gap: 12px; }
         .profile-label { font-size: 14px; font-weight: bold; color: #ffffff; }
         .profile-sublabel { font-size: 11px; color: #8b949e; margin-top: 2px; }
-        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
+        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
         .section-header-title { font-size: 13px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 8px 4px; }
         .profile-btn-yellow { background: #ffb400; color: #000000; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 12px rgba(255, 180, 0, 0.3); transition: all 0.2s ease; }
         .profile-btn-yellow:active { transform: scale(0.96); }
@@ -230,7 +230,7 @@
                 <div id="ton-connect-button"></div>
             </div>
 
-            <div style="font-size: 10px; color: #2ea043; margin-bottom: 8px;">0.07$ left to Lvl UP</div>
+            <div style="font-size: 10px; color: #2ea043; margin-bottom: 8px;">0.07 GRAM left to Lvl UP</div>
 
             <div class="mine-header">
                 <div class="asset-title">ASSETS</div>
@@ -352,7 +352,7 @@
                 </div>
             </div>
 
-            <div class="card profile-row">
+            <div class="card profile-row" onclick="openVerificationSupport()" style="cursor: pointer;">
                 <div class="profile-info-block" id="profile-verification-icon-box">
                     <div class="profile-icon-box" style="border-color: rgba(218, 54, 51, 0.4);" id="profile-verify-icon">❌</div>
                     <div>
@@ -424,6 +424,31 @@
             <div id="history-list-container" style="max-height: 250px; overflow-y: auto;">
                 <div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No transactions recorded yet.</div>
             </div>
+        </div>
+    </div>
+
+    <!-- Buy Engine Modal with Address & User ID Copy Buttons -->
+    <div id="buy-engine-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="color: #ffb400;" id="buy-modal-title">Purchase Engine</h3>
+                <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeBuyEngineModal()">✕</button>
+            </div>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;">Send the required GRAM to the address below and include your User ID as a comment, then contact support.</p>
+            
+            <div style="font-size: 11px; color: #00f0ff; font-weight: bold; margin-bottom: 4px;">Payment Address:</div>
+            <div class="ref-link-input-group" style="margin-top: 0; margin-bottom: 12px;">
+                <span class="ref-link-text" id="buy-modal-address">UQDj2bVdQKdlEAPgSFEeX-GB9-VDRlk2rRPO5KvvKZyyTvHB</span>
+                <button class="copy-btn-yellow" onclick="copyModalText('UQDj2bVdQKdlEAPgSFEeX-GB9-VDRlk2rRPO5KvvKZyyTvHB', 'Payment Address')">Copy</button>
+            </div>
+
+            <div style="font-size: 11px; color: #00f0ff; font-weight: bold; margin-bottom: 4px;">Your User ID (Comment):</div>
+            <div class="ref-link-input-group" style="margin-top: 0; margin-bottom: 20px;">
+                <span class="ref-link-text" id="buy-modal-userid">Loading...</span>
+                <button class="copy-btn-yellow" onclick="copyUserIdForBuy()">Copy</button>
+            </div>
+
+            <button class="action-btn" style="width: 100%; background: #2ea043; color: #fff;" onclick="openVerificationSupport()">Contact Support Bot</button>
         </div>
     </div>
 
@@ -504,6 +529,15 @@
         let withdrawalHistory = [];
         let availableClaimCount = 0;
 
+        function openVerificationSupport() {
+            const supportBotUrl = 'https://t.me/GRM_VerificationSupport_Bot';
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(supportBotUrl);
+            } else {
+                window.open(supportBotUrl, '_blank');
+            }
+        }
+
         function renderMinersStore() {
             const grid = document.getElementById('miners-store-grid');
             if (!grid) return;
@@ -532,7 +566,7 @@
                             <img src="${engineImg}" alt="Miner Level ${i}" style="filter: ${filterStyle};">
                         </div>
                         <div class="lvl-text">Lvl ${i} Engine</div>
-                        <div class="miner-price-box">${price}$</div>
+                        <div class="miner-price-box">${price} GRAM</div>
                         <div class="miner-speed">${speedRate.toFixed(6)} GRM/s</div>
                         <button class="status-badge ${btnClass}" onclick="buyMiner(${i}, ${price})">${btnText}</button>
                     </div>
@@ -544,13 +578,30 @@
         function buyMiner(level, price) {
             if (level === currentLevel) {
                 alert(`Level ${level} Engine is already active!`);
-            } else if (level === currentLevel + 1) {
-                alert(`Purchasing Level ${level} Jet Engine for$${price}`);
-            } else if (level < currentLevel) {
-                alert(`You have already passed Level ${level}!`);
+            } else if (level === currentLevel + 1 || level > currentLevel) {
+                document.getElementById('buy-modal-title').innerText = `Purchase Lvl ${level} Engine (${price} GRAM)`;
+                document.getElementById('buy-modal-userid').innerText = rawUserId || currentUserId;
+                document.getElementById('buy-engine-modal').style.display = 'flex';
             } else {
-                alert("Please unlock previous levels first!");
+                alert(`You have already passed Level ${level}!`);
             }
+        }
+
+        function closeBuyEngineModal() {
+            document.getElementById('buy-engine-modal').style.display = 'none';
+        }
+
+        function copyModalText(textToCopy, labelName) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(`${labelName} copied to clipboard!`);
+            });
+        }
+
+        function copyUserIdForBuy() {
+            const uid = rawUserId || currentUserId;
+            navigator.clipboard.writeText(uid).then(() => {
+                alert("User ID copied to clipboard!");
+            });
         }
 
         function extractUserFriendlyAddress(walletObj) {
@@ -980,7 +1031,7 @@
                 }
 
                 if (data && data.length > 0) {
-                    alert(`Success! Set level to ${targetLevel} for user${targetUserId}`);
+                    alert(`Success! Set level to ${targetLevel} for user ${targetUserId}`);
                     if (targetUserId === currentUserId) {
                         await loadUserDataFromSupabase();
                         renderMinersStore();
