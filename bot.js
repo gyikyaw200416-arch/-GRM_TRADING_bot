@@ -30,39 +30,34 @@ bot.start(async (ctx) => {
     // 1. Fetch existing user from Supabase
     let { data: existingUser, error: fetchError } = await supabase
       .from('grm_users')
-      .select('user_id, referrer_id, balance')
+      .select('user_id, referrer_id, balance, is_verified')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (fetchError) console.log('Fetch error:', fetchError.message);
 
-    const REWARD_AMOUNT = 10;
-
     if (!existingUser) {
-      let initialBalance = assignedReferrerId ? REWARD_AMOUNT : 0;
-
+      // User အသစ်ဝင်လာလျှင် is_verified ကို false ဖြင့် စတင်သိမ်းဆည်းမည် (reward မပေးသေးပါ)
       let { error: insertError } = await supabase.from('grm_users').upsert([{
         user_id: userId,
         username: username,
         referrer_id: assignedReferrerId,
-        balance: initialBalance,
+        balance: 0, 
         mined_amount: 0,
         mining_state: 'stopped',
         level: 0,
-        is_verified: false,
+        is_verified: false, // Admin က verify လုပ်မှ true ဖြစ်မည်
         updated_at: new Date().toISOString()
       }], { onConflict: 'user_id' });
 
       if (insertError) console.log('Insert error:', insertError.message);
 
     } else {
+      // ရှေ့မှာ ရှိပြီးသား user ဖြစ်ပြီး referrer_id မရှိသေးပါက ထည့်သွင်းပေးမည်
       if (!existingUser.referrer_id && assignedReferrerId) {
-        let newBalance = (existingUser.balance || 0) + REWARD_AMOUNT;
-
         let { error: updateError } = await supabase.from('grm_users')
           .update({ 
             referrer_id: assignedReferrerId, 
-            balance: newBalance,
             updated_at: new Date().toISOString() 
           })
           .eq('user_id', userId);
@@ -82,6 +77,7 @@ bot.start(async (ctx) => {
         .maybeSingle();
 
       if (!existingRef) {
+        // Referral ဆက်သွယ်မှုကို မှတ်တမ်းတင်မည် (status ကို active သို့မဟုတ် pending ထားနိုင်သည်)
         let { error: refError } = await supabase.from('grm_referrals').upsert([{
           id: refRelationId,
           referrer_id: assignedReferrerId,
@@ -92,11 +88,11 @@ bot.start(async (ctx) => {
 
         if (refError) console.log('Referral insert error:', refError.message);
 
-        // Notify Referrer only on the first successful referral join
+        // Notify Referrer about the new join
         let targetChatId = assignedReferrerId.replace('tg_', '');
         await bot.telegram.sendMessage(
           targetChatId,
-          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
+          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 Note: This referral will be counted as Successful and reward will be available after admin verification!`,
           { parse_mode: 'Markdown' }
         ).catch((e) => console.log('Notification failed:', e.message));
       }
