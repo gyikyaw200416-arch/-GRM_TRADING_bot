@@ -12,22 +12,20 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 bot.start(async (ctx) => {
   try {
     const telegramUser = ctx.from;
-    const rawUserId = telegramUser.id.toString();
-    const userId = 'tg_' + rawUserId;
+    const userId = telegramUser.id.toString(); // Use raw Telegram ID directly without 'tg_' prefix
     const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-    const startPayload = ctx.payload; // Referral ID payload
+    const startPayload = ctx.payload; // Referral ID payload (e.g. 6908636109)
 
     let assignedReferrerId = null;
 
     if (startPayload && startPayload.trim() !== '') {
-      let refRaw = startPayload.trim();
-      let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
+      let refParsed = startPayload.trim().replace('tg_', ''); // Clean prefix if exists
       if (refParsed !== userId) {
         assignedReferrerId = refParsed;
       }
     }
 
-    // 1. Fetch existing user from Supabase
+    // 1. Fetch existing user from Supabase using clean userId
     let { data: existingUser, error: fetchError } = await supabase
       .from('grm_users')
       .select('user_id, referrer_id, balance')
@@ -67,17 +65,13 @@ bot.start(async (ctx) => {
           })
           .eq('user_id', userId);
 
-        if (updateError) {
-          console.log('Update error:', updateError.message);
-        } else {
-          console.log(`Successfully updated referrer ${assignedReferrerId} for user ${userId}`);
-        }
+        if (updateError) console.log('Update error:', updateError.message);
       }
     }
 
     // 2. Register Referral Relation in 'grm_referrals' table safely
     if (assignedReferrerId) {
-      const refRelationId = 'ref_' + rawUserId;
+      const refRelationId = 'ref_' + userId;
       
       let { data: existingRef } = await supabase
         .from('grm_referrals')
@@ -97,10 +91,10 @@ bot.start(async (ctx) => {
         if (refError) console.log('Referral insert error:', refError.message);
 
         // Notify Referrer only on the first successful referral join
-        let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
+        let targetChatId = assignedReferrerId;
         await bot.telegram.sendMessage(
           targetChatId,
-          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
+          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${userId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
           { parse_mode: 'Markdown' }
         ).catch((e) => console.log('Notification failed:', e.message));
       }
