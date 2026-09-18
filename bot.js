@@ -12,20 +12,22 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 bot.start(async (ctx) => {
   try {
     const telegramUser = ctx.from;
-    const userId = telegramUser.id.toString(); // Use raw Telegram ID directly without 'tg_' prefix
+    const rawUserId = telegramUser.id.toString();
+    const userId = 'tg_' + rawUserId; // Database structure match: tg_ + id
     const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-    const startPayload = ctx.payload; // Referral ID payload (e.g. 6908636109)
+    const startPayload = ctx.payload; // Referral ID payload
 
     let assignedReferrerId = null;
 
     if (startPayload && startPayload.trim() !== '') {
-      let refParsed = startPayload.trim().replace('tg_', ''); // Clean prefix if exists
+      let refRaw = startPayload.trim();
+      let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw;
       if (refParsed !== userId) {
-        assignedReferrerId = refParsed;
+        assignedReferrerId = refParsed; // e.g. tg_6908636109
       }
     }
 
-    // 1. Fetch existing user from Supabase using clean userId
+    // 1. Fetch existing user from Supabase
     let { data: existingUser, error: fetchError } = await supabase
       .from('grm_users')
       .select('user_id, referrer_id, balance')
@@ -71,7 +73,7 @@ bot.start(async (ctx) => {
 
     // 2. Register Referral Relation in 'grm_referrals' table safely
     if (assignedReferrerId) {
-      const refRelationId = 'ref_' + userId;
+      const refRelationId = 'ref_' + rawUserId;
       
       let { data: existingRef } = await supabase
         .from('grm_referrals')
@@ -91,10 +93,10 @@ bot.start(async (ctx) => {
         if (refError) console.log('Referral insert error:', refError.message);
 
         // Notify Referrer only on the first successful referral join
-        let targetChatId = assignedReferrerId;
+        let targetChatId = assignedReferrerId.replace('tg_', '');
         await bot.telegram.sendMessage(
           targetChatId,
-          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${userId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
+          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
           { parse_mode: 'Markdown' }
         ).catch((e) => console.log('Notification failed:', e.message));
       }
