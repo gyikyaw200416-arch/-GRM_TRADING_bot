@@ -15,7 +15,7 @@ bot.start(async (ctx) => {
     const rawUserId = telegramUser.id.toString();
     const userId = 'tg_' + rawUserId;
     const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-    const startPayload = ctx.payload; // Referral ID payload (e.g. 6908636109 or tg_6908636109)
+    const startPayload = ctx.payload; // Referral ID payload
 
     let assignedReferrerId = null;
 
@@ -28,19 +28,20 @@ bot.start(async (ctx) => {
     }
 
     // 1. Fetch existing user from Supabase
-    let { data: existingUser } = await supabase
+    let { data: existingUser, error: fetchError } = await supabase
       .from('grm_users')
       .select('user_id, referrer_id, balance')
       .eq('user_id', userId)
       .maybeSingle();
 
-    const REWARD_AMOUNT = 10; // Reward bonus amount
+    if (fetchError) console.log('Fetch error:', fetchError.message);
+
+    const REWARD_AMOUNT = 10;
 
     if (!existingUser) {
-      // If user doesn't exist, create new user with referrer_id if available
       let initialBalance = assignedReferrerId ? REWARD_AMOUNT : 0;
 
-      await supabase.from('grm_users').upsert([{
+      let { error: insertError } = await supabase.from('grm_users').upsert([{
         user_id: userId,
         username: username,
         referrer_id: assignedReferrerId,
@@ -52,18 +53,25 @@ bot.start(async (ctx) => {
         updated_at: new Date().toISOString()
       }], { onConflict: 'user_id' });
 
+      if (insertError) console.log('Insert error:', insertError.message);
+
     } else {
-      // If user exists but doesn't have a referrer yet, update it once
       if (!existingUser.referrer_id && assignedReferrerId) {
         let newBalance = (existingUser.balance || 0) + REWARD_AMOUNT;
 
-        await supabase.from('grm_users')
+        let { error: updateError } = await supabase.from('grm_users')
           .update({ 
             referrer_id: assignedReferrerId, 
             balance: newBalance,
             updated_at: new Date().toISOString() 
           })
           .eq('user_id', userId);
+
+        if (updateError) {
+          console.log('Update error:', updateError.message);
+        } else {
+          console.log(`Successfully updated referrer ${assignedReferrerId} for user ${userId}`);
+        }
       }
     }
 
@@ -78,14 +86,15 @@ bot.start(async (ctx) => {
         .maybeSingle();
 
       if (!existingRef) {
-        // Insert new referral relation
-        await supabase.from('grm_referrals').upsert([{
+        let { error: refError } = await supabase.from('grm_referrals').upsert([{
           id: refRelationId,
           referrer_id: assignedReferrerId,
           referred_id: userId,
           status: 'active',
           created_at: new Date().toISOString()
         }], { onConflict: 'id' });
+
+        if (refError) console.log('Referral insert error:', refError.message);
 
         // Notify Referrer only on the first successful referral join
         let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
