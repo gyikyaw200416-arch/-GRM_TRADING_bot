@@ -47,20 +47,6 @@
         .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
-        /* VPN Warning Overlay Styles */
-        #vpn-warning-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(7, 13, 24, 0.98); backdrop-filter: blur(15px);
-            z-index: 100000; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 25px; text-align: center;
-        }
-        .vpn-card {
-            background: #0d1626; border: 1px solid rgba(255, 180, 0, 0.4);
-            border-radius: 18px; padding: 25px; width: 100%; max-width: 380px;
-            box-shadow: 0 0 30px rgba(255, 180, 0, 0.2);
-        }
-        .vpn-icon { font-size: 45px; margin-bottom: 15px; }
-
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -225,19 +211,7 @@
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
-    <!-- VPN Warning Overlay -->
-    <div id="vpn-warning-overlay">
-        <div class="vpn-card">
-            <div class="vpn-icon">🛡️</div>
-            <h3 style="color: #ffb400; margin-bottom: 10px;">VPN Connection Required</h3>
-            <p style="font-size: 12px; color: #8b949e; margin-bottom: 20px; line-height: 1.5;">
-                For security and network node verification, please turn on your VPN. Without VPN, you cannot access GRM Mining Core.
-            </p>
-            <button class="action-btn" style="width: 100%; background: #ffb400; color: #000;" onclick="verifyVpnAndEnter()">I have turned on VPN, Enter</button>
-        </div>
-    </div>
-
-    <div id="splash-screen" style="display: none;">
+    <div id="splash-screen">
         <div class="logo-box">
             <div class="logo-inner"><span>GRM</span></div>
         </div>
@@ -490,23 +464,6 @@
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) tg.expand();
 
-        // --- VPN Enforcement Logic ---
-        function checkVpnRequirement() {
-            const vpnActive = localStorage.getItem('grm_vpn_active');
-            if (vpnActive === 'true') {
-                document.getElementById('vpn-warning-overlay').style.display = 'none';
-                initializeAppFlow();
-            } else {
-                document.getElementById('vpn-warning-overlay').style.display = 'flex';
-            }
-        }
-
-        function verifyVpnAndEnter() {
-            localStorage.setItem('grm_vpn_active', 'true');
-            document.getElementById('vpn-warning-overlay').style.display = 'none';
-            initializeAppFlow();
-        }
-
         const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
         const BOT_USERNAME = "grm_trading_bot"; 
 
@@ -671,7 +628,7 @@
             return null;
         }
 
-        async function initializeAppFlow() {
+        window.addEventListener('DOMContentLoaded', async () => {
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
             await fetchWithdrawalHistory();
@@ -679,11 +636,7 @@
             renderMinersStore();
             checkAdminPermissions();
             await fetchTasksFromSupabase();
-            setTimeout(hideSplashScreen, 500);
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            checkVpnRequirement();
+            setTimeout(hideSplashScreen, 1000);
         });
 
         async function handleReferralRegistration() {
@@ -1139,8 +1092,13 @@
         function hideSplashScreen() {
             const splash = document.getElementById('splash-screen');
             const mainApp = document.querySelector('.main-container');
-            if (splash) splash.style.display = 'none';
-            if (mainApp) mainApp.style.display = 'block';
+            if (splash && splash.style.display !== 'none') {
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    if (mainApp) mainApp.style.display = 'block';
+                }, 400);
+            }
         }
 
         function switchTab(tabName, element) {
