@@ -47,7 +47,7 @@
         .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
-        /* VPN Warning Overlay Styles - တင်းကျပ်စွာ ပိတ်ဆို့ရန် */
+        /* VPN Warning Overlay Styles */
         #vpn-warning-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(7, 13, 24, 0.98); backdrop-filter: blur(15px);
@@ -225,7 +225,7 @@
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
-    <!-- VPN Warning Overlay - VPN မပါပါက အမြဲပေါ်နေမည်ဖြစ်ပြီး App ကို ဝင်မရအောင် တားဆီးထားမည် -->
+    <!-- VPN Warning Overlay -->
     <div id="vpn-warning-overlay">
         <div class="vpn-card">
             <div class="vpn-icon">🛡️</div>
@@ -497,13 +497,11 @@
                 document.getElementById('vpn-warning-overlay').style.display = 'none';
                 initializeAppFlow();
             } else {
-                // VPN မပါသေးပါက သတိပေးချက် ဝင်းဒෝကို အမြဲပြထားမည် (ဝင်လို့မရအောင် ပိတ်ထားမည်)
                 document.getElementById('vpn-warning-overlay').style.display = 'flex';
             }
         }
 
         function verifyVpnAndEnter() {
-            // တင်းကျပ်စွာ စစ်ဆေးမှုပြုလုပ်ပြီး VPN သုံးထားကြောင်း အတည်ပြုချက်မှတ်သားခြင်း
             localStorage.setItem('grm_vpn_active', 'true');
             document.getElementById('vpn-warning-overlay').style.display = 'none';
             initializeAppFlow();
@@ -673,7 +671,6 @@
             return null;
         }
 
-        // App Initialization လုပ်ဆောင်ချက် (VPN အတည်ပြုပြီးမှ စတင်မည်)
         async function initializeAppFlow() {
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
@@ -686,7 +683,6 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // စတင်ဖွင့်ချင်း VPN ရှိမရှိ စစ်ဆေးခြင်း
             checkVpnRequirement();
         });
 
