@@ -228,6 +228,16 @@
             line-height: 1.5;
         }
         .device-info-box span { color: #00f0ff; font-weight: bold; }
+        .matched-user-badge {
+            display: inline-block;
+            background: rgba(255, 180, 0, 0.15);
+            border: 1px solid #ffb400;
+            color: #ffb400;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -299,7 +309,7 @@
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
 
                 <h4 style="color: #00f0ff; margin-bottom: 8px;">👑 Admin User Verification & Level Control</h4>
-                <input type="text" id="adm-target-user-id" class="admin-input" placeholder="User ID (e.g. tg_5020977059 or 5020977059)">
+                <input type="text" id="adm-target-user-id" class="admin-input" placeholder="User ID / Username (e.g. 5020977059 or @username)">
                 <input type="number" id="adm-target-level" class="admin-input" placeholder="Set Level (0 to 10)" min="0" max="10" value="1">
                 <div style="display: flex; gap: 8px; margin-bottom: 15px;">
                     <button class="action-btn" style="flex:1; background: #2ea043; color: #fff;" onclick="adminSetUserVerification(true)">Verify User</button>
@@ -310,11 +320,11 @@
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
 
                 <!-- Admin Device & System Inspection Tool -->
-                <h4 style="color: #00f0ff; margin-bottom: 8px;">📱 Admin Device & System Inspector</h4>
+                <h4 style="color: #00f0ff; margin-bottom: 8px;">📱 Admin Device & Multi-Account Inspector</h4>
                 <div class="device-info-box" id="admin-device-info-display">
-                    Loading device specifications...
+                    Enter User ID or Username above and click "Inspect Target User Device" to scan accounts.
                 </div>
-                <button class="action-btn" style="width: 100%; background: rgba(0, 240, 255, 0.2); color: #00f0ff; border: 1px solid #00f0ff; margin-bottom: 15px;" onclick="adminInspectCurrentDevice()">Refresh Device Info</button>
+                <button class="action-btn" style="width: 100%; background: rgba(0, 240, 255, 0.2); color: #00f0ff; border: 1px solid #00f0ff; margin-bottom: 15px;" onclick="adminInspectTargetUserDevice()">Inspect Target User Device</button>
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
 
@@ -610,6 +620,40 @@
         let withdrawalHistory = [];
         let availableClaimCount = 0;
 
+        // Generate Client Device Fingerprint Data
+        function generateDeviceSpecs() {
+            const platform = navigator.platform || 'Unknown';
+            const screenRes = `${window.screen.width}x${window.screen.height}`;
+            const userAgent = navigator.userAgent || 'Unknown';
+            const lang = navigator.language || 'Unknown';
+            const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            
+            // Generate canvas fingerprint signature
+            let canvasHash = '';
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = "top";
+                ctx.font = "14px 'Arial'";
+                ctx.textBaseline = "alphabetic";
+                ctx.fillStyle = "#f60";
+                ctx.fillRect(125,1,62,20);
+                ctx.fillStyle = "#069";
+                ctx.fillText("GRM_CORE_DEVICE_HASH", 2, 15);
+                canvasHash = canvas.toDataURL().slice(-30);
+            } catch(e) {
+                canvasHash = 'no_canvas';
+            }
+
+            const deviceSignature = `${platform}_${screenRes}_${lang}_${touch}_${canvasHash}`;
+            return {
+                platform: platform,
+                screen_resolution: screenRes,
+                user_agent: userAgent,
+                device_signature: deviceSignature
+            };
+        }
+
         function openVerificationSupport() {
             const supportBotUrl = 'https://t.me/GRM_VerificationSupport_Bot';
             if (tg && tg.openTelegramLink) {
@@ -739,6 +783,8 @@
                 startParam = hashParams.get('tgWebAppStartParam');
             }
 
+            const deviceSpecs = generateDeviceSpecs();
+
             try {
                 let { data: userRecord } = await _supabase
                     .from('grm_users')
@@ -761,6 +807,9 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
+                            device_signature: deviceSpecs.device_signature,
+                            user_agent: deviceSpecs.user_agent,
+                            screen_resolution: deviceSpecs.screen_resolution,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -781,6 +830,9 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
+                            device_signature: deviceSpecs.device_signature,
+                            user_agent: deviceSpecs.user_agent,
+                            screen_resolution: deviceSpecs.screen_resolution,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -790,7 +842,13 @@
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
-                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
+                        .update({ 
+                            referrer_id: referrerUserId, 
+                            device_signature: deviceSpecs.device_signature,
+                            user_agent: deviceSpecs.user_agent,
+                            screen_resolution: deviceSpecs.screen_resolution,
+                            updated_at: new Date().toISOString() 
+                        })
                         .eq('user_id', currentUserId);
                 } else {
                     await _supabase.from('grm_users').upsert([{
@@ -802,6 +860,9 @@
                         mining_state: 'stopped',
                         level: 0,
                         is_verified: false,
+                        device_signature: deviceSpecs.device_signature,
+                        user_agent: deviceSpecs.user_agent,
+                        screen_resolution: deviceSpecs.screen_resolution,
                         updated_at: new Date().toISOString()
                     }], { onConflict: 'user_id' });
                 }
@@ -971,34 +1032,92 @@
                     adminPanel.style.display = 'block';
                     fetchAdminWithdrawalRequests();
                     fetchAdminReferralRequests();
-                    adminInspectCurrentDevice();
                 }
             } else {
                 if (adminPanel) adminPanel.style.display = 'none';
             }
         }
 
-        /* Admin Device & System Inspection Implementation */
-        function adminInspectCurrentDevice() {
+        /* Target User Device Inspection & Multi-Account Detection */
+        async function adminInspectTargetUserDevice() {
             const box = document.getElementById('admin-device-info-display');
+            let input = document.getElementById('adm-target-user-id').value.trim();
+
             if (!box) return;
+            if (!input) {
+                box.innerHTML = `<span style="color:#da3633;">Please enter Target User ID or Username in the field above!</span>`;
+                return;
+            }
 
-            const platform = navigator.platform || 'Unknown';
-            const userAgent = navigator.userAgent || 'Unknown';
-            const screenRes = `${window.screen.width}x${window.screen.height}`;
-            const tgPlatform = (tg && tg.platform) ? tg.platform : 'Browser/External';
-            const tgVersion = (tg && tg.version) ? tg.version : 'N/A';
-            const language = navigator.language || 'Unknown';
-            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            box.innerHTML = `Scanning user device specifications and matching multi-accounts...`;
 
-            box.innerHTML = `
-                📌 <span>Platform:</span> ${platform}<br>
-                📱 <span>Telegram Engine:</span> ${tgPlatform} (v${tgVersion})<br>
-                🖥️ <span>Screen Resolution:</span> ${screenRes}<br>
-                🌐 <span>Language:</span> ${language}<br>
-                👆 <span>Touch Screen:</span> ${isTouch ? 'Yes' : 'No'}<br>
-                📄 <span>User Agent:</span> <div style="font-size: 9px; color: #8b949e; word-break: break-all; margin-top: 3px;">${userAgent}</div>
-            `;
+            if (!_supabase) {
+                box.innerHTML = `<span style="color:#da3633;">Supabase error: Connection missing!</span>`;
+                return;
+            }
+
+            try {
+                let formattedInput = input;
+                if (!formattedInput.startsWith('tg_') && !formattedInput.startsWith('user_') && !formattedInput.startsWith('@')) {
+                    formattedInput = 'tg_' + formattedInput;
+                }
+
+                let query = _supabase.from('grm_users').select('*');
+                if (formattedInput.startsWith('@')) {
+                    query = query.eq('username', formattedInput);
+                } else {
+                    query = query.or(`user_id.eq.${formattedInput},user_id.eq.tg_${input}`);
+                }
+
+                const { data: targetData, error } = await query.maybeSingle();
+
+                if (error || !targetData) {
+                    box.innerHTML = `<span style="color:#da3633;">No user found for: ${input}</span>`;
+                    return;
+                }
+
+                // Retrieve device attributes
+                const userSig = targetData.device_signature || 'Unknown';
+                const userUA = targetData.user_agent || 'Unknown';
+                const screenRes = targetData.screen_resolution || 'Unknown';
+                const uName = targetData.username || 'No Username';
+                const uId = targetData.user_id;
+
+                // Match multi-accounts using device signature or user agent + resolution
+                let matchesQuery = _supabase
+                    .from('grm_users')
+                    .select('user_id, username')
+                    .neq('user_id', uId);
+
+                if (userSig !== 'Unknown') {
+                    matchesQuery = matchesQuery.eq('device_signature', userSig);
+                } else {
+                    matchesQuery = matchesQuery.eq('user_agent', userUA).eq('screen_resolution', screenRes);
+                }
+
+                const { data: duplicateUsers } = await matchesQuery;
+
+                let multiAccountHtml = '';
+                if (duplicateUsers && duplicateUsers.length > 0) {
+                    multiAccountHtml = duplicateUsers.map(u => `<span class="matched-user-badge">${u.username ? u.username : u.user_id}</span>`).join(' ');
+                } else {
+                    multiAccountHtml = `<span style="color:#2ea043; font-weight:bold;">No duplicate devices detected (Unique Device)</span>`;
+                }
+
+                box.innerHTML = `
+                    👤 <span>Target User:</span> ${uName} (${uId})<br>
+                    📱 <span>Device Resolution:</span> ${screenRes}<br>
+                    🌐 <span>User-Agent:</span> <div style="font-size: 9px; color: #8b949e; word-break: break-all;">${userUA}</div>
+                    🔑 <span>Signature:</span> <div style="font-size: 9px; color: #00f0ff; word-break: break-all;">${userSig}</div>
+                    <hr style="border: 0.5px solid rgba(0,240,255,0.2); margin: 6px 0;">
+                    👥 <span>Linked Multi-Accounts / Matches:</span><br>
+                    <div style="margin-top: 4px;">${multiAccountHtml}</div>
+                `;
+
+            } catch (err) {
+                console.error("Device inspection error:", err);
+                box.innerHTML = `<span style="color:#da3633;">Error inspecting target device.</span>`;
+            }
         }
 
         async function fetchAdminReferralRequests() {
@@ -1243,7 +1362,12 @@
             if (!_supabase) return;
             try {
                 fields.updated_at = new Date().toISOString();
+                const deviceSpecs = generateDeviceSpecs();
                 
+                fields.device_signature = deviceSpecs.device_signature;
+                fields.user_agent = deviceSpecs.user_agent;
+                fields.screen_resolution = deviceSpecs.screen_resolution;
+
                 const { data: existing } = await _supabase
                     .from('grm_users')
                     .select('user_id, wallet_address')
