@@ -280,7 +280,7 @@
                 <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel)">
                 <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
                 <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
-                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 3)" value="3">
+                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 50)" value="50">
                 <button class="action-btn" style="width: 100%; background: #ffb400; color: #000; margin-bottom: 15px;" onclick="adminSaveTask()">Add / Update Task</button>
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
@@ -344,7 +344,7 @@
                     <div style="font-size: 24px;">🎁</div>
                     <div>
                         <div style="font-size: 13px; font-weight: bold; color: #fff;">Referral Reward</div>
-                        <div style="font-size: 11px; color: #8b949e; margin-top: 2px;" id="referral-claim-subtitle">0 available · +100 GRM each</div>
+                        <div style="font-size: 11px; color: #8b949e; margin-top: 2px;" id="referral-claim-subtitle">0 available · +50 GRM each</div>
                     </div>
                 </div>
                 <button class="claim-reward-btn" id="claim-referral-btn" onclick="claimReferralRewards()">Claim</button>
@@ -529,7 +529,6 @@
         async function checkNetworkConnectivity() {
             const vpnOverlay = document.getElementById('vpn-warning-overlay');
             try {
-                // Ping supabase or a lightweight reliable endpoint to check connection
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
                 
@@ -553,7 +552,6 @@
             }
         }
 
-        // Run connectivity check every 15 seconds in the background
         setInterval(checkNetworkConnectivity, 15000);
 
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -569,8 +567,17 @@
         let miningStartTime = Date.now();
         
         const levelMiningRates = {
-            0: 0.000005, 1: 0.000050, 2: 0.000100, 3: 0.000150, 4: 0.000250,
-            5: 0.000300, 6: 0.000400, 7: 0.000500, 8: 0.000650, 9: 0.000800, 10: 0.001000
+            0: 0.000050, 
+            1: 0.000100, 
+            2: 0.000150, 
+            3: 0.000250,
+            4: 0.000300, 
+            5: 0.000400, 
+            6: 0.000500, 
+            7: 0.000650, 
+            8: 0.000800, 
+            9: 0.001000,
+           10: 0.001200
         };
 
         let currentLevel = 0;
@@ -604,7 +611,7 @@
 
             for (let i = 0; i <= 10; i++) {
                 let price = i === 0 ? "0.00" : (i * 1.00).toFixed(2);
-                let speedRate = levelMiningRates[i] || 0.000005;
+                let speedRate = levelMiningRates[i] || 0.000050;
                 let borderClass = i === currentLevel ? 'active-border' : (i === currentLevel + 1 ? 'unlock-border' : 'locked-border');
                 let btnClass = i === currentLevel ? 'badge-active' : (i === currentLevel + 1 ? 'badge-need' : 'badge-lock');
                 let btnText = i === currentLevel ? 'ACTIVE' : (i === currentLevel + 1 ? 'BUY NOW' : 'LOCKED');
@@ -682,7 +689,7 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             const isConnected = await checkNetworkConnectivity();
-            if (!isConnected) return; // Wait until connection is fixed via retry
+            if (!isConnected) return;
 
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
@@ -810,7 +817,7 @@
 
                 if (!refData || refData.length === 0) {
                     document.getElementById('referral-stats-text').innerText = `0 successful · 0 total`;
-                    document.getElementById('referral-claim-subtitle').innerText = `0 available · +100 GRM each`;
+                    document.getElementById('referral-claim-subtitle').innerText = `0 available · +50 GRM each`;
                     document.getElementById('claim-referral-btn').classList.remove('active-claim');
                     document.getElementById('referrals-user-list-container').innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No referrals yet. Share your link to invite friends!</div>';
                     return;
@@ -870,7 +877,7 @@
 
                 availableClaimCount = availableClaims;
                 document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
-                document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
+                document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +50 GRM each`;
 
                 const claimBtn = document.getElementById('claim-referral-btn');
                 if (availableClaimCount > 0) {
@@ -896,7 +903,7 @@
                 return;
             }
 
-            const rewardTotal = availableClaimCount * 100;
+            const rewardTotal = availableClaimCount * 50;
             baseInitialBalance += rewardTotal;
             currentBalance = baseInitialBalance;
             updateBalanceUI();
@@ -995,7 +1002,7 @@
                         title: t.title,
                         channelLink: t.channel_link,
                         groupLink: t.group_link || '',
-                        reward: parseFloat(t.reward) || 3
+                        reward: parseFloat(t.reward) || 50
                     }));
                     renderTasksList();
                 }
@@ -1006,7 +1013,7 @@
             const title = document.getElementById('adm-task-title').value.trim();
             const channelLink = document.getElementById('adm-channel-link').value.trim();
             const groupLink = document.getElementById('adm-group-link').value.trim();
-            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 3;
+            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 50;
 
             if (!title || !channelLink) {
                 alert("Please fill in at least Task Title and Channel Link!");
@@ -1312,7 +1319,7 @@
                 return;
             }
 
-            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000005;
+            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000050;
 
             if (btn.innerText === "START MINING") {
                 isMining = true;
@@ -1364,7 +1371,7 @@
             const statusBadge = document.getElementById('mining-status-badge');
             const coinBox = document.getElementById('coin-box-elem');
             const amountDisplay = document.getElementById('mining-amount-display');
-            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000005;
+            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000050;
 
             btn.innerText = "CLAIM";
             btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
