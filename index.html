@@ -10,6 +10,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- TON Connect UI SDK -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <!-- FingerprintJS for Device Identification -->
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
@@ -47,7 +49,7 @@
         .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
-        /* VPN Warning Banner Overlay */
+        /* VPN / Connection Warning Overlay */
         #vpn-warning-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(7, 13, 24, 0.95); backdrop-filter: blur(8px);
@@ -57,6 +59,27 @@
             background: #0d1626; border: 1px solid rgba(218, 54, 51, 0.6); border-radius: 16px;
             max-width: 380px; width: 100%; padding: 25px; box-shadow: 0 0 30px rgba(218, 54, 51, 0.3);
         }
+
+        /* Multi Account Block Overlay */
+        #multi-block-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 8, 15, 0.98); backdrop-filter: blur(12px);
+            z-index: 100000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center;
+        }
+        .multi-block-box {
+            background: #110909; border: 2px solid #ff0055; border-radius: 20px;
+            max-width: 400px; width: 100%; padding: 30px 20px; box-shadow: 0 0 50px rgba(255, 0, 85, 0.4);
+            animation: alertPulse 2s infinite;
+        }
+        @keyframes alertPulse {
+            0% { box-shadow: 0 0 30px rgba(255, 0, 85, 0.3); }
+            50% { box-shadow: 0 0 60px rgba(255, 0, 85, 0.7); }
+            100% { box-shadow: 0 0 30px rgba(255, 0, 85, 0.3); }
+        }
+        .block-title { color: #ff0055; font-size: 26px; font-weight: 900; letter-spacing: 2px; margin-bottom: 10px; text-transform: uppercase; }
+        .block-reason { font-size: 13px; color: #d0d7de; margin-bottom: 20px; line-height: 1.5; }
+        .block-info-card { background: rgba(255, 0, 85, 0.08); border: 1px dashed rgba(255, 0, 85, 0.4); border-radius: 10px; padding: 12px; margin-bottom: 20px; text-align: left; font-size: 11px; color: #8b949e; }
+        .block-info-card div { margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
@@ -232,11 +255,28 @@
         </div>
     </div>
 
+    <!-- Block Multi Account Overlay -->
+    <div id="multi-block-overlay">
+        <div class="multi-block-box">
+            <div style="font-size: 50px; margin-bottom: 10px;">🚫</div>
+            <div class="block-title">BLOCK MULTI</div>
+            <div class="block-reason" id="block-reason-text">Multiple accounts or identical IP address / Device detected! Access blocked to protect network security.</div>
+            
+            <div class="block-info-card">
+                <div><strong>IP Address:</strong> <span id="block-display-ip" style="color: #ff0055;">Detecting...</span></div>
+                <div><strong>Device Hash:</strong> <span id="block-display-device" style="color: #ff0055;">Detecting...</span></div>
+                <div><strong>User ID:</strong> <span id="block-display-uid" style="color: #ffffff;">Loading...</span></div>
+            </div>
+
+            <button class="action-btn" style="width: 100%; background: #ff0055; color: #ffffff;" onclick="openVerificationSupport()">Contact Support</button>
+        </div>
+    </div>
+
     <div id="splash-screen">
         <div class="logo-box">
             <div class="logo-inner"><span>GRM</span></div>
         </div>
-        <div class="loading-text">Loading GRM Miner...</div>
+        <div class="loading-text" id="splash-status-text">Verifying Security & IP...</div>
     </div>
 
     <div class="main-container">
@@ -493,6 +533,10 @@
         let currentUserName = 'Miner';
         const ADMIN_ID = '5020977059'; 
 
+        // Security Tracking Variables
+        let currentUserIP = 'Unknown';
+        let currentDeviceFingerprint = 'Unknown';
+
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             rawUserId = tg.initDataUnsafe.user.id.toString();
             currentUserId = 'tg_' + rawUserId;
@@ -523,6 +567,133 @@
             }
         } catch (e) {
             console.warn("Supabase init error:", e);
+        }
+
+        // --- SECURITY ENHANCEMENT: IP AND DEVICE DETECTOR ---
+        async function fetchUserIPAddress() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip || 'Unknown';
+            } catch (err) {
+                try {
+                    const fallbackRes = await fetch('https://ipapi.co/json/');
+                    const fallbackData = await fallbackRes.json();
+                    return fallbackData.ip || 'Unknown';
+                } catch (e) {
+                    return 'Unknown';
+                }
+            }
+        }
+
+        async function fetchDeviceFingerprint() {
+            try {
+                if (typeof FingerprintJS !== 'undefined') {
+                    const fp = await FingerprintJS.load();
+                    const result = await fp.get();
+                    return result.visitorId;
+                }
+            } catch (e) {
+                console.warn("FingerprintJS error:", e);
+            }
+            // Fallback screen & userAgent hash logic
+            const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+            const str = navigator.userAgent + screenInfo + (navigator.language || '');
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return 'dev_' + Math.abs(hash).toString(36);
+        }
+
+        function triggerMultiBlock(reasonText) {
+            const blockOverlay = document.getElementById('multi-block-overlay');
+            const splash = document.getElementById('splash-screen');
+            
+            if (splash) splash.style.display = 'none';
+            
+            document.getElementById('block-display-ip').innerText = currentUserIP;
+            document.getElementById('block-display-device').innerText = currentDeviceFingerprint;
+            document.getElementById('block-display-uid').innerText = rawUserId || currentUserId;
+            
+            if (reasonText) {
+                document.getElementById('block-reason-text').innerText = reasonText;
+            }
+            
+            if (blockOverlay) {
+                blockOverlay.style.display = 'flex';
+            }
+        }
+
+        async function verifyIPAndDeviceSecurity() {
+            currentUserIP = await fetchUserIPAddress();
+            currentDeviceFingerprint = await fetchDeviceFingerprint();
+
+            // Admin Whitelist Bypass (Admin ID skips Multi-Block restriction)
+            if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) {
+                return true;
+            }
+
+            if (!_supabase) return true;
+
+            try {
+                // 1. Check if user is manually marked as blocked in database
+                const { data: selfUser } = await _supabase
+                    .from('grm_users')
+                    .select('is_blocked, block_reason')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
+                if (selfUser && selfUser.is_blocked === true) {
+                    triggerMultiBlock(selfUser.block_reason || "Account permanently blocked due to policy violations.");
+                    return false;
+                }
+
+                // 2. Check for Duplicate IP Address across other registered users
+                if (currentUserIP !== 'Unknown') {
+                    const { data: ipMatches } = await _supabase
+                        .from('grm_users')
+                        .select('user_id')
+                        .eq('ip_address', currentUserIP)
+                        .neq('user_id', currentUserId);
+
+                    if (ipMatches && ipMatches.length > 0) {
+                        const reason = `[BLOCK MULTI] Multiple accounts detected under IP: ${currentUserIP}. Only 1 account per network connection is permitted.`;
+                        await updateSupabaseField({ is_blocked: true, block_reason: reason, ip_address: currentUserIP, device_fingerprint: currentDeviceFingerprint });
+                        triggerMultiBlock(reason);
+                        return false;
+                    }
+                }
+
+                // 3. Check for Duplicate Device Fingerprint across other registered users
+                if (currentDeviceFingerprint !== 'Unknown') {
+                    const { data: deviceMatches } = await _supabase
+                        .from('grm_users')
+                        .select('user_id')
+                        .eq('device_fingerprint', currentDeviceFingerprint)
+                        .neq('user_id', currentUserId);
+
+                    if (deviceMatches && deviceMatches.length > 0) {
+                        const reason = `[BLOCK MULTI] Multiple accounts detected on this device. Only 1 account per device is permitted.`;
+                        await updateSupabaseField({ is_blocked: true, block_reason: reason, ip_address: currentUserIP, device_fingerprint: currentDeviceFingerprint });
+                        triggerMultiBlock(reason);
+                        return false;
+                    }
+                }
+
+                // Save valid IP and Device information
+                await updateSupabaseField({
+                    ip_address: currentUserIP,
+                    device_fingerprint: currentDeviceFingerprint
+                });
+
+                return true;
+
+            } catch (err) {
+                console.error("Security verification error:", err);
+                return true; 
+            }
         }
 
         // Background Network & VPN Checker
@@ -691,6 +862,12 @@
             const isConnected = await checkNetworkConnectivity();
             if (!isConnected) return;
 
+            // Security check before loading app data
+            const securityPassed = await verifyIPAndDeviceSecurity();
+            if (!securityPassed) {
+                return; // Stop loading application if multi account detected
+            }
+
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
             await fetchWithdrawalHistory();
@@ -739,6 +916,8 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
+                            ip_address: currentUserIP,
+                            device_fingerprint: currentDeviceFingerprint,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -759,6 +938,8 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
+                            ip_address: currentUserIP,
+                            device_fingerprint: currentDeviceFingerprint,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -780,6 +961,8 @@
                         mining_state: 'stopped',
                         level: 0,
                         is_verified: false,
+                        ip_address: currentUserIP,
+                        device_fingerprint: currentDeviceFingerprint,
                         updated_at: new Date().toISOString()
                     }], { onConflict: 'user_id' });
                 }
@@ -1215,6 +1398,8 @@
                     fields.mining_state = 'stopped';
                     fields.level = 0;
                     fields.is_verified = false;
+                    fields.ip_address = currentUserIP;
+                    fields.device_fingerprint = currentDeviceFingerprint;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -1408,6 +1593,8 @@
             const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
                             `👤 <b>User:</b> ${currentUserName}\n` +
                             `🆔 <b>User ID:</b> <code>${rawUserId || currentUserId}</code>\n` +
+                            `🌐 <b>IP Address:</b> <code>${currentUserIP}</code>\n` +
+                            `📱 <b>Device Hash:</b> <code>${currentDeviceFingerprint}</code>\n` +
                             `💰 <b>Amount:</b> <code>${txRecord.amount} GRM</code>\n` +
                             `💎 <b>Wallet Address:</b>\n<code>${txRecord.address}</code>\n` +
                             `⏰ <b>Date:</b> ${txRecord.date}`;
