@@ -816,7 +816,7 @@
                     .select('referred_id, status')
                     .eq('referrer_id', currentUserId);
 
-                // Safely fetch available claims directly from server to override cache
+                // Fetch available claims directly from server to override cache
                 const { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('ref_claim_allowed')
@@ -884,10 +884,10 @@
                 const claimBtn = document.getElementById('claim-referral-btn');
                 if (availableClaimCount > 0) {
                     claimBtn.classList.add('active-claim');
-                    claimBtn.disabled = false; // Strictly activate native interaction
+                    claimBtn.disabled = false; // Activate native interaction
                 } else {
                     claimBtn.classList.remove('active-claim');
-                    claimBtn.disabled = true; // Strictly prevent native interaction
+                    claimBtn.disabled = true; // Prevent native interaction
                 }
 
                 document.getElementById('referrals-user-list-container').innerHTML = html;
@@ -904,8 +904,27 @@
         }
 
         async function claimReferralRewards() {
+            // Re-verify latest count directly from database before executing claim
+            if (_supabase) {
+                const { data: freshUser } = await _supabase
+                    .from('grm_users')
+                    .select('ref_claim_allowed, balance')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+                
+                if (freshUser && typeof freshUser.ref_claim_allowed !== 'undefined') {
+                    availableClaimCount = parseInt(freshUser.ref_claim_allowed) || 0;
+                    if (freshUser.balance !== undefined) {
+                        baseInitialBalance = parseFloat(freshUser.balance) || 0;
+                    }
+                }
+            }
+
             if (availableClaimCount <= 0) {
                 alert("❌ Cannot claim! Admin has not assigned any claimable referral reward yet.");
+                const claimBtn = document.getElementById('claim-referral-btn');
+                claimBtn.disabled = true;
+                claimBtn.classList.remove('active-claim');
                 return;
             }
 
