@@ -22,13 +22,11 @@ async function callTelegramAPI(method, payload) {
 }
 
 export default async function handler(req, res) {
-  // Telegram API မပြတ်စေရန် 200 OK အမြဲတမ်း ပေးမည်
   if (req.method !== "POST") {
     return res.status(200).send("Telegram bot server is running!");
   }
 
   try {
-    // Body Parsing Safe Handling
     let update = req.body;
     if (typeof update === "string") {
       try {
@@ -64,15 +62,26 @@ export default async function handler(req, res) {
           ]
         };
 
-        // ၁။ စာအဆင်ပြေပြေ ရောက်မရောက် sendMessage ဖြင့် အရင် စမ်းသပ်စစ်ဆေးခြင်း
-        await callTelegramAPI("sendMessage", {
+        // 1. Send Photo with Caption and Buttons
+        const photoResult = await callTelegramAPI("sendPhoto", {
           chat_id: chatId,
-          text: captionText,
+          photo: "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
+          caption: captionText,
           parse_mode: "Markdown",
           reply_markup: replyMarkup,
         });
 
-        // ၂။ Supabase Database Process ကို Background တွင် သီးသန့် လုပ်ဆောင်ခြင်း
+        // If photo sending fails (e.g. invalid File ID), fallback to sendMessage
+        if (!photoResult || !photoResult.ok) {
+          await callTelegramAPI("sendMessage", {
+            chat_id: chatId,
+            text: captionText,
+            parse_mode: "Markdown",
+            reply_markup: replyMarkup,
+          });
+        }
+
+        // 2. Background Database & Referral Process
         (async () => {
           try {
             let { data: existingUser } = await supabase
