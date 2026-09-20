@@ -820,7 +820,6 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                // Safely parse ref_claim_allowed to prevent NaN errors
                 availableClaimCount = userRecord && userRecord.ref_claim_allowed !== undefined && userRecord.ref_claim_allowed !== null ? parseInt(userRecord.ref_claim_allowed) || 0 : 0;
 
                 const totalCount = refData ? refData.length : 0;
@@ -955,25 +954,49 @@
             }
 
             try {
-                const { data, error } = await _supabase
+                // Ensure record exists or upsert with ref_claim_allowed
+                const { data: existingUser } = await _supabase
                     .from('grm_users')
-                    .update({ ref_claim_allowed: claimCount, updated_at: new Date().toISOString() })
+                    .select('user_id')
                     .eq('user_id', targetUserId)
-                    .select();
+                    .maybeSingle();
+
+                let error;
+                let data;
+
+                if (existingUser) {
+                    let res = await _supabase
+                        .from('grm_users')
+                        .update({ ref_claim_allowed: claimCount, updated_at: new Date().toISOString() })
+                        .eq('user_id', targetUserId)
+                        .select();
+                    data = res.data;
+                    error = res.error;
+                } else {
+                    let res = await _supabase
+                        .from('grm_users')
+                        .upsert([{
+                            user_id: targetUserId,
+                            username: 'User_' + targetUserId,
+                            balance: 0,
+                            ref_claim_allowed: claimCount,
+                            updated_at: new Date().toISOString()
+                        }], { onConflict: 'user_id' })
+                        .select();
+                    data = res.data;
+                    error = res.error;
+                }
 
                 if (error) {
                     alert("Error updating claim count: " + error.message);
                     return;
                 }
 
-                if (data && data.length > 0) {
-                    alert(`Success! Set referral claim allowed to ${claimCount} time(s) for user ${targetUserId}`);
-                    document.getElementById('adm-ref-target-id').value = '';
-                    if (targetUserId === currentUserId) {
-                        fetchReferralStats();
-                    }
-                } else {
-                    alert("User ID not found in database!");
+                alert(`Success! Set referral claim allowed to ${claimCount} time(s) for user ${targetUserId}`);
+                document.getElementById('adm-ref-target-id').value = '';
+                
+                if (targetUserId === currentUserId) {
+                    fetchReferralStats();
                 }
             } catch (err) { alert("Exception occurred: " + err.message); }
         }
@@ -1668,7 +1691,7 @@
                 let parts = cleaned.split('t.me/')[1].split('/')[0].split('?')[0];
                 let target = parts.replace('+', '');
                 if (target.startsWith('joinchat')) return null;
-                return target.startsWith('@') ? target : '@' + target;
+                return target.startsWith('@' )? target : '@' + target;
             }
             if (!cleaned.startsWith('@') && !cleaned.startsWith('-')) return '@' + cleaned;
             return cleaned;
@@ -1749,7 +1772,6 @@
             container.innerHTML = html;
         }
 
-        // Periodic refresher to update task cooldown countdown text every minute
         setInterval(() => {
             if (document.getElementById('tab-tasks').classList.contains('active')) {
                 renderTasksList();
@@ -1795,7 +1817,6 @@
                 updateBalanceUI();
                 await updateSupabaseField({ balance: baseInitialBalance });
 
-                // Set 3-hour cooldown timestamp in localStorage
                 localStorage.setItem(`task_cooldown_${currentUserId}_${task.id}`, Date.now().toString());
 
                 delete taskStates[task.id];
