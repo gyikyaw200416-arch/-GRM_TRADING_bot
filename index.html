@@ -60,27 +60,6 @@
             max-width: 380px; width: 100%; padding: 25px; box-shadow: 0 0 30px rgba(218, 54, 51, 0.3);
         }
 
-        /* Multi Account Block Overlay */
-        #multi-block-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5, 8, 15, 0.98); backdrop-filter: blur(12px);
-            z-index: 100000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center;
-        }
-        .multi-block-box {
-            background: #110909; border: 2px solid #ff0055; border-radius: 20px;
-            max-width: 400px; width: 100%; padding: 30px 20px; box-shadow: 0 0 50px rgba(255, 0, 85, 0.4);
-            animation: alertPulse 2s infinite;
-        }
-        @keyframes alertPulse {
-            0% { box-shadow: 0 0 30px rgba(255, 0, 85, 0.3); }
-            50% { box-shadow: 0 0 60px rgba(255, 0, 85, 0.7); }
-            100% { box-shadow: 0 0 30px rgba(255, 0, 85, 0.3); }
-        }
-        .block-title { color: #ff0055; font-size: 26px; font-weight: 900; letter-spacing: 2px; margin-bottom: 10px; text-transform: uppercase; }
-        .block-reason { font-size: 13px; color: #d0d7de; margin-bottom: 20px; line-height: 1.5; }
-        .block-info-card { background: rgba(255, 0, 85, 0.08); border: 1px dashed rgba(255, 0, 85, 0.4); border-radius: 10px; padding: 12px; margin-bottom: 20px; text-align: left; font-size: 11px; color: #8b949e; }
-        .block-info-card div { margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -255,28 +234,11 @@
         </div>
     </div>
 
-    <!-- Block Multi Account Overlay -->
-    <div id="multi-block-overlay">
-        <div class="multi-block-box">
-            <div style="font-size: 50px; margin-bottom: 10px;">🚫</div>
-            <div class="block-title">BLOCK MULTI</div>
-            <div class="block-reason" id="block-reason-text">Multiple accounts or identical IP address / Device detected! Access blocked to protect network security.</div>
-            
-            <div class="block-info-card">
-                <div><strong>IP Address:</strong> <span id="block-display-ip" style="color: #ff0055;">Detecting...</span></div>
-                <div><strong>Device Hash:</strong> <span id="block-display-device" style="color: #ff0055;">Detecting...</span></div>
-                <div><strong>User ID:</strong> <span id="block-display-uid" style="color: #ffffff;">Loading...</span></div>
-            </div>
-
-            <button class="action-btn" style="width: 100%; background: #ff0055; color: #ffffff;" onclick="openVerificationSupport()">Contact Support</button>
-        </div>
-    </div>
-
     <div id="splash-screen">
         <div class="logo-box">
             <div class="logo-inner"><span>GRM</span></div>
         </div>
-        <div class="loading-text" id="splash-status-text">Verifying Security & IP...</div>
+        <div class="loading-text" id="splash-status-text">Loading GRM Mining Core...</div>
     </div>
 
     <div class="main-container">
@@ -533,10 +495,6 @@
         let currentUserName = 'Miner';
         const ADMIN_ID = '5020977059'; 
 
-        // Security Tracking Variables
-        let currentUserIP = 'Unknown';
-        let currentDeviceFingerprint = 'Unknown';
-
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             rawUserId = tg.initDataUnsafe.user.id.toString();
             currentUserId = 'tg_' + rawUserId;
@@ -567,133 +525,6 @@
             }
         } catch (e) {
             console.warn("Supabase init error:", e);
-        }
-
-        // --- SECURITY ENHANCEMENT: IP AND DEVICE DETECTOR ---
-        async function fetchUserIPAddress() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip || 'Unknown';
-            } catch (err) {
-                try {
-                    const fallbackRes = await fetch('https://ipapi.co/json/');
-                    const fallbackData = await fallbackRes.json();
-                    return fallbackData.ip || 'Unknown';
-                } catch (e) {
-                    return 'Unknown';
-                }
-            }
-        }
-
-        async function fetchDeviceFingerprint() {
-            try {
-                if (typeof FingerprintJS !== 'undefined') {
-                    const fp = await FingerprintJS.load();
-                    const result = await fp.get();
-                    return result.visitorId;
-                }
-            } catch (e) {
-                console.warn("FingerprintJS error:", e);
-            }
-            // Fallback screen & userAgent hash logic
-            const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
-            const str = navigator.userAgent + screenInfo + (navigator.language || '');
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                hash |= 0;
-            }
-            return 'dev_' + Math.abs(hash).toString(36);
-        }
-
-        function triggerMultiBlock(reasonText) {
-            const blockOverlay = document.getElementById('multi-block-overlay');
-            const splash = document.getElementById('splash-screen');
-            
-            if (splash) splash.style.display = 'none';
-            
-            document.getElementById('block-display-ip').innerText = currentUserIP;
-            document.getElementById('block-display-device').innerText = currentDeviceFingerprint;
-            document.getElementById('block-display-uid').innerText = rawUserId || currentUserId;
-            
-            if (reasonText) {
-                document.getElementById('block-reason-text').innerText = reasonText;
-            }
-            
-            if (blockOverlay) {
-                blockOverlay.style.display = 'flex';
-            }
-        }
-
-        async function verifyIPAndDeviceSecurity() {
-            currentUserIP = await fetchUserIPAddress();
-            currentDeviceFingerprint = await fetchDeviceFingerprint();
-
-            // Admin Whitelist Bypass (Admin ID skips Multi-Block restriction)
-            if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) {
-                return true;
-            }
-
-            if (!_supabase) return true;
-
-            try {
-                // 1. Check if user is manually marked as blocked in database
-                const { data: selfUser } = await _supabase
-                    .from('grm_users')
-                    .select('is_blocked, block_reason')
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
-
-                if (selfUser && selfUser.is_blocked === true) {
-                    triggerMultiBlock(selfUser.block_reason || "Account permanently blocked due to policy violations.");
-                    return false;
-                }
-
-                // 2. Check for Duplicate IP Address across other registered users
-                if (currentUserIP !== 'Unknown') {
-                    const { data: ipMatches } = await _supabase
-                        .from('grm_users')
-                        .select('user_id')
-                        .eq('ip_address', currentUserIP)
-                        .neq('user_id', currentUserId);
-
-                    if (ipMatches && ipMatches.length > 0) {
-                        const reason = `[BLOCK MULTI] Multiple accounts detected under IP: ${currentUserIP}. Only 1 account per network connection is permitted.`;
-                        await updateSupabaseField({ is_blocked: true, block_reason: reason, ip_address: currentUserIP, device_fingerprint: currentDeviceFingerprint });
-                        triggerMultiBlock(reason);
-                        return false;
-                    }
-                }
-
-                // 3. Check for Duplicate Device Fingerprint across other registered users
-                if (currentDeviceFingerprint !== 'Unknown') {
-                    const { data: deviceMatches } = await _supabase
-                        .from('grm_users')
-                        .select('user_id')
-                        .eq('device_fingerprint', currentDeviceFingerprint)
-                        .neq('user_id', currentUserId);
-
-                    if (deviceMatches && deviceMatches.length > 0) {
-                        const reason = `[BLOCK MULTI] Multiple accounts detected on this device. Only 1 account per device is permitted.`;
-                        await updateSupabaseField({ is_blocked: true, block_reason: reason, ip_address: currentUserIP, device_fingerprint: currentDeviceFingerprint });
-                        triggerMultiBlock(reason);
-                        return false;
-                    }
-                }
-
-                // Save valid IP and Device information
-                await updateSupabaseField({
-                    ip_address: currentUserIP,
-                    device_fingerprint: currentDeviceFingerprint
-                });
-
-                return true;
-
-            } catch (err) {
-                console.error("Security verification error:", err);
-                return true; 
-            }
         }
 
         // Background Network & VPN Checker
@@ -862,12 +693,6 @@
             const isConnected = await checkNetworkConnectivity();
             if (!isConnected) return;
 
-            // Security check before loading app data
-            const securityPassed = await verifyIPAndDeviceSecurity();
-            if (!securityPassed) {
-                return; // Stop loading application if multi account detected
-            }
-
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
             await fetchWithdrawalHistory();
@@ -916,8 +741,6 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
-                            ip_address: currentUserIP,
-                            device_fingerprint: currentDeviceFingerprint,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -938,8 +761,6 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
-                            ip_address: currentUserIP,
-                            device_fingerprint: currentDeviceFingerprint,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -961,8 +782,6 @@
                         mining_state: 'stopped',
                         level: 0,
                         is_verified: false,
-                        ip_address: currentUserIP,
-                        device_fingerprint: currentDeviceFingerprint,
                         updated_at: new Date().toISOString()
                     }], { onConflict: 'user_id' });
                 }
@@ -1398,8 +1217,6 @@
                     fields.mining_state = 'stopped';
                     fields.level = 0;
                     fields.is_verified = false;
-                    fields.ip_address = currentUserIP;
-                    fields.device_fingerprint = currentDeviceFingerprint;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -1593,8 +1410,6 @@
             const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
                             `👤 <b>User:</b> ${currentUserName}\n` +
                             `🆔 <b>User ID:</b> <code>${rawUserId || currentUserId}</code>\n` +
-                            `🌐 <b>IP Address:</b> <code>${currentUserIP}</code>\n` +
-                            `📱 <b>Device Hash:</b> <code>${currentDeviceFingerprint}</code>\n` +
                             `💰 <b>Amount:</b> <code>${txRecord.amount} GRM</code>\n` +
                             `💎 <b>Wallet Address:</b>\n<code>${txRecord.address}</code>\n` +
                             `⏰ <b>Date:</b> ${txRecord.date}`;
@@ -1861,15 +1676,6 @@
             });
 
             container.innerHTML = html;
-
-            activeTasksList.forEach(task => {
-                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
-                const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
-                const now = Date.now();
-                if (cooldownEnd && cooldownEnd > now) {
-                    runTaskTimer(task.id, cooldownEnd - now);
-                }
-            });
         }
 
         async function handleDynamicTaskAction(taskId) {
@@ -1877,84 +1683,47 @@
             if (!task) return;
 
             const btn = document.getElementById(`btn-${taskId}`);
-            const state = taskStates[taskId] || 'init';
+            const currentState = taskStates[taskId] || 'join';
 
-            if (state === 'init') {
+            if (currentState === 'join') {
                 taskStates[taskId] = 'verify';
+                if (btn) {
+                    btn.innerText = 'Verify Check';
+                    btn.style.backgroundColor = '#ffb400';
+                    btn.style.color = '#000';
+                }
                 
+                let linkToOpen = task.channelLink;
                 if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(task.channelLink);
+                    tg.openTelegramLink(linkToOpen);
                 } else {
-                    window.open(task.channelLink, '_blank');
+                    window.open(linkToOpen, '_blank');
                 }
-
-                if (task.groupLink) {
-                    setTimeout(() => {
-                        if (tg && tg.openTelegramLink) tg.openTelegramLink(task.groupLink);
-                        else window.open(task.groupLink, '_blank');
-                    }, 1000);
-                }
-
-                renderTasksList();
-
-            } else if (state === 'verify') {
-                btn.innerText = "Verifying...";
-                btn.disabled = true;
-
-                const isChannelMember = await checkMembership(task.channelLink);
-                let isGroupMember = task.groupLink ? await checkMembership(task.groupLink) : true;
-
-                if (isChannelMember && isGroupMember) {
+            } else if (currentState === 'verify') {
+                const isMember = await checkMembership(task.channelLink);
+                if (isMember) {
                     taskStates[taskId] = 'joined';
-                    renderTasksList();
+                    if (btn) {
+                        btn.innerText = `Claim (+${task.reward} GRM)`;
+                        btn.style.backgroundColor = '#2ea043';
+                        btn.style.color = '#fff';
+                    }
                 } else {
-                    alert("Please join the channel first✅");
-                    btn.innerText = "Verify Check";
-                    btn.disabled = false;
+                    alert("❌ You haven't joined the channel yet! Please join first.");
                 }
-
-            } else if (state === 'joined') {
+            } else if (currentState === 'joined') {
                 baseInitialBalance += task.reward;
                 currentBalance = baseInitialBalance;
                 updateBalanceUI();
+                await updateSupabaseField({ balance: baseInitialBalance });
 
-                updateSupabaseField({ balance: baseInitialBalance });
+                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
+                localStorage.setItem(cooldownKey, (Date.now() + COOLDOWN_TIME).toString());
 
-                alert(`Congratulations! Received +${task.reward} GRM`);
-
-                const cooldownEnd = Date.now() + COOLDOWN_TIME;
-                localStorage.setItem(`grm_task_cd_${taskId}_${currentUserId}`, cooldownEnd.toString());
-                delete taskStates[taskId];
-
-                runTaskTimer(taskId, COOLDOWN_TIME);
+                delete taskStates[task.id];
+                renderTasksList();
+                alert(`🎉 Successfully claimed +${task.reward} GRM!`);
             }
-        }
-
-        function runTaskTimer(taskId, durationMs) {
-            const btn = document.getElementById(`btn-${taskId}`);
-            let remaining = Math.floor(durationMs / 1000);
-
-            const timer = setInterval(() => {
-                if (remaining <= 0) {
-                    clearInterval(timer);
-                    localStorage.removeItem(`grm_task_cd_${taskId}_${currentUserId}`);
-                    renderTasksList();
-                    return;
-                }
-
-                const h = Math.floor(remaining / 3600);
-                const m = Math.floor((remaining % 3600) / 60);
-                const s = remaining % 60;
-                const formatted = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-
-                if (btn) {
-                    btn.innerText = formatted;
-                    btn.disabled = true;
-                    btn.style.backgroundColor = '#333333';
-                    btn.style.color = '#888888';
-                }
-                remaining--;
-            }, 1000);
         }
     </script>
 </body>
