@@ -1095,7 +1095,7 @@
                     if (users.length > 1) {
                         detectedDuplicates = true;
                         let usersListHtml = users.map(u => `
-                            <div style="display:flex; justify-between; align-items:center; font-size:10px; margin-top:3px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; margin-top:3px;">
                                 <span>👤 ${u.username || u.user_id} (${u.user_id})</span>
                                 <span style="color:${u.is_verified ? '#2ea043' : '#da3633'}; font-weight:bold;">${u.is_verified ? 'Verified' : 'Unverified'}</span>
                             </div>
