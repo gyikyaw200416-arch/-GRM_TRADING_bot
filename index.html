@@ -214,8 +214,9 @@
         .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
 
         .withdraw-req-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 11px; }
-        .claim-reward-btn { background: #333; color: #777; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: not-allowed; }
+        .claim-reward-btn { background: #333; color: #777; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: not-allowed; transition: all 0.2s ease; }
         .claim-reward-btn.active-claim { background: #ffb400; color: #000; cursor: pointer; box-shadow: 0 0 10px rgba(255, 180, 0, 0.4); }
+        .claim-reward-btn.active-claim:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -361,7 +362,7 @@
                         <div style="font-size: 11px; color: #8b949e; margin-top: 2px;" id="referral-claim-subtitle">0 available · +100 GRM each</div>
                     </div>
                 </div>
-                <button class="claim-reward-btn" id="claim-referral-btn" onclick="claimReferralRewards()">Claim</button>
+                <button class="claim-reward-btn" id="claim-referral-btn" disabled onclick="claimReferralRewards()">Claim</button>
             </div>
 
             <div class="section-header-title">Invited Friends</div>
@@ -809,18 +810,25 @@
         async function fetchReferralStats() {
             if (!_supabase) return;
             try {
+                // Fetch friends data
                 const { data: refData } = await _supabase
                     .from('grm_referrals')
                     .select('referred_id, status')
                     .eq('referrer_id', currentUserId);
 
+                // Safely fetch available claims directly from server to override cache
                 const { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('ref_claim_allowed')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                availableClaimCount = userRecord && userRecord.ref_claim_allowed !== undefined && userRecord.ref_claim_allowed !== null ? parseInt(userRecord.ref_claim_allowed) || 0 : 0;
+                if (userRecord && typeof userRecord.ref_claim_allowed !== 'undefined' && userRecord.ref_claim_allowed !== null) {
+                    availableClaimCount = parseInt(userRecord.ref_claim_allowed);
+                    if (isNaN(availableClaimCount)) availableClaimCount = 0;
+                } else {
+                    availableClaimCount = 0;
+                }
 
                 const totalCount = refData ? refData.length : 0;
                 let successfulCount = 0;
@@ -869,18 +877,23 @@
                     html = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No referrals yet. Share your link to invite friends!</div>';
                 }
 
+                // Update UI based on fetched data
                 document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
                 document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
 
                 const claimBtn = document.getElementById('claim-referral-btn');
                 if (availableClaimCount > 0) {
                     claimBtn.classList.add('active-claim');
+                    claimBtn.disabled = false; // Strictly activate native interaction
                 } else {
                     claimBtn.classList.remove('active-claim');
+                    claimBtn.disabled = true; // Strictly prevent native interaction
                 }
 
                 document.getElementById('referrals-user-list-container').innerHTML = html;
-            } catch (e) { console.error("Error fetching ref stats:", e); }
+            } catch (e) { 
+                console.error("Error fetching ref stats:", e); 
+            }
         }
 
         function copyReferralLink() {
@@ -896,6 +909,11 @@
                 return;
             }
 
+            // Immediately disable the button to prevent duplicate clicks
+            const claimBtn = document.getElementById('claim-referral-btn');
+            claimBtn.disabled = true;
+            claimBtn.classList.remove('active-claim');
+
             const rewardTotal = availableClaimCount * 100;
             baseInitialBalance += rewardTotal;
             currentBalance = baseInitialBalance;
@@ -903,16 +921,24 @@
 
             availableClaimCount = 0;
             document.getElementById('referral-claim-subtitle').innerText = `0 available · +100 GRM each`;
-            document.getElementById('claim-referral-btn').classList.remove('active-claim');
 
             if (_supabase) {
-                await _supabase
+                // Combine into a single atomic update to prevent race conditions in Supabase
+                const { error } = await _supabase
                     .from('grm_users')
-                    .update({ ref_claim_allowed: 0, updated_at: new Date().toISOString() })
+                    .update({ 
+                        ref_claim_allowed: 0, 
+                        balance: baseInitialBalance, 
+                        updated_at: new Date().toISOString() 
+                    })
                     .eq('user_id', currentUserId);
+                    
+                if (error) {
+                    alert("Database Error while claiming: " + error.message);
+                    return;
+                }
             }
 
-            await updateSupabaseField({ balance: baseInitialBalance });
             alert(`🎉 Successfully claimed +${rewardTotal} GRM referral reward!`);
             fetchReferralStats();
         }
@@ -954,49 +980,28 @@
             }
 
             try {
-                // Ensure record exists or upsert with ref_claim_allowed
-                const { data: existingUser } = await _supabase
+                const { data, error } = await _supabase
                     .from('grm_users')
-                    .select('user_id')
+                    .update({ ref_claim_allowed: claimCount, updated_at: new Date().toISOString() })
                     .eq('user_id', targetUserId)
-                    .maybeSingle();
-
-                let error;
-                let data;
-
-                if (existingUser) {
-                    let res = await _supabase
-                        .from('grm_users')
-                        .update({ ref_claim_allowed: claimCount, updated_at: new Date().toISOString() })
-                        .eq('user_id', targetUserId)
-                        .select();
-                    data = res.data;
-                    error = res.error;
-                } else {
-                    let res = await _supabase
-                        .from('grm_users')
-                        .upsert([{
-                            user_id: targetUserId,
-                            username: 'User_' + targetUserId,
-                            balance: 0,
-                            ref_claim_allowed: claimCount,
-                            updated_at: new Date().toISOString()
-                        }], { onConflict: 'user_id' })
-                        .select();
-                    data = res.data;
-                    error = res.error;
-                }
+                    .select();
 
                 if (error) {
                     alert("Error updating claim count: " + error.message);
                     return;
                 }
 
-                alert(`Success! Set referral claim allowed to ${claimCount} time(s) for user ${targetUserId}`);
-                document.getElementById('adm-ref-target-id').value = '';
-                
-                if (targetUserId === currentUserId) {
-                    fetchReferralStats();
+                if (data && data.length > 0) {
+                    alert(`Success! Set referral claim allowed to ${claimCount} time(s) for user ${targetUserId}`);
+                    document.getElementById('adm-ref-target-id').value = '';
+                    
+                    // Directly refresh the interface if the admin sets the reward for themselves
+                    if (targetUserId === currentUserId) {
+                        availableClaimCount = claimCount; 
+                        fetchReferralStats();
+                    }
+                } else {
+                    alert("User ID not found in database!");
                 }
             } catch (err) { alert("Exception occurred: " + err.message); }
         }
@@ -1691,7 +1696,7 @@
                 let parts = cleaned.split('t.me/')[1].split('/')[0].split('?')[0];
                 let target = parts.replace('+', '');
                 if (target.startsWith('joinchat')) return null;
-                return target.startsWith('@' )? target : '@' + target;
+                return target.startsWith('@') ? target : '@' + target;
             }
             if (!cleaned.startsWith('@') && !cleaned.startsWith('-')) return '@' + cleaned;
             return cleaned;
@@ -1772,6 +1777,7 @@
             container.innerHTML = html;
         }
 
+        // Periodic refresher to update task cooldown countdown text every minute
         setInterval(() => {
             if (document.getElementById('tab-tasks').classList.contains('active')) {
                 renderTasksList();
@@ -1817,6 +1823,7 @@
                 updateBalanceUI();
                 await updateSupabaseField({ balance: baseInitialBalance });
 
+                // Set 3-hour cooldown timestamp in localStorage
                 localStorage.setItem(`task_cooldown_${currentUserId}_${task.id}`, Date.now().toString());
 
                 delete taskStates[task.id];
