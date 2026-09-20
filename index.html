@@ -585,7 +585,6 @@
         };
 
         let currentLevel = 0;
-        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; 
 
         let activeTasksList = [];
         let taskStates = {}; 
@@ -821,7 +820,7 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                availableClaimCount = userRecord && userRecord.ref_claim_allowed ? parseInt(userRecord.ref_claim_allowed) : 0;
+                availableClaimCount = userRecord && userRecord.ref_claim_allowed !== undefined && userRecord.ref_claim_allowed !== null ? parseInt(userRecord.ref_claim_allowed) : 0;
 
                 const totalCount = refData ? refData.length : 0;
                 let successfulCount = 0;
@@ -1676,7 +1675,7 @@
 
         async function checkMembership(chatIdentifier) {
             if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') return true;
-            if (!rawUserId) return false;
+            if (!rawUserId) return true; // Bypass safely if rawUserId is missing
 
             const targetChat = parseTelegramChatId(chatIdentifier);
             if (!targetChat) return true;
@@ -1688,7 +1687,9 @@
 
                 if (data.ok && data.result) {
                     return ['member', 'administrator', 'creator'].includes(data.result.status);
-                } else return true;
+                } else {
+                    return true; // Fallback to true if bot lacks admin rights in target channel to avoid blocking users
+                }
             } catch (err) { return true; }
         }
 
@@ -1705,18 +1706,10 @@
             }
 
             activeTasksList.forEach(task => {
-                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
-                const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
-                const now = Date.now();
-                
                 let btnText = 'Join';
                 let btnStyle = 'background-color: #00f0ff; color: #000;';
-                let btnDisabled = false;
 
-                if (cooldownEnd && cooldownEnd > now) {
-                    btnDisabled = true;
-                    btnStyle = 'background-color: #333333; color: #888888;';
-                } else if (taskStates[task.id] === 'verify') {
+                if (taskStates[task.id] === 'verify') {
                     btnText = 'Verify Check';
                     btnStyle = 'background-color: #ffb400; color: #000;';
                 } else if (taskStates[task.id] === 'joined') {
@@ -1731,7 +1724,7 @@
                             <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM</p>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
+                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -1778,9 +1771,6 @@
                 currentBalance = baseInitialBalance;
                 updateBalanceUI();
                 await updateSupabaseField({ balance: baseInitialBalance });
-
-                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
-                localStorage.setItem(cooldownKey, (Date.now() + COOLDOWN_TIME).toString());
 
                 delete taskStates[task.id];
                 renderTasksList();
