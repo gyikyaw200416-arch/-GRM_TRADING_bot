@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -816,16 +816,23 @@
                     .select('referred_id, status')
                     .eq('referrer_id', currentUserId);
 
-                // Fetch available claims directly from server to override cache
+                // Safely fetch available claims directly from server to override cache
                 const { data: userRecord } = await _supabase
                     .from('grm_users')
-                    .select('ref_claim_allowed')
+                    .select('ref_claim_allowed, balance')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                if (userRecord && typeof userRecord.ref_claim_allowed !== 'undefined' && userRecord.ref_claim_allowed !== null) {
-                    availableClaimCount = parseInt(userRecord.ref_claim_allowed);
-                    if (isNaN(availableClaimCount)) availableClaimCount = 0;
+                if (userRecord) {
+                    if (typeof userRecord.ref_claim_allowed !== 'undefined' && userRecord.ref_claim_allowed !== null) {
+                        availableClaimCount = parseInt(userRecord.ref_claim_allowed);
+                        if (isNaN(availableClaimCount)) availableClaimCount = 0;
+                    }
+                    if (typeof userRecord.balance !== 'undefined' && userRecord.balance !== null) {
+                        baseInitialBalance = parseFloat(userRecord.balance);
+                        currentBalance = baseInitialBalance;
+                        updateBalanceUI();
+                    }
                 } else {
                     availableClaimCount = 0;
                 }
@@ -884,10 +891,10 @@
                 const claimBtn = document.getElementById('claim-referral-btn');
                 if (availableClaimCount > 0) {
                     claimBtn.classList.add('active-claim');
-                    claimBtn.disabled = false; // Activate native interaction
+                    claimBtn.disabled = false; // Strictly activate native interaction
                 } else {
                     claimBtn.classList.remove('active-claim');
-                    claimBtn.disabled = true; // Prevent native interaction
+                    claimBtn.disabled = true; // Strictly prevent native interaction
                 }
 
                 document.getElementById('referrals-user-list-container').innerHTML = html;
@@ -904,31 +911,11 @@
         }
 
         async function claimReferralRewards() {
-            // Re-verify latest count directly from database before executing claim
-            if (_supabase) {
-                const { data: freshUser } = await _supabase
-                    .from('grm_users')
-                    .select('ref_claim_allowed, balance')
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
-                
-                if (freshUser && typeof freshUser.ref_claim_allowed !== 'undefined') {
-                    availableClaimCount = parseInt(freshUser.ref_claim_allowed) || 0;
-                    if (freshUser.balance !== undefined) {
-                        baseInitialBalance = parseFloat(freshUser.balance) || 0;
-                    }
-                }
-            }
-
             if (availableClaimCount <= 0) {
                 alert("❌ Cannot claim! Admin has not assigned any claimable referral reward yet.");
-                const claimBtn = document.getElementById('claim-referral-btn');
-                claimBtn.disabled = true;
-                claimBtn.classList.remove('active-claim');
                 return;
             }
 
-            // Immediately disable the button to prevent duplicate clicks
             const claimBtn = document.getElementById('claim-referral-btn');
             claimBtn.disabled = true;
             claimBtn.classList.remove('active-claim');
@@ -942,7 +929,6 @@
             document.getElementById('referral-claim-subtitle').innerText = `0 available · +100 GRM each`;
 
             if (_supabase) {
-                // Combine into a single atomic update to prevent race conditions in Supabase
                 const { error } = await _supabase
                     .from('grm_users')
                     .update({ 
@@ -999,6 +985,28 @@
             }
 
             try {
+                // Ensure the user exists in grm_users before updating to avoid missing row issues
+                const { data: existingUser } = await _supabase
+                    .from('grm_users')
+                    .select('user_id')
+                    .eq('user_id', targetUserId)
+                    .maybeSingle();
+
+                if (!existingUser) {
+                    // Create basic record if not exists
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: targetUserId,
+                        username: 'User_' + targetUserId,
+                        balance: 0,
+                        mined_amount: 0,
+                        mining_state: 'stopped',
+                        level: 0,
+                        is_verified: false,
+                        ref_claim_allowed: claimCount,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+                }
+
                 const { data, error } = await _supabase
                     .from('grm_users')
                     .update({ ref_claim_allowed: claimCount, updated_at: new Date().toISOString() })
@@ -1014,7 +1022,6 @@
                     alert(`Success! Set referral claim allowed to ${claimCount} time(s) for user ${targetUserId}`);
                     document.getElementById('adm-ref-target-id').value = '';
                     
-                    // Directly refresh the interface if the admin sets the reward for themselves
                     if (targetUserId === currentUserId) {
                         availableClaimCount = claimCount; 
                         fetchReferralStats();
@@ -1796,7 +1803,6 @@
             container.innerHTML = html;
         }
 
-        // Periodic refresher to update task cooldown countdown text every minute
         setInterval(() => {
             if (document.getElementById('tab-tasks').classList.contains('active')) {
                 renderTasksList();
@@ -1842,7 +1848,6 @@
                 updateBalanceUI();
                 await updateSupabaseField({ balance: baseInitialBalance });
 
-                // Set 3-hour cooldown timestamp in localStorage
                 localStorage.setItem(`task_cooldown_${currentUserId}_${task.id}`, Date.now().toString());
 
                 delete taskStates[task.id];
