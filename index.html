@@ -58,6 +58,17 @@
             max-width: 380px; width: 100%; padding: 25px; box-shadow: 0 0 30px rgba(218, 54, 51, 0.3);
         }
 
+        /* Multi-Account Strict Block Screen */
+        #multi-account-block-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 7, 13, 0.98); backdrop-filter: blur(12px);
+            z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center;
+        }
+        .multi-account-box {
+            background: #0f1624; border: 2px solid #da3633; border-radius: 20px;
+            max-width: 400px; width: 100%; padding: 30px; box-shadow: 0 0 50px rgba(218, 54, 51, 0.5);
+        }
+
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -215,6 +226,10 @@
         .withdraw-req-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 11px; }
         .claim-reward-btn { background: #333; color: #777; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: not-allowed; }
         .claim-reward-btn.active-claim { background: #ffb400; color: #000; cursor: pointer; box-shadow: 0 0 10px rgba(255, 180, 0, 0.4); }
+
+        /* Admin IP & Multi-Account Card CSS */
+        .ip-flag-card { background: rgba(218, 54, 51, 0.1); border: 1px solid rgba(218, 54, 51, 0.5); border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 11px; }
+        .ip-clean-card { background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -229,6 +244,19 @@
             <h3 style="color: #da3633; margin-bottom: 8px;">Connection Refused</h3>
             <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;">Network or VPN connection failure detected. Please check your internet connection or turn on your VPN to load resources correctly.</p>
             <button class="action-btn" style="width: 100%; background: #00f0ff; color: #000;" onclick="checkNetworkConnectivity()">Retry Connection</button>
+        </div>
+    </div>
+
+    <!-- Multi-Account / Shared WiFi Strictly Blocked Screen Overlay -->
+    <div id="multi-account-block-overlay">
+        <div class="multi-account-box">
+            <div style="font-size: 48px; margin-bottom: 12px;">🚫</div>
+            <h3 style="color: #da3633; margin-bottom: 10px; font-size: 18px;">ACCESS BLOCKED</h3>
+            <p style="font-size: 12px; color: #00f0ff; font-weight: bold; margin-bottom: 8px;">Multi-Account / Network Violation Detected</p>
+            <p style="font-size: 11px; color: #8b949e; line-height: 1.5; margin-bottom: 20px;">
+                This WiFi or IP address is already registered to a primary account. Multiple accounts on the same IP network are strictly forbidden. Only the primary registered account on this connection is permitted to access GRM Core.
+            </p>
+            <button class="action-btn" style="width: 100%; background: #da3633; color: #fff;" onclick="openVerificationSupport()">Contact Verification Support</button>
         </div>
     </div>
 
@@ -296,22 +324,6 @@
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
 
-                <!-- WiFi / IP Search Lookup by ID -->
-                <h4 style="color: #ffb400; margin-bottom: 8px;">🔎 Search Multi-Accounts by User ID</h4>
-                <input type="text" id="adm-search-ip-user-id" class="admin-input" placeholder="Enter User ID (e.g. 5020977059 or tg_5020977059)">
-                <button class="action-btn" style="width: 100%; background: #ffb400; color: #000; margin-bottom: 10px;" onclick="searchAccountsByUserIdIP()">Search Multi-Accounts</button>
-                <div id="admin-ip-search-result" style="margin-bottom: 15px;"></div>
-
-                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
-
-                <!-- WiFi / IP Multi-Account Tracking Panel -->
-                <h4 style="color: #da3633; margin-bottom: 8px;">📶 WiFi/IP Multi-Account Detector</h4>
-                <div id="admin-ip-list">
-                    <div style="text-align: center; color: #8b949e; font-size: 11px;">Scanning shared IP addresses...</div>
-                </div>
-
-                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px; margin-top: 15px;">
-
                 <h4 style="color: #2ea043; margin-bottom: 8px;">💸 Pending Withdrawal Requests</h4>
                 <div id="admin-withdrawals-list">
                     <div style="text-align: center; color: #8b949e; font-size: 11px;">Loading pending requests...</div>
@@ -322,6 +334,15 @@
                 <h4 style="color: #ffb400; margin-bottom: 8px;">👥 Admin Referral Verification & Tree Tracking</h4>
                 <div id="admin-referrals-list">
                     <div style="text-align: center; color: #8b949e; font-size: 11px;">Loading pending referrals...</div>
+                </div>
+
+                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px; margin-top: 15px;">
+
+                <!-- Admin Multi-Account & WiFi IP Security Detector Panel -->
+                <h4 style="color: #da3633; margin-bottom: 8px;">🛡️ Anti-Multi-Account & WiFi IP Audit Tracker</h4>
+                <p style="font-size: 10px; color: #8b949e; margin-bottom: 10px;">Scans user WiFi IP addresses, device identifiers, and flags users sharing identical network IPs.</p>
+                <div id="admin-ip-audit-list">
+                    <div style="text-align: center; color: #8b949e; font-size: 11px;">Scanning user IP records...</div>
                 </div>
             </div>
 
@@ -464,7 +485,7 @@
         </div>
     </div>
 
-    <!-- Buy Engine Modal with Address & User ID Copy Buttons -->
+    <!-- Buy Engine Modal -->
     <div id="buy-engine-modal" class="modal-overlay">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -507,7 +528,6 @@
         let rawUserId = '';
         let currentUserId = '';
         let currentUserName = 'Miner';
-        let currentUserIp = '';
         const ADMIN_ID = '5020977059'; 
 
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
@@ -540,19 +560,6 @@
             }
         } catch (e) {
             console.warn("Supabase init error:", e);
-        }
-
-        // Fetch User Public IP Logic
-        async function fetchUserPublicIP() {
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                if (data && data.ip) {
-                    currentUserIp = data.ip;
-                }
-            } catch (err) {
-                console.warn("Unable to fetch IP address:", err);
-            }
         }
 
         // Background Network & VPN Checker
@@ -617,6 +624,97 @@
         let taskStates = {}; 
         let withdrawalHistory = [];
         let availableClaimCount = 0;
+
+        // Device & Network IP Context Tracker
+        let currentUserNetworkInfo = {
+            ip: 'Unknown',
+            isp: 'Unknown',
+            country: 'Unknown',
+            devicePlatform: navigator.platform || 'Unknown',
+            userAgent: navigator.userAgent || 'Unknown'
+        };
+
+        async function fetchUserNetworkAndIPDetails() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                if (res.ok) {
+                    const data = await res.json();
+                    currentUserNetworkInfo.ip = data.ip || 'Unknown';
+                    currentUserNetworkInfo.isp = data.org || data.asn || 'Unknown';
+                    currentUserNetworkInfo.country = data.country_name || data.country || 'Unknown';
+                }
+            } catch (err) {
+                try {
+                    const fallbackRes = await fetch('https://api.ipify.org?format=json');
+                    if (fallbackRes.ok) {
+                        const fallbackData = await fallbackRes.json();
+                        currentUserNetworkInfo.ip = fallbackData.ip || 'Unknown';
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch user IP details:", e);
+                }
+            }
+            await syncUserNetworkDetailsToSupabase();
+        }
+
+        /* 
+           STRICT MULTI-ACCOUNT & WiFi IP ENFORCEMENT LOGIC 
+           - Checks if the user IP is associated with any other previously registered account.
+           - Only the FIRST created user account on a specific IP network is permitted.
+           - All secondary accounts attempting connection under the same IP are blocked completely.
+        */
+        async function checkMultiAccountAndBlock() {
+            if (!_supabase || !currentUserNetworkInfo.ip || currentUserNetworkInfo.ip === 'Unknown') return false;
+
+            // Admin bypasses IP checks
+            if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) return false;
+
+            try {
+                // Fetch all accounts that share this WiFi/Public IP
+                const { data: existingIpUsers, error } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, created_at')
+                    .eq('last_ip', currentUserNetworkInfo.ip)
+                    .order('created_at', { ascending: true });
+
+                if (error || !existingIpUsers || existingIpUsers.length === 0) {
+                    return false; // First account on this IP address
+                }
+
+                // Identify the very first account created on this IP
+                const firstRegisteredUserId = existingIpUsers[0].user_id;
+
+                // Block if current user is NOT the primary/first account on this IP network
+                if (firstRegisteredUserId !== currentUserId) {
+                    const blockOverlay = document.getElementById('multi-account-block-overlay');
+                    if (blockOverlay) blockOverlay.style.display = 'flex';
+                    
+                    // Stop application load entirely
+                    const splash = document.getElementById('splash-screen');
+                    if (splash) splash.style.display = 'none';
+                    return true;
+                }
+            } catch (err) {
+                console.error("Multi-account check exception:", err);
+            }
+            return false;
+        }
+
+        async function syncUserNetworkDetailsToSupabase() {
+            if (!_supabase) return;
+            try {
+                await updateSupabaseField({
+                    last_ip: currentUserNetworkInfo.ip,
+                    network_isp: currentUserNetworkInfo.isp,
+                    country: currentUserNetworkInfo.country,
+                    device_platform: currentUserNetworkInfo.devicePlatform,
+                    user_agent: currentUserNetworkInfo.userAgent,
+                    last_active_at: new Date().toISOString()
+                });
+            } catch (e) {
+                console.error("Error syncing network info to database:", e);
+            }
+        }
 
         function openVerificationSupport() {
             const supportBotUrl = 'https://t.me/GRM_VerificationSupport_Bot';
@@ -721,7 +819,12 @@
             const isConnected = await checkNetworkConnectivity();
             if (!isConnected) return;
 
-            await fetchUserPublicIP();
+            await fetchUserNetworkAndIPDetails();
+            
+            // Execute Multi-Account Check before proceeding with user login
+            const isBlocked = await checkMultiAccountAndBlock();
+            if (isBlocked) return; // Completely freeze initialization for secondary accounts
+
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
             await fetchWithdrawalHistory();
@@ -770,7 +873,7 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
-                            last_ip: currentUserIp || null,
+                            last_ip: currentUserNetworkInfo.ip,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -791,7 +894,7 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
-                            last_ip: currentUserIp || null,
+                            last_ip: currentUserNetworkInfo.ip,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -801,7 +904,7 @@
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
-                        .update({ referrer_id: referrerUserId, last_ip: currentUserIp || null, updated_at: new Date().toISOString() })
+                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
                         .eq('user_id', currentUserId);
                 } else {
                     await _supabase.from('grm_users').upsert([{
@@ -813,7 +916,7 @@
                         mining_state: 'stopped',
                         level: 0,
                         is_verified: false,
-                        last_ip: currentUserIp || null,
+                        last_ip: currentUserNetworkInfo.ip,
                         updated_at: new Date().toISOString()
                     }], { onConflict: 'user_id' });
                 }
@@ -983,141 +1086,83 @@
                     adminPanel.style.display = 'block';
                     fetchAdminWithdrawalRequests();
                     fetchAdminReferralRequests();
-                    fetchAdminIPDetector();
+                    fetchAdminIPAuditRecords();
                 }
             } else {
                 if (adminPanel) adminPanel.style.display = 'none';
             }
         }
 
-        // Admin Search Accounts by User ID & Match Shared IP
-        async function searchAccountsByUserIdIP() {
-            const searchInput = document.getElementById('adm-search-ip-user-id');
-            const resultBox = document.getElementById('admin-ip-search-result');
-            
-            if (!searchInput || !resultBox || !_supabase) return;
-            
-            let queryId = searchInput.value.trim();
-            if (!queryId) {
-                alert("Please enter a User ID to search!");
-                return;
-            }
-
-            let targetFormattedId = queryId.startsWith('tg_') || queryId.startsWith('user_') ? queryId : 'tg_' + queryId;
-            resultBox.innerHTML = '<div style="text-align: center; color: #ffb400; font-size: 11px;">Searching database...</div>';
-
-            try {
-                // Step 1: Get Target User's IP
-                const { data: targetUser, error: targetError } = await _supabase
-                    .from('grm_users')
-                    .select('user_id, username, last_ip, is_verified')
-                    .eq('user_id', targetFormattedId)
-                    .maybeSingle();
-
-                if (targetError || !targetUser) {
-                    resultBox.innerHTML = `<div style="text-align: center; color: #da3633; font-size: 11px;">User ID ${queryId} not found in database.</div>`;
-                    return;
-                }
-
-                if (!targetUser.last_ip) {
-                    resultBox.innerHTML = `<div style="text-align: center; color: #ffb400; font-size: 11px;">User ${targetUser.username || targetUser.user_id} has no recorded IP address.</div>`;
-                    return;
-                }
-
-                // Step 2: Fetch all accounts sharing the exact same IP
-                const { data: matchingUsers, error: matchError } = await _supabase
-                    .from('grm_users')
-                    .select('user_id, username, last_ip, is_verified, balance, level')
-                    .eq('last_ip', targetUser.last_ip);
-
-                if (matchError || !matchingUsers || matchingUsers.length === 0) {
-                    resultBox.innerHTML = `<div style="text-align: center; color: #8b949e; font-size: 11px;">No other accounts found for IP: ${targetUser.last_ip}</div>`;
-                    return;
-                }
-
-                let isMulti = matchingUsers.length > 1;
-                let usersListHtml = matchingUsers.map(u => `
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; margin-top:5px; padding:4px; background:rgba(255,255,255,0.05); border-radius:4px;">
-                        <div>
-                            <span style="font-weight:bold; color:${u.user_id === targetFormattedId ? '#00f0ff' : '#ffffff'};">👤 ${u.username || u.user_id}</span>
-                            <div style="font-size:9px; color:#8b949e;">ID: ${u.user_id} | Lvl: ${u.level || 0}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="color:${u.is_verified ? '#2ea043' : '#da3633'}; font-weight:bold; font-size:10px;">${u.is_verified ? 'Verified' : 'Unverified'}</span>
-                            <div style="font-size:9px; color:#ffb400;">${(u.balance || 0).toFixed(2)} GRM</div>
-                        </div>
-                    </div>
-                `).join('');
-
-                resultBox.innerHTML = `
-                    <div class="withdraw-req-card" style="border: 1px solid ${isMulti ? '#da3633' : '#2ea043'}; background: ${isMulti ? 'rgba(218, 54, 51, 0.1)' : 'rgba(46, 160, 67, 0.1)'};">
-                        <div style="color: ${isMulti ? '#da3633' : '#2ea043'}; font-weight: bold; font-size:12px;">
-                            ${isMulti ? '⚠️ Multi-Accounts Detected!' : '✔️ Single Account IP'}
-                        </div>
-                        <div style="color: #ffb400; font-size: 10px; margin-bottom: 6px;">IP Address: ${targetUser.last_ip} (${matchingUsers.length} total accounts)</div>
-                        ${usersListHtml}
-                    </div>
-                `;
-
-            } catch (err) {
-                console.error("Error searching user IP multi-accounts:", err);
-                resultBox.innerHTML = '<div style="text-align: center; color: #da3633; font-size: 11px;">Search failed due to network or query error.</div>';
-            }
-        }
-
-        // Admin IP Detector Logic
-        async function fetchAdminIPDetector() {
-            const container = document.getElementById('admin-ip-list');
+        // Admin Anti-Multi-Account & WiFi IP Security Fetcher
+        async function fetchAdminIPAuditRecords() {
+            const container = document.getElementById('admin-ip-audit-list');
             if (!container || !_supabase) return;
 
             try {
                 const { data, error } = await _supabase
                     .from('grm_users')
-                    .select('user_id, username, last_ip, is_verified')
-                    .not('last_ip', 'is', null);
+                    .select('user_id, username, last_ip, network_isp, country, is_banned, updated_at')
+                    .order('updated_at', { ascending: false });
 
                 if (error || !data || data.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 11px;">No IP records tracked.</div>';
+                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 11px;">No user IP records logged yet.</div>';
                     return;
                 }
 
-                // Group users by IP
-                const ipGroups = {};
+                // Group accounts by public WiFi IP Address
+                const ipMap = {};
                 data.forEach(user => {
-                    if (!ipGroups[user.last_ip]) ipGroups[user.last_ip] = [];
-                    ipGroups[user.last_ip].push(user);
+                    const ip = user.last_ip || 'Unknown IP';
+                    if (!ipMap[ip]) ipMap[ip] = [];
+                    ipMap[ip].push(user);
                 });
 
                 let html = '';
-                let detectedDuplicates = false;
+                data.forEach(user => {
+                    const ip = user.last_ip || 'Unknown IP';
+                    const duplicateAccounts = ipMap[ip] ? ipMap[ip] : [];
+                    const isMultiAccount = duplicateAccounts.length > 1 && ip !== 'Unknown IP';
+                    const cardClass = isMultiAccount ? 'ip-flag-card' : 'ip-clean-card';
+                    const multiFlagText = isMultiAccount ? `<span style="color: #da3633; font-weight: bold;">⚠️ MULTI-ACCOUNT SUSPECT (${duplicateAccounts.length} accounts on same WiFi IP)</span>` : '<span style="color: #2ea043; font-weight: bold;">✅ Clean IP Context</span>';
+                    const banBtnText = user.is_banned ? 'Unban Account' : 'Ban Multi-Account';
+                    const banBtnBg = user.is_banned ? '#2ea043' : '#da3633';
 
-                for (const [ip, users] of Object.entries(ipGroups)) {
-                    if (users.length > 1) {
-                        detectedDuplicates = true;
-                        let usersListHtml = users.map(u => `
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; margin-top:3px;">
-                                <span>👤 ${u.username || u.user_id} (${u.user_id})</span>
-                                <span style="color:${u.is_verified ? '#2ea043' : '#da3633'}; font-weight:bold;">${u.is_verified ? 'Verified' : 'Unverified'}</span>
+                    html += `
+                        <div class="${cardClass}">
+                            <div><strong>User:</strong> ${user.username || user.user_id} (${user.user_id})</div>
+                            <div><strong>WiFi Public IP:</strong> <span style="color:#00f0ff; font-weight:bold;">${ip}</span></div>
+                            <div><strong>ISP / Country:</strong> ${user.network_isp || 'N/A'} (${user.country || 'N/A'})</div>
+                            <div><strong>Status:</strong> ${multiFlagText}</div>
+                            <div style="margin-top: 6px; display: flex; gap: 8px;">
+                                <button class="action-btn" style="flex:1; background: ${banBtnBg}; color: #fff; font-size: 10px; padding: 4px;" onclick="adminToggleUserBan('${user.user_id}', ${!user.is_banned})">${banBtnText}</button>
                             </div>
-                        `).join('');
+                        </div>
+                    `;
+                });
 
-                        html += `
-                            <div class="withdraw-req-card" style="border: 1px solid #da3633; background: rgba(218, 54, 51, 0.1);">
-                                <div style="color: #da3633; font-weight: bold;">⚠️ Shared WiFi/IP: ${ip}</div>
-                                <div style="color: #ffb400; font-size: 10px; margin-bottom: 4px;">Detected Accounts (${users.length}):</div>
-                                ${usersListHtml}
-                            </div>
-                        `;
-                    }
-                }
-
-                if (!detectedDuplicates) {
-                    container.innerHTML = '<div style="text-align: center; color: #2ea043; font-size: 11px;">✔️ No multi-account WiFi/IP overlaps detected.</div>';
-                } else {
-                    container.innerHTML = html;
-                }
+                container.innerHTML = html;
             } catch (err) {
-                console.error("Error fetching Admin IP data:", err);
+                console.error("Error loading Admin IP audit records:", err);
+            }
+        }
+
+        async function adminToggleUserBan(targetUserId, banStatus) {
+            if (!_supabase) return;
+            try {
+                const { error } = await _supabase
+                    .from('grm_users')
+                    .update({ is_banned: banStatus, updated_at: new Date().toISOString() })
+                    .eq('user_id', targetUserId);
+
+                if (error) {
+                    alert("Error toggling account ban: " + error.message);
+                    return;
+                }
+
+                alert(`Account ${targetUserId} status updated to: ${banStatus ? 'BANNED' : 'ACTIVE'}`);
+                fetchAdminIPAuditRecords();
+            } catch (err) {
+                console.error("Error updating user ban state:", err);
             }
         }
 
@@ -1363,7 +1408,6 @@
             if (!_supabase) return;
             try {
                 fields.updated_at = new Date().toISOString();
-                if (currentUserIp) fields.last_ip = currentUserIp;
                 
                 const { data: existing } = await _supabase
                     .from('grm_users')
@@ -1382,6 +1426,7 @@
                     fields.mining_state = 'stopped';
                     fields.level = 0;
                     fields.is_verified = false;
+                    fields.last_ip = currentUserNetworkInfo.ip;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -1407,6 +1452,10 @@
                 const verifyIcon = document.getElementById('profile-verify-icon');
 
                 if (data) {
+                    if (data.is_banned) {
+                        alert("⚠️ Your account has been suspended due to multi-account policy violation.");
+                    }
+
                     baseInitialBalance = parseFloat(data.balance) || 0.000000;
                     currentBalance = baseInitialBalance;
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
@@ -1444,11 +1493,6 @@
                             verifyIcon.style.color = "#da3633";
                         }
                     }
-
-                    // Always keep IP up-to-date
-                    if (currentUserIp && data.last_ip !== currentUserIp) {
-                        await updateSupabaseField({ last_ip: currentUserIp });
-                    }
                 } else {
                     currentLevel = 0;
                     const lvlBadge = document.querySelector('.lvl-badge');
@@ -1467,8 +1511,6 @@
                             verifyIcon.style.color = "#da3633";
                         }
                     }
-
-                    await updateSupabaseField({ last_ip: currentUserIp || null });
                 }
             } catch (err) { console.error('Load user data exception:', err); }
         }
@@ -1582,7 +1624,7 @@
             const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
                             `👤 <b>User:</b> ${currentUserName}\n` +
                             `🆔 <b>User ID:</b> <code>${rawUserId || currentUserId}</code>\n` +
-                            `🌐 <b>IP Address:</b> <code>${currentUserIp || 'N/A'}</code>\n` +
+                            `🌐 <b>IP Address:</b> <code>${currentUserNetworkInfo.ip}</code>\n` +
                             `💰 <b>Amount:</b> <code>${txRecord.amount} GRM</code>\n` +
                             `💎 <b>Wallet Address:</b>\n<code>${txRecord.address}</code>\n` +
                             `⏰ <b>Date:</b> ${txRecord.date}`;
