@@ -22,24 +22,55 @@ async function callTelegramAPI(method, payload) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(200).send("Telegram bot server is running!");
+  // CORS headers for admin/mini-app requests if needed
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
-    let update = req.body;
-    if (typeof update === "string") {
+    let bodyData = req.body;
+    if (typeof bodyData === "string") {
       try {
-        update = JSON.parse(update);
+        bodyData = JSON.parse(bodyData);
       } catch (e) {}
     }
 
-    if (update && update.message && update.message.text) {
-      const chatId = update.message.chat.id;
-      const text = update.message.text.trim();
+    // --- ADMIN PANEL REFERRAL CLAIM COUNT UPDATE HANDLER ---
+    // Handles requests coming from Admin Panel to update max_reward_limit safely (Integer instead of Boolean)
+    if (bodyData && (bodyData.action === "update_claim_count" || bodyData.max_reward_limit !== undefined || bodyData.claim_count !== undefined)) {
+      const targetUserId = bodyData.user_id ? (bodyData.user_id.toString().startsWith('tg_') ? bodyData.user_id : 'tg_' + bodyData.user_id) : null;
+      const newLimit = parseInt(bodyData.max_reward_limit || bodyData.claim_count || 100, 10);
+
+      if (!targetUserId) {
+        return res.status(400).json({ ok: false, error: "Missing user_id for claim count update" });
+      }
+
+      // Update max_reward_limit as an integer in grm_users table
+      const { data, error } = await supabase
+        .from('grm_users')
+        .update({ max_reward_limit: newLimit })
+        .eq('user_id', targetUserId)
+        .select();
+
+      if (error) {
+        console.error("Admin claim count update error:", error);
+        return res.status(500).json({ ok: false, error: error.message });
+      }
+
+      return res.status(200).json({ ok: true, message: "Claim count updated successfully", data });
+    }
+
+    // --- TELEGRAM BOT WEBHOOK HANDLER ---
+    if (bodyData && bodyData.message && bodyData.message.text) {
+      const chatId = bodyData.message.chat.id;
+      const text = bodyData.message.text.trim();
 
       if (text.startsWith("/start")) {
-        const telegramUser = update.message.from;
+        const telegramUser = bodyData.message.from;
         const rawUserId = telegramUser.id.toString();
         const userId = 'tg_' + rawUserId;
         const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
@@ -107,6 +138,7 @@ export default async function handler(req, res) {
                 mining_state: 'stopped',
                 level: 0,
                 is_verified: false,
+                max_reward_limit: 1, // Default initial limit
                 updated_at: new Date().toISOString()
               }], { onConflict: 'user_id' });
 
