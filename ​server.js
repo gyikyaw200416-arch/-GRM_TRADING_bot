@@ -1,8 +1,16 @@
 const express = require('express');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+
+// Middleware
 app.use(express.json());
+
+// Serve static files (HTML, CSS, JS) from the root directory or public folder
+app.use(express.static(path.join(__dirname))); 
+// If your static files are inside a 'public' folder, use this instead:
+// app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
