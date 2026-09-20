@@ -282,7 +282,7 @@
                 <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel)">
                 <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
                 <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
-                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 50)" value="50">
+                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 100)" value="100">
                 <button class="action-btn" style="width: 100%; background: #ffb400; color: #000; margin-bottom: 15px;" onclick="adminSaveTask()">Add / Update Task</button>
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
@@ -295,6 +295,13 @@
                     <button class="action-btn" style="flex:1; background: #da3633; color: #fff;" onclick="adminSetUserVerification(false)">Unverify User</button>
                     <button class="action-btn" style="flex:1; background: #00f0ff; color: #000;" onclick="adminUpdateUserLevel()">Set Level</button>
                 </div>
+
+                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
+
+                <h4 style="color: #ffb400; margin-bottom: 8px;">🎁 Admin Bonus Direct Payout</h4>
+                <input type="text" id="adm-bonus-user-id" class="admin-input" placeholder="Target User ID (e.g. 5020977059)">
+                <input type="number" id="adm-bonus-amount" class="admin-input" placeholder="Bonus GRM Amount (e.g. 100)" value="100">
+                <button class="action-btn" style="width: 100%; background: #2ea043; color: #fff; margin-bottom: 15px;" onclick="adminSendBonusReward()">Send Bonus to User</button>
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
 
@@ -346,7 +353,7 @@
                     <div style="font-size: 24px;">🎁</div>
                     <div>
                         <div style="font-size: 13px; font-weight: bold; color: #fff;">Referral Reward</div>
-                        <div style="font-size: 11px; color: #8b949e; margin-top: 2px;" id="referral-claim-subtitle">0 available · +50 GRM each</div>
+                        <div style="font-size: 11px; color: #8b949e; margin-top: 2px;" id="referral-claim-subtitle">0 available · +100 GRM each</div>
                     </div>
                 </div>
                 <button class="claim-reward-btn" id="claim-referral-btn" onclick="claimReferralRewards()">Claim</button>
@@ -819,7 +826,7 @@
 
                 if (!refData || refData.length === 0) {
                     document.getElementById('referral-stats-text').innerText = `0 successful · 0 total`;
-                    document.getElementById('referral-claim-subtitle').innerText = `0 available · +50 GRM each`;
+                    document.getElementById('referral-claim-subtitle').innerText = `0 available · +100 GRM each`;
                     document.getElementById('claim-referral-btn').classList.remove('active-claim');
                     document.getElementById('referrals-user-list-container').innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No referrals yet. Share your link to invite friends!</div>';
                     return;
@@ -879,7 +886,7 @@
 
                 availableClaimCount = availableClaims;
                 document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
-                document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +50 GRM each`;
+                document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
 
                 const claimBtn = document.getElementById('claim-referral-btn');
                 if (availableClaimCount > 0) {
@@ -905,7 +912,7 @@
                 return;
             }
 
-            const rewardTotal = availableClaimCount * 50;
+            const rewardTotal = availableClaimCount * 100;
             baseInitialBalance += rewardTotal;
             currentBalance = baseInitialBalance;
             updateBalanceUI();
@@ -1004,7 +1011,7 @@
                         title: t.title,
                         channelLink: t.channel_link,
                         groupLink: t.group_link || '',
-                        reward: parseFloat(t.reward) || 50
+                        reward: parseFloat(t.reward) || 100
                     }));
                     renderTasksList();
                 }
@@ -1015,7 +1022,7 @@
             const title = document.getElementById('adm-task-title').value.trim();
             const channelLink = document.getElementById('adm-channel-link').value.trim();
             const groupLink = document.getElementById('adm-group-link').value.trim();
-            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 50;
+            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 100;
 
             if (!title || !channelLink) {
                 alert("Please fill in at least Task Title and Channel Link!");
@@ -1136,6 +1143,67 @@
                     await loadUserDataFromSupabase();
                 }
             } catch (e) { alert("Error: " + e.message); }
+        }
+
+        async function adminSendBonusReward() {
+            let targetUserId = document.getElementById('adm-bonus-user-id').value.trim();
+            const bonusAmount = parseFloat(document.getElementById('adm-bonus-amount').value);
+
+            if (!targetUserId) {
+                alert("Please enter a target User ID!");
+                return;
+            }
+
+            if (isNaN(bonusAmount) || bonusAmount <= 0) {
+                alert("Please enter a valid bonus amount!");
+                return;
+            }
+
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) {
+                alert("Supabase not connected!");
+                return;
+            }
+
+            try {
+                const { data: userRecord, error: fetchErr } = await _supabase
+                    .from('grm_users')
+                    .select('balance')
+                    .eq('user_id', targetUserId)
+                    .maybeSingle();
+
+                if (fetchErr || !userRecord) {
+                    alert("User ID not found in database!");
+                    return;
+                }
+
+                const currentDbBalance = parseFloat(userRecord.balance) || 0;
+                const newBalance = currentDbBalance + bonusAmount;
+
+                const { error: updateErr } = await _supabase
+                    .from('grm_users')
+                    .update({ balance: newBalance, updated_at: new Date().toISOString() })
+                    .eq('user_id', targetUserId);
+
+                if (updateErr) {
+                    alert("Error sending bonus: " + updateErr.message);
+                    return;
+                }
+
+                alert(`Successfully sent +${bonusAmount} GRM bonus to user ${targetUserId}!`);
+                document.getElementById('adm-bonus-user-id').value = '';
+
+                if (targetUserId === currentUserId) {
+                    baseInitialBalance = newBalance;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
+                }
+            } catch (err) {
+                alert("Exception: " + err.message);
+            }
         }
 
         tonConnectUI.onStatusChange(async (walletInfo) => {
