@@ -217,7 +217,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
-            display: flex; justify-space-around; align-items: center; z-index: 1000;
+            display: flex; justify-style: space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
@@ -233,7 +233,7 @@
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
-    <!-- Background Connection Warning Overlay -->
+    <!-- Connection Warning Overlay -->
     <div id="vpn-warning-overlay">
         <div class="vpn-warning-box">
             <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
@@ -471,7 +471,7 @@
         </div>
     </div>
 
-    <!-- Buy Engine Modal with Address & User ID Copy Buttons -->
+    <!-- Buy Engine Modal -->
     <div id="buy-engine-modal" class="modal-overlay">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -506,10 +506,7 @@
 
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (tg) {
-            tg.ready();
-            tg.expand();
-        }
+        if (tg) tg.expand();
 
         const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
         const BOT_USERNAME = "grm_trading_bot"; 
@@ -552,10 +549,13 @@
             console.warn("Supabase init error:", e);
         }
 
-        // Get Client Public IP Address
+        // Safe Client Public IP Address Fetching
         async function fetchUserIPAddress() {
             try {
-                const res = await fetch('https://api.ipify.org?format=json');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                const res = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await res.json();
                 if (data && data.ip) {
                     currentUserIP = data.ip;
@@ -567,15 +567,12 @@
             return '';
         }
 
-        // Safe Multi-Account Check (Prevents locking bot initialization)
+        // Multi-Account Device IP Restriction (Safely check without crashing app)
         async function validateDeviceAndIPRestriction() {
             if (!_supabase) return true;
             try {
                 if (!currentUserIP) await fetchUserIPAddress();
-                if (!currentUserIP) return true; 
-
-                // Ignore check if user is admin
-                if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) return true;
+                if (!currentUserIP) return true; // Pass if IP provider unreachable
 
                 const { data, error } = await _supabase
                     .from('grm_users')
@@ -595,12 +592,12 @@
             return true;
         }
 
-        // Background Network & VPN Checker
+        // Network Connectivity Check
         async function checkNetworkConnectivity() {
             const vpnOverlay = document.getElementById('vpn-warning-overlay');
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
                 
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
                     method: 'HEAD',
@@ -616,13 +613,10 @@
                     throw new Error("Server unhealthy");
                 }
             } catch (err) {
-                console.warn("Network connectivity error / VPN check failed:", err);
-                if (vpnOverlay) vpnOverlay.style.display = 'flex';
-                return false;
+                console.warn("Network connectivity warning:", err);
+                return true; 
             }
         }
-
-        setInterval(checkNetworkConnectivity, 15000);
 
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/tonconnect-manifest.json',
@@ -758,22 +752,17 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            const isConnected = await checkNetworkConnectivity();
-            if (!isConnected) return;
+            fetchUserIPAddress();
+            validateDeviceAndIPRestriction();
 
-            await fetchUserIPAddress();
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
-
-            const allowed = await validateDeviceAndIPRestriction();
-            if (!allowed) return; 
-
             await fetchWithdrawalHistory();
             await fetchReferralStats();
             renderMinersStore();
             checkAdminPermissions();
             await fetchTasksFromSupabase();
-            setTimeout(hideSplashScreen, 800);
+            setTimeout(hideSplashScreen, 600);
         });
 
         async function handleReferralRegistration() {
@@ -786,10 +775,6 @@
             if (!startParam) {
                 const urlParams = new URLSearchParams(window.location.search);
                 startParam = urlParams.get('tgWebAppStartParam') || urlParams.get('start');
-            }
-            if (!startParam) {
-                const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                startParam = hashParams.get('tgWebAppStartParam');
             }
 
             try {
@@ -824,23 +809,7 @@
                 const referrerRawId = startParam.toString().trim();
                 const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
 
-                if (referrerUserId === currentUserId) {
-                    if (!userRecord) {
-                        await _supabase.from('grm_users').upsert([{
-                            user_id: currentUserId,
-                            username: currentUserName,
-                            referrer_id: null,
-                            balance: baseInitialBalance,
-                            mined_amount: 0,
-                            mining_state: 'stopped',
-                            level: 0,
-                            is_verified: false,
-                            ip_address: currentUserIP,
-                            updated_at: new Date().toISOString()
-                        }], { onConflict: 'user_id' });
-                    }
-                    return;
-                }
+                if (referrerUserId === currentUserId) return;
 
                 if (userRecord) {
                     await _supabase
@@ -870,7 +839,6 @@
 
                 if (!existingRef) {
                     const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
-                    
                     await _supabase.from('grm_referrals').upsert([{
                         id: newRefId,
                         referrer_id: referrerUserId,
@@ -902,16 +870,13 @@
                 }
 
                 const referredIds = refData.map(r => r.referred_id);
-
                 const { data: usersData } = await _supabase
                     .from('grm_users')
                     .select('user_id, username, is_verified')
                     .in('user_id', referredIds);
 
                 const userMap = new Map();
-                if (usersData) {
-                    usersData.forEach(u => userMap.set(u.user_id, u));
-                }
+                if (usersData) usersData.forEach(u => userMap.set(u.user_id, u));
 
                 const totalCount = refData.length;
                 let successfulCount = 0;
@@ -925,9 +890,7 @@
 
                     if (isVerified) {
                         successfulCount++;
-                        if (!isClaimed) {
-                            availableClaims++;
-                        }
+                        if (!isClaimed) availableClaims++;
                     }
 
                     let displayName = targetUser && targetUser.username ? (targetUser.username.startsWith('@') ? targetUser.username : '@' + targetUser.username) : ('ID:' + ref.referred_id.replace('tg_', '').replace('user_', ''));
@@ -958,11 +921,8 @@
                 document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +50 GRM each`;
 
                 const claimBtn = document.getElementById('claim-referral-btn');
-                if (availableClaimCount > 0) {
-                    claimBtn.classList.add('active-claim');
-                } else {
-                    claimBtn.classList.remove('active-claim');
-                }
+                if (availableClaimCount > 0) claimBtn.classList.add('active-claim');
+                else claimBtn.classList.remove('active-claim');
 
                 document.getElementById('referrals-user-list-container').innerHTML = html;
             } catch (e) { console.error("Error fetching ref stats:", e); }
@@ -1153,10 +1113,7 @@
                 targetUserId = 'tg_' + targetUserId;
             }
 
-            if (!_supabase) {
-                alert("Supabase connection not initialized!");
-                return;
-            }
+            if (!_supabase) return;
 
             try {
                 const { data, error } = await _supabase
@@ -1325,7 +1282,6 @@
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
                     currentLevel = (data.level !== undefined && data.level !== null) ? parseInt(data.level) : 0;
                     
-                    // Update IP address record if changed
                     if (currentUserIP && data.ip_address !== currentUserIP) {
                         await updateSupabaseField({ ip_address: currentUserIP });
                     }
@@ -1368,18 +1324,6 @@
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
                     updateBalanceUI();
                     checkWalletAndButtonState();
-                    
-                    if (verifiedBadge) {
-                        verifiedBadge.innerText = "Unverified ❌";
-                        verifiedBadge.style.backgroundColor = "#da3633";
-                        verifiedBadge.style.color = "#ffffff";
-                        if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
-                        if (verifyIcon) {
-                            verifyIcon.innerText = "❌";
-                            verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
-                            verifyIcon.style.color = "#da3633";
-                        }
-                    }
                 }
             } catch (err) { console.error('Load user data exception:', err); }
         }
