@@ -312,7 +312,7 @@
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px; margin-top: 15px;">
 
-                <h4 style="color: #ffb400; margin-bottom: 8px;">👥 Admin Referral Verification & Tree Tracking</h4>
+                <h4 style="color: #ffb400; margin-bottom: 8px;">👥 Admin Referral Claim Approvals (Grant Rewards)</h4>
                 <div id="admin-referrals-list">
                     <div style="text-align: center; color: #8b949e; font-size: 11px;">Loading pending referrals...</div>
                 </div>
@@ -807,6 +807,7 @@
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
                         status: 'active',
+                        admin_approved: false,
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
                 }
@@ -821,7 +822,7 @@
             try {
                 const { data: refData } = await _supabase
                     .from('grm_referrals')
-                    .select('referred_id, status')
+                    .select('referred_id, status, admin_approved')
                     .eq('referrer_id', currentUserId);
 
                 if (!refData || refData.length === 0) {
@@ -851,10 +852,11 @@
 
                 refData.forEach(ref => {
                     const targetUser = userMap.get(ref.referred_id);
-                    const isVerified = targetUser && targetUser.is_verified === true;
                     const isClaimed = ref.status === 'claimed';
+                    const adminApproved = ref.admin_approved === true;
 
-                    if (isVerified) {
+                    // Successful means admin approved the referral reward
+                    if (adminApproved) {
                         successfulCount++;
                         if (!isClaimed) {
                             availableClaims++;
@@ -862,9 +864,10 @@
                     }
 
                     let displayName = targetUser && targetUser.username ? (targetUser.username.startsWith('@') ? targetUser.username : '@' + targetUser.username) : ('ID:' + ref.referred_id.replace('tg_', '').replace('user_', ''));
-                    let statusLabel = isClaimed ? 'Claimed' : (isVerified ? 'Verified (Successful)' : 'Unverified (Pending)');
-                    let statusDotClass = isVerified ? 'status-active-dot' : 'status-inactive-dot';
-                    let statusTextClass = isVerified ? 'text-active' : 'text-inactive';
+                    
+                    let statusLabel = isClaimed ? 'Claimed' : (adminApproved ? 'Approved (Ready to Claim)' : 'Pending Admin Approval');
+                    let statusDotClass = adminApproved ? 'status-active-dot' : 'status-inactive-dot';
+                    let statusTextClass = adminApproved ? 'text-active' : 'text-inactive';
 
                     html += `
                         <div class="ref-user-item">
@@ -908,7 +911,7 @@
 
         async function claimReferralRewards() {
             if (availableClaimCount <= 0) {
-                alert("❌ Cannot claim! You have no verified referrals available yet. Admin must verify them first.");
+                alert("❌ Cannot claim! You have no approved referral rewards available yet. Admin must approve them first.");
                 return;
             }
 
@@ -922,32 +925,20 @@
                     .from('grm_referrals')
                     .select('id, referred_id')
                     .eq('referrer_id', currentUserId)
+                    .eq('admin_approved', true)
                     .neq('status', 'claimed');
 
                 if (refData && refData.length > 0) {
-                    const referredIds = refData.map(r => r.referred_id);
-                    const { data: verifiedUsers } = await _supabase
-                        .from('grm_users')
-                        .select('user_id')
-                        .in('user_id', referredIds)
-                        .eq('is_verified', true);
-
-                    if (verifiedUsers && verifiedUsers.length > 0) {
-                        const verifiedIdsSet = new Set(verifiedUsers.map(u => u.user_id));
-                        const targetRefIds = refData.filter(r => verifiedIdsSet.has(r.referred_id)).map(r => r.id);
-
-                        if (targetRefIds.length > 0) {
-                            await _supabase
-                                .from('grm_referrals')
-                                .update({ status: 'claimed' })
-                                .in('id', targetRefIds);
-                        }
-                    }
+                    const targetRefIds = refData.map(r => r.id);
+                    await _supabase
+                        .from('grm_referrals')
+                        .update({ status: 'claimed' })
+                        .in('id', targetRefIds);
                 }
             }
 
             await updateSupabaseField({ balance: baseInitialBalance });
-            alert(`🎉 Successfully claimed +${rewardTotal} GRM for verified referrals!`);
+            alert(`🎉 Successfully claimed +${rewardTotal} GRM from approved referrals!`);
             fetchReferralStats();
         }
 
@@ -981,18 +972,57 @@
 
                 let html = '';
                 data.forEach(ref => {
-                    let stBadge = ref.status === 'claimed' ? '<span style="color:#00f0ff;font-weight:bold;">[Claimed]</span>' : '<span style="color:#2ea043;font-weight:bold;">[Active]</span>';
+                    let isApproved = ref.admin_approved === true;
+                    let isClaimed = ref.status === 'claimed';
                     
+                    let statusBadge = isClaimed ? '<span style="color:#00f0ff;">[Claimed]</span>' : (isApproved ? '<span style="color:#2ea043;">[Approved]</span>' : '<span style="color:#ffb400;">[Pending Admin Approval]</span>');
+                    
+                    let actionButtons = '';
+                    if (!isApproved) {
+                        actionButtons = `
+                            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminApproveReferral('${ref.id}', true)">Approve Reward (1 Claim)</button>
+                            </div>
+                        `;
+                    } else if (!isClaimed) {
+                        actionButtons = `
+                            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminApproveReferral('${ref.id}', false)">Revoke Approval</button>
+                            </div>
+                        `;
+                    } else {
+                        actionButtons = `<div style="font-size: 10px; color: #00f0ff; margin-top: 4px;">User already claimed reward.</div>`;
+                    }
+
                     html += `
                         <div class="withdraw-req-card">
                             <div><strong>Referrer:</strong> ${ref.referrer_id}</div>
-                            <div><strong>Referred User:</strong> ${ref.referred_id} ${stBadge}</div>
+                            <div><strong>Referred User:</strong> ${ref.referred_id} ${statusBadge}</div>
                             <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
+                            ${actionButtons}
                         </div>
                     `;
                 });
                 container.innerHTML = html;
             } catch (err) { console.error("Error admin referrals:", err); }
+        }
+
+        async function adminApproveReferral(refId, approveStatus) {
+            if (!_supabase) return;
+            try {
+                const { error } = await _supabase
+                    .from('grm_referrals')
+                    .update({ admin_approved: approveStatus })
+                    .eq('id', refId);
+
+                if (error) {
+                    alert("Error updating referral approval: " + error.message);
+                    return;
+                }
+
+                alert(`Referral reward status updated successfully!`);
+                fetchAdminReferralRequests();
+            } catch (err) { console.error("Error approving referral:", err); }
         }
 
         async function fetchTasksFromSupabase() {
