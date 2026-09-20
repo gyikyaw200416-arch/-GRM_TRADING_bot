@@ -22,81 +22,11 @@ async function callTelegramAPI(method, payload) {
 }
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(200).send("Telegram bot server is running!");
+  }
+
   try {
-    const urlPath = req.url || '';
-
-    // ==========================================
-    // 1. API Endpoint for Multi-Account Verification
-    // ==========================================
-    if (urlPath.includes('/api/verify-user') || req.method === 'POST' && req.body && req.body.telegram_id && req.body.device_hash) {
-      if (req.method !== "POST") {
-        return res.status(405).json({ status: "ERROR", message: "Method not allowed" });
-      }
-
-      const { telegram_id, device_hash } = req.body;
-
-      if (!telegram_id || !device_hash) {
-        return res.status(400).json({ 
-          status: "ERROR", 
-          message: "Incomplete data provided." 
-        });
-      }
-
-      // Get client IP address
-      const clientIp = req.headers['cf-connecting-ip'] || 
-                       req.headers['x-forwarded-for']?.split(',')[0].trim() || 
-                       req.socket.remoteAddress;
-
-      // Check if another user account already exists with the same IP or Device Hash
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('grm_users')
-        .select('user_id')
-        .or(`ip_address.eq.${clientIp},device_hash.eq.${device_hash}`)
-        .neq('user_id', telegram_id)
-        .limit(1);
-
-      if (checkError) throw checkError;
-
-      // If a duplicate is found, block the user
-      if (existingUsers && existingUsers.length > 0) {
-        await supabase
-          .from('grm_users')
-          .update({ 
-            ip_address: clientIp, 
-            device_hash: device_hash, 
-            is_blocked: true 
-          })
-          .eq('user_id', telegram_id);
-
-        return res.json({
-          status: "BLOCKED",
-          message: "Multi-Account Detected! Multiple accounts are not allowed on the same device or IP address."
-        });
-      }
-
-      // Otherwise, update the user record normally and allow access
-      await supabase
-        .from('grm_users')
-        .update({ 
-          ip_address: clientIp, 
-          device_hash: device_hash, 
-          is_blocked: false 
-        })
-        .eq('user_id', telegram_id);
-
-      return res.json({ 
-        status: "ALLOWED", 
-        message: "Verification successful." 
-      });
-    }
-
-    // ==========================================
-    // 2. Telegram Bot Webhook Handler (/start & messages)
-    // ==========================================
-    if (req.method !== "POST") {
-      return res.status(200).send("Telegram bot server is running!");
-    }
-
     let update = req.body;
     if (typeof update === "string") {
       try {
@@ -132,7 +62,6 @@ export default async function handler(req, res) {
           ]
         };
 
-        // 1. Send Photo with Caption and Buttons
         const photoResult = await callTelegramAPI("sendPhoto", {
           chat_id: chatId,
           photo: "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -141,7 +70,6 @@ export default async function handler(req, res) {
           reply_markup: replyMarkup,
         });
 
-        // If photo sending fails (e.g. invalid File ID), fallback to sendMessage
         if (!photoResult || !photoResult.ok) {
           await callTelegramAPI("sendMessage", {
             chat_id: chatId,
@@ -151,7 +79,7 @@ export default async function handler(req, res) {
           });
         }
 
-        // 2. Background Database & Referral Process
+        // Background Database & Referral Process
         (async () => {
           try {
             let { data: existingUser } = await supabase
