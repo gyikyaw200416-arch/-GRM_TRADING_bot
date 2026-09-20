@@ -820,7 +820,8 @@
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                availableClaimCount = userRecord && userRecord.ref_claim_allowed !== undefined && userRecord.ref_claim_allowed !== null ? parseInt(userRecord.ref_claim_allowed) : 0;
+                // Safely parse ref_claim_allowed to prevent NaN errors
+                availableClaimCount = userRecord && userRecord.ref_claim_allowed !== undefined && userRecord.ref_claim_allowed !== null ? parseInt(userRecord.ref_claim_allowed) || 0 : 0;
 
                 const totalCount = refData ? refData.length : 0;
                 let successfulCount = 0;
@@ -1675,7 +1676,7 @@
 
         async function checkMembership(chatIdentifier) {
             if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') return true;
-            if (!rawUserId) return true; // Bypass safely if rawUserId is missing
+            if (!rawUserId) return true;
 
             const targetChat = parseTelegramChatId(chatIdentifier);
             if (!targetChat) return true;
@@ -1688,7 +1689,7 @@
                 if (data.ok && data.result) {
                     return ['member', 'administrator', 'creator'].includes(data.result.status);
                 } else {
-                    return true; // Fallback to true if bot lacks admin rights in target channel to avoid blocking users
+                    return true;
                 }
             } catch (err) { return true; }
         }
@@ -1705,11 +1706,26 @@
                 return;
             }
 
+            const now = Date.now();
+            const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+
             activeTasksList.forEach(task => {
+                let lastCompleted = parseInt(localStorage.getItem(`task_cooldown_${currentUserId}_${task.id}`)) || 0;
+                let timeElapsed = now - lastCompleted;
+                let isCooldownActive = timeElapsed < THREE_HOURS_MS;
+
                 let btnText = 'Join';
                 let btnStyle = 'background-color: #00f0ff; color: #000;';
+                let isDisabled = false;
 
-                if (taskStates[task.id] === 'verify') {
+                if (isCooldownActive) {
+                    let timeLeft = THREE_HOURS_MS - timeElapsed;
+                    let hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+                    let minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    btnText = `Wait ${hoursLeft}h ${minsLeft}m`;
+                    btnStyle = 'background-color: #333; color: #777;';
+                    isDisabled = true;
+                } else if (taskStates[task.id] === 'verify') {
                     btnText = 'Verify Check';
                     btnStyle = 'background-color: #ffb400; color: #000;';
                 } else if (taskStates[task.id] === 'joined') {
@@ -1721,10 +1737,10 @@
                     <div class="card profile-row" id="card-${task.id}">
                         <div>
                             <strong>${task.title}</strong>
-                            <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM</p>
+                            <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM (Every 3 Hours)</p>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
+                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${isDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -1732,6 +1748,13 @@
 
             container.innerHTML = html;
         }
+
+        // Periodic refresher to update task cooldown countdown text every minute
+        setInterval(() => {
+            if (document.getElementById('tab-tasks').classList.contains('active')) {
+                renderTasksList();
+            }
+        }, 60000);
 
         async function handleDynamicTaskAction(taskId) {
             const task = activeTasksList.find(t => t.id === taskId);
@@ -1772,9 +1795,12 @@
                 updateBalanceUI();
                 await updateSupabaseField({ balance: baseInitialBalance });
 
+                // Set 3-hour cooldown timestamp in localStorage
+                localStorage.setItem(`task_cooldown_${currentUserId}_${task.id}`, Date.now().toString());
+
                 delete taskStates[task.id];
                 renderTasksList();
-                alert(`🎉 Successfully claimed +${task.reward} GRM!`);
+                alert(`🎉 Successfully claimed +${task.reward} GRM! You can repeat this task after 3 hours.`);
             }
         }
     </script>
