@@ -58,6 +58,17 @@
             max-width: 380px; width: 100%; padding: 25px; box-shadow: 0 0 30px rgba(218, 54, 51, 0.3);
         }
 
+        /* Anti-Multi Account Block Overlay */
+        #ip-block-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 7, 13, 0.98); backdrop-filter: blur(12px);
+            z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center;
+        }
+        .ip-block-box {
+            background: #11090d; border: 1px solid rgba(255, 0, 85, 0.7); border-radius: 18px;
+            max-width: 390px; width: 100%; padding: 30px 20px; box-shadow: 0 0 40px rgba(255, 0, 85, 0.4);
+        }
+
         .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -206,7 +217,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
             background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
-            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+            display: flex; justify-space-around; align-items: center; z-index: 1000;
         }
         .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
         .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
@@ -222,13 +233,25 @@
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
-    <!-- Background VPN / Connection Warning Overlay -->
+    <!-- Background Connection Warning Overlay -->
     <div id="vpn-warning-overlay">
         <div class="vpn-warning-box">
             <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
             <h3 style="color: #da3633; margin-bottom: 8px;">Connection Refused</h3>
             <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;">Network or VPN connection failure detected. Please check your internet connection or turn on your VPN to load resources correctly.</p>
             <button class="action-btn" style="width: 100%; background: #00f0ff; color: #000;" onclick="checkNetworkConnectivity()">Retry Connection</button>
+        </div>
+    </div>
+
+    <!-- Anti Multi-Account Device IP Restriction Overlay -->
+    <div id="ip-block-overlay">
+        <div class="ip-block-box">
+            <div style="font-size: 48px; margin-bottom: 12px;">🚫</div>
+            <h3 style="color: #ff0055; margin-bottom: 10px; font-size: 20px;">Access Denied</h3>
+            <p style="font-size: 13px; color: #b0b8c4; margin-bottom: 20px; line-height: 1.5;">
+                Multiple accounts detected on this device or IP address. To ensure fairness, only <strong>one account per device/WiFi network</strong> is allowed.
+            </p>
+            <button class="action-btn" style="width: 100%; background: #ff0055; color: #fff; border: none; padding: 12px; border-radius: 10px;" onclick="window.location.reload()">Refresh Page</button>
         </div>
     </div>
 
@@ -483,7 +506,10 @@
 
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (tg) tg.expand();
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
         const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
         const BOT_USERNAME = "grm_trading_bot"; 
@@ -491,6 +517,7 @@
         let rawUserId = '';
         let currentUserId = '';
         let currentUserName = 'Miner';
+        let currentUserIP = '';
         const ADMIN_ID = '5020977059'; 
 
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
@@ -523,6 +550,49 @@
             }
         } catch (e) {
             console.warn("Supabase init error:", e);
+        }
+
+        // Get Client Public IP Address
+        async function fetchUserIPAddress() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                if (data && data.ip) {
+                    currentUserIP = data.ip;
+                    return data.ip;
+                }
+            } catch (err) {
+                console.warn("IP fetch fallback:", err);
+            }
+            return '';
+        }
+
+        // Safe Multi-Account Check (Prevents locking bot initialization)
+        async function validateDeviceAndIPRestriction() {
+            if (!_supabase) return true;
+            try {
+                if (!currentUserIP) await fetchUserIPAddress();
+                if (!currentUserIP) return true; 
+
+                // Ignore check if user is admin
+                if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) return true;
+
+                const { data, error } = await _supabase
+                    .from('grm_users')
+                    .select('user_id')
+                    .eq('ip_address', currentUserIP)
+                    .neq('user_id', currentUserId);
+
+                if (data && data.length > 0) {
+                    const blockOverlay = document.getElementById('ip-block-overlay');
+                    if (blockOverlay) blockOverlay.style.display = 'flex';
+                    hideSplashScreen();
+                    return false;
+                }
+            } catch (e) {
+                console.error("Multi-account check exception:", e);
+            }
+            return true;
         }
 
         // Background Network & VPN Checker
@@ -691,14 +761,19 @@
             const isConnected = await checkNetworkConnectivity();
             if (!isConnected) return;
 
+            await fetchUserIPAddress();
             await handleReferralRegistration();
             await loadUserDataFromSupabase();
+
+            const allowed = await validateDeviceAndIPRestriction();
+            if (!allowed) return; 
+
             await fetchWithdrawalHistory();
             await fetchReferralStats();
             renderMinersStore();
             checkAdminPermissions();
             await fetchTasksFromSupabase();
-            setTimeout(hideSplashScreen, 1000);
+            setTimeout(hideSplashScreen, 800);
         });
 
         async function handleReferralRegistration() {
@@ -739,6 +814,7 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
+                            ip_address: currentUserIP,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -759,6 +835,7 @@
                             mining_state: 'stopped',
                             level: 0,
                             is_verified: false,
+                            ip_address: currentUserIP,
                             updated_at: new Date().toISOString()
                         }], { onConflict: 'user_id' });
                     }
@@ -768,7 +845,7 @@
                 if (userRecord) {
                     await _supabase
                         .from('grm_users')
-                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
+                        .update({ referrer_id: referrerUserId, ip_address: currentUserIP, updated_at: new Date().toISOString() })
                         .eq('user_id', currentUserId);
                 } else {
                     await _supabase.from('grm_users').upsert([{
@@ -780,6 +857,7 @@
                         mining_state: 'stopped',
                         level: 0,
                         is_verified: false,
+                        ip_address: currentUserIP,
                         updated_at: new Date().toISOString()
                     }], { onConflict: 'user_id' });
                 }
@@ -1197,6 +1275,7 @@
             if (!_supabase) return;
             try {
                 fields.updated_at = new Date().toISOString();
+                if (currentUserIP) fields.ip_address = currentUserIP;
                 
                 const { data: existing } = await _supabase
                     .from('grm_users')
@@ -1215,6 +1294,7 @@
                     fields.mining_state = 'stopped';
                     fields.level = 0;
                     fields.is_verified = false;
+                    fields.ip_address = currentUserIP;
                     
                     if (!fields.wallet_address) {
                         let activeAddr = getActiveWalletAddress();
@@ -1245,6 +1325,11 @@
                     miningStartTime = parseInt(data.mining_start_time) || Date.now();
                     currentLevel = (data.level !== undefined && data.level !== null) ? parseInt(data.level) : 0;
                     
+                    // Update IP address record if changed
+                    if (currentUserIP && data.ip_address !== currentUserIP) {
+                        await updateSupabaseField({ ip_address: currentUserIP });
+                    }
+
                     const lvlBadge = document.querySelector('.lvl-badge');
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
 
