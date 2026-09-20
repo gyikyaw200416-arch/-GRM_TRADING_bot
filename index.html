@@ -816,7 +816,7 @@
                     .select('referred_id, status')
                     .eq('referrer_id', currentUserId);
 
-                // Safely fetch available claims directly from server to override cache
+                // Fetch latest server database record to keep claim count and balance completely synchronized
                 const { data: userRecord } = await _supabase
                     .from('grm_users')
                     .select('ref_claim_allowed, balance')
@@ -824,12 +824,11 @@
                     .maybeSingle();
 
                 if (userRecord) {
-                    if (typeof userRecord.ref_claim_allowed !== 'undefined' && userRecord.ref_claim_allowed !== null) {
-                        availableClaimCount = parseInt(userRecord.ref_claim_allowed);
-                        if (isNaN(availableClaimCount)) availableClaimCount = 0;
+                    if (userRecord.ref_claim_allowed !== undefined && userRecord.ref_claim_allowed !== null) {
+                        availableClaimCount = parseInt(userRecord.ref_claim_allowed) || 0;
                     }
-                    if (typeof userRecord.balance !== 'undefined' && userRecord.balance !== null) {
-                        baseInitialBalance = parseFloat(userRecord.balance);
+                    if (userRecord.balance !== undefined && userRecord.balance !== null) {
+                        baseInitialBalance = parseFloat(userRecord.balance) || 0;
                         currentBalance = baseInitialBalance;
                         updateBalanceUI();
                     }
@@ -884,17 +883,17 @@
                     html = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No referrals yet. Share your link to invite friends!</div>';
                 }
 
-                // Update UI based on fetched data
+                // Update UI elements dynamically
                 document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
                 document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
 
                 const claimBtn = document.getElementById('claim-referral-btn');
                 if (availableClaimCount > 0) {
                     claimBtn.classList.add('active-claim');
-                    claimBtn.disabled = false; // Strictly activate native interaction
+                    claimBtn.disabled = false;
                 } else {
                     claimBtn.classList.remove('active-claim');
-                    claimBtn.disabled = true; // Strictly prevent native interaction
+                    claimBtn.disabled = true;
                 }
 
                 document.getElementById('referrals-user-list-container').innerHTML = html;
@@ -985,7 +984,6 @@
             }
 
             try {
-                // Ensure the user exists in grm_users before updating to avoid missing row issues
                 const { data: existingUser } = await _supabase
                     .from('grm_users')
                     .select('user_id')
@@ -993,7 +991,6 @@
                     .maybeSingle();
 
                 if (!existingUser) {
-                    // Create basic record if not exists
                     await _supabase.from('grm_users').upsert([{
                         user_id: targetUserId,
                         username: 'User_' + targetUserId,
