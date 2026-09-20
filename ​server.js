@@ -9,34 +9,74 @@ const supabaseUrl = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
 const supabaseKey = process.env.SUPABASE_KEY || 'YOUR_SUPABASE_ANON_KEY';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// API Endpoint to update user IP and device fingerprint
-app.post('/api/update-user-info', async (req, res) => {
+// API Endpoint to verify user, check multi-account, and update info
+app.post('/api/verify-user', async (req, res) => {
   try {
-    const { currentUserId, deviceId } = req.body;
+    const { telegram_id, device_hash } = req.body;
+
+    if (!telegram_id || !device_hash) {
+      return res.status(400).json({ 
+        status: "ERROR", 
+        message: "Incomplete data provided." 
+      });
+    }
 
     // Get client IP address
-    const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const clientIp = req.headers['cf-connecting-ip'] || 
+                     req.headers['x-forwarded-for']?.split(',')[0].trim() || 
+                     req.socket.remoteAddress;
 
-    // Update user record in Supabase
-    const { data, error } = await supabase
+    // 1. Check if another user account already exists with the same IP or Device Hash
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('grm_users')
+      .select('user_id')
+      .or(`ip_address.eq.${clientIp},device_hash.eq.${device_hash}`)
+      .neq('user_id', telegram_id)
+      .limit(1);
+
+    if (checkError) throw checkError;
+
+    // 2. If a duplicate is found, block the user
+    if (existingUsers && existingUsers.length > 0) {
+      const { error: blockError } = await supabase
+        .from('grm_users')
+        .update({ 
+          ip_address: clientIp, 
+          device_hash: device_hash, 
+          is_blocked: true 
+        })
+        .eq('user_id', telegram_id);
+
+      if (blockError) throw blockError;
+
+      return res.json({
+        status: "BLOCKED",
+        message: "Multi-Account Detected! Multiple accounts are not allowed on the same device or IP address."
+      });
+    }
+
+    // 3. Otherwise, update the user record normally and allow access
+    const { error: updateError } = await supabase
       .from('grm_users')
       .update({ 
-        ip_address: userIp,
-        device_fingerprint: deviceId
+        ip_address: clientIp, 
+        device_hash: device_hash, 
+        is_blocked: false 
       })
-      .eq('user_id', currentUserId);
+      .eq('user_id', telegram_id);
 
-    if (error) throw error;
+    if (updateError) throw updateError;
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'User info updated successfully', 
-      data 
+    return res.json({ 
+      status: "ALLOWED", 
+      message: "Verification successful." 
     });
+
   } catch (err) {
+    console.error("Backend Error:", err);
     return res.status(500).json({ 
-      success: false, 
-      error: err.message 
+      status: "ERROR", 
+      message: err.message 
     });
   }
 });
