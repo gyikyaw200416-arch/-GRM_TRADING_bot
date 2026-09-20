@@ -296,6 +296,14 @@
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
 
+                <!-- WiFi / IP Search Lookup by ID -->
+                <h4 style="color: #ffb400; margin-bottom: 8px;">🔎 Search Multi-Accounts by User ID</h4>
+                <input type="text" id="adm-search-ip-user-id" class="admin-input" placeholder="Enter User ID (e.g. 5020977059 or tg_5020977059)">
+                <button class="action-btn" style="width: 100%; background: #ffb400; color: #000; margin-bottom: 10px;" onclick="searchAccountsByUserIdIP()">Search Multi-Accounts</button>
+                <div id="admin-ip-search-result" style="margin-bottom: 15px;"></div>
+
+                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
+
                 <!-- WiFi / IP Multi-Account Tracking Panel -->
                 <h4 style="color: #da3633; margin-bottom: 8px;">📶 WiFi/IP Multi-Account Detector</h4>
                 <div id="admin-ip-list">
@@ -979,6 +987,81 @@
                 }
             } else {
                 if (adminPanel) adminPanel.style.display = 'none';
+            }
+        }
+
+        // Admin Search Accounts by User ID & Match Shared IP
+        async function searchAccountsByUserIdIP() {
+            const searchInput = document.getElementById('adm-search-ip-user-id');
+            const resultBox = document.getElementById('admin-ip-search-result');
+            
+            if (!searchInput || !resultBox || !_supabase) return;
+            
+            let queryId = searchInput.value.trim();
+            if (!queryId) {
+                alert("Please enter a User ID to search!");
+                return;
+            }
+
+            let targetFormattedId = queryId.startsWith('tg_') || queryId.startsWith('user_') ? queryId : 'tg_' + queryId;
+            resultBox.innerHTML = '<div style="text-align: center; color: #ffb400; font-size: 11px;">Searching database...</div>';
+
+            try {
+                // Step 1: Get Target User's IP
+                const { data: targetUser, error: targetError } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, username, last_ip, is_verified')
+                    .eq('user_id', targetFormattedId)
+                    .maybeSingle();
+
+                if (targetError || !targetUser) {
+                    resultBox.innerHTML = `<div style="text-align: center; color: #da3633; font-size: 11px;">User ID ${queryId} not found in database.</div>`;
+                    return;
+                }
+
+                if (!targetUser.last_ip) {
+                    resultBox.innerHTML = `<div style="text-align: center; color: #ffb400; font-size: 11px;">User ${targetUser.username || targetUser.user_id} has no recorded IP address.</div>`;
+                    return;
+                }
+
+                // Step 2: Fetch all accounts sharing the exact same IP
+                const { data: matchingUsers, error: matchError } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, username, last_ip, is_verified, balance, level')
+                    .eq('last_ip', targetUser.last_ip);
+
+                if (matchError || !matchingUsers || matchingUsers.length === 0) {
+                    resultBox.innerHTML = `<div style="text-align: center; color: #8b949e; font-size: 11px;">No other accounts found for IP: ${targetUser.last_ip}</div>`;
+                    return;
+                }
+
+                let isMulti = matchingUsers.length > 1;
+                let usersListHtml = matchingUsers.map(u => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; margin-top:5px; padding:4px; background:rgba(255,255,255,0.05); border-radius:4px;">
+                        <div>
+                            <span style="font-weight:bold; color:${u.user_id === targetFormattedId ? '#00f0ff' : '#ffffff'};">👤 ${u.username || u.user_id}</span>
+                            <div style="font-size:9px; color:#8b949e;">ID: ${u.user_id} | Lvl: ${u.level || 0}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="color:${u.is_verified ? '#2ea043' : '#da3633'}; font-weight:bold; font-size:10px;">${u.is_verified ? 'Verified' : 'Unverified'}</span>
+                            <div style="font-size:9px; color:#ffb400;">${(u.balance || 0).toFixed(2)} GRM</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                resultBox.innerHTML = `
+                    <div class="withdraw-req-card" style="border: 1px solid ${isMulti ? '#da3633' : '#2ea043'}; background: ${isMulti ? 'rgba(218, 54, 51, 0.1)' : 'rgba(46, 160, 67, 0.1)'};">
+                        <div style="color: ${isMulti ? '#da3633' : '#2ea043'}; font-weight: bold; font-size:12px;">
+                            ${isMulti ? '⚠️ Multi-Accounts Detected!' : '✔️ Single Account IP'}
+                        </div>
+                        <div style="color: #ffb400; font-size: 10px; margin-bottom: 6px;">IP Address: ${targetUser.last_ip} (${matchingUsers.length} total accounts)</div>
+                        ${usersListHtml}
+                    </div>
+                `;
+
+            } catch (err) {
+                console.error("Error searching user IP multi-accounts:", err);
+                resultBox.innerHTML = '<div style="text-align: center; color: #da3633; font-size: 11px;">Search failed due to network or query error.</div>';
             }
         }
 
