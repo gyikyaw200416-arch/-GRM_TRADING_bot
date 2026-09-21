@@ -921,18 +921,8 @@
         }
 
         async function fetchTasksFromSupabase() {
-            let defaultTasks = [
-                {
-                    id: 'default_reward_100_task',
-                    title: 'Join GRM Official Channel & Community',
-                    channel_link: 'https://t.me/grm_trading_bot',
-                    group_link: '',
-                    reward: 100
-                }
-            ];
-
             if (!_supabase) {
-                activeTasksList = defaultTasks;
+                activeTasksList = [];
                 renderTasksList();
                 return;
             }
@@ -944,37 +934,26 @@
                     .order('created_at', { ascending: true });
 
                 if (error) {
-                    activeTasksList = defaultTasks;
+                    activeTasksList = [];
                     renderTasksList();
                     return;
                 }
 
                 if (data && data.length > 0) {
-                    let fetchedTasks = data.map(t => ({
+                    activeTasksList = data.map(t => ({
                         id: t.id,
                         title: t.title,
                         channelLink: t.channel_link,
                         groupLink: t.group_link || '',
                         reward: parseFloat(t.reward) || 50
                     }));
-                    
-                    if (!fetchedTasks.some(t => t.id === 'default_reward_100_task')) {
-                        fetchedTasks.unshift({
-                            id: 'default_reward_100_task',
-                            title: 'Join GRM Official Channel & Community',
-                            channelLink: 'https://t.me/grm_trading_bot',
-                            groupLink: '',
-                            reward: 100
-                        });
-                    }
-                    activeTasksList = fetchedTasks;
                 } else {
-                    activeTasksList = defaultTasks;
+                    activeTasksList = [];
                 }
                 renderTasksList();
             } catch (err) { 
                 console.error("Supabase fetch tasks exception:", err);
-                activeTasksList = defaultTasks;
+                activeTasksList = [];
                 renderTasksList();
             }
         }
@@ -1015,10 +994,6 @@
         }
 
         async function adminDeleteTask(taskId) {
-            if (taskId === 'default_reward_100_task') {
-                alert("This default task cannot be removed.");
-                return;
-            }
             if (confirm("Are you sure you want to remove this task?")) {
                 if (_supabase) {
                     const { error } = await _supabase.from('grm_tasks').delete().eq('id', taskId);
@@ -1673,8 +1648,6 @@
                     btnStyle = 'background-color: #2ea043; color: #fff;';
                 }
 
-                const isDefaultTask = task.id === 'default_reward_100_task';
-
                 html += `
                     <div class="card profile-row" id="card-${task.id}">
                         <div>
@@ -1683,7 +1656,7 @@
                         </div>
                         <div style="display: flex; gap: 5px; align-items: center;">
                             <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>
-                            ${isAdmin && !isDefaultTask ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
+                            ${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
                         </div>
                     </div>
                 `;
