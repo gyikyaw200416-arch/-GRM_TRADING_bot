@@ -586,7 +586,6 @@
         };
 
         let currentLevel = 0;
-
         let activeTasksList = [];
         let taskStates = {}; 
         let withdrawalHistory = [];
@@ -702,6 +701,60 @@
             checkAdminPermissions();
             await fetchTasksFromSupabase();
             setTimeout(hideSplashScreen, 1000);
+
+            // Real-time synchronization subscription for instant updates when Admin modifies database
+            if (_supabase) {
+                _supabase
+                    .channel('public:grm_users')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'grm_users', filter: `user_id=eq.${currentUserId}` }, payload => {
+                        console.log('Realtime user update received:', payload);
+                        if (payload.new) {
+                            const updatedData = payload.new;
+                            baseInitialBalance = parseFloat(updatedData.balance) || 0.000000;
+                            currentBalance = baseInitialBalance;
+                            currentLevel = updatedData.level !== undefined ? parseInt(updatedData.level) : currentLevel;
+                            availableClaimCount = updatedData.ref_claim_allowed !== undefined ? parseInt(updatedData.ref_claim_allowed) : availableClaimCount;
+                            
+                            const lvlBadge = document.querySelector('.lvl-badge');
+                            if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
+                            updateBalanceUI();
+                            renderMinersStore();
+                            fetchReferralStats();
+
+                            // Update Verification UI instantly
+                            const verifiedBadge = document.getElementById('profile-verified-badge');
+                            const verificationSubtext = document.getElementById('profile-verification-subtext');
+                            const verifyIcon = document.getElementById('profile-verify-icon');
+
+                            if (updatedData.is_verified === true) {
+                                if (verifiedBadge) {
+                                    verifiedBadge.innerText = "Verified ✔️";
+                                    verifiedBadge.style.backgroundColor = "#238636";
+                                    verifiedBadge.style.color = "#ffffff";
+                                }
+                                if (verificationSubtext) verificationSubtext.innerText = "Verified User";
+                                if (verifyIcon) {
+                                    verifyIcon.innerText = "✔";
+                                    verifyIcon.style.borderColor = "rgba(35, 134, 54, 0.4)";
+                                    verifyIcon.style.color = "#2ea043";
+                                }
+                            } else {
+                                if (verifiedBadge) {
+                                    verifiedBadge.innerText = "Unverified ❌";
+                                    verifiedBadge.style.backgroundColor = "#da3633";
+                                    verifiedBadge.style.color = "#ffffff";
+                                }
+                                if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
+                                if (verifyIcon) {
+                                    verifyIcon.innerText = "❌";
+                                    verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
+                                    verifyIcon.style.color = "#da3633";
+                                }
+                            }
+                        }
+                    })
+                    .subscribe();
+            }
         });
 
         async function handleReferralRegistration() {
@@ -1185,6 +1238,27 @@
             if (!_supabase) return;
 
             try {
+                // First ensure user exists in db so verification doesn't fail on new IDs
+                const { data: existingUser } = await _supabase
+                    .from('grm_users')
+                    .select('user_id')
+                    .eq('user_id', targetUserId)
+                    .maybeSingle();
+
+                if (!existingUser) {
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: targetUserId,
+                        username: 'User_' + targetUserId,
+                        balance: 0,
+                        mined_amount: 0,
+                        mining_state: 'stopped',
+                        level: 0,
+                        is_verified: status,
+                        ref_claim_allowed: 0,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+                }
+
                 const { data, error } = await _supabase
                     .from('grm_users')
                     .update({ is_verified: status, updated_at: new Date().toISOString() })
@@ -1196,7 +1270,7 @@
                     return;
                 }
 
-                alert(`User verification status set to ${status ? 'VERIFIED' : 'UNVERIFIED'}!`);
+                alert(`User verification status set to ${status ? 'VERIFIED' : 'UNVERIFIED'} successfully!`);
                 if (targetUserId === currentUserId) {
                     await loadUserDataFromSupabase();
                 }
@@ -1231,7 +1305,21 @@
                     .maybeSingle();
 
                 if (fetchErr || !userRecord) {
-                    alert("User ID not found in database!");
+                    // Create user if not exists with bonus amount
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: targetUserId,
+                        username: 'User_' + targetUserId,
+                        balance: bonusAmount,
+                        mined_amount: 0,
+                        mining_state: 'stopped',
+                        level: 0,
+                        is_verified: false,
+                        ref_claim_allowed: 0,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+
+                    alert(`Successfully created user and sent +${bonusAmount} GRM bonus to ${targetUserId}!`);
+                    document.getElementById('adm-bonus-user-id').value = '';
                     return;
                 }
 
