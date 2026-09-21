@@ -783,8 +783,8 @@
             if (!_supabase) return;
 
             let startParam = null;
-            if (tg && tg.initDataUnsafe) {
-                startParam = tg.initDataUnsafe.start_param || null;
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+                startParam = tg.initDataUnsafe.start_param;
             }
             if (!startParam) {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -792,7 +792,7 @@
             }
             if (!startParam) {
                 const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                startParam = hashParams.get('tgWebAppStartParam');
+                startParam = hashParams.get('tgWebAppStartParam') || hashParams.get('start');
             }
 
             try {
@@ -879,7 +879,6 @@
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
 
-                    // ပုံပါအတိုင်း Referral အသစ်ဝင်လာပါက Referrer ထံသို့ Telegram အသိပေးချက် ပို့ပေးရန်
                     await notifyAdminNewReferral(referrerUserId, currentUserName, rawUserId);
                 }
             } catch (e) { console.error("Referral registration error:", e); }
