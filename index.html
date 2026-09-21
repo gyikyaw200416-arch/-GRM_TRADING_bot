@@ -702,7 +702,6 @@
             await fetchTasksFromSupabase();
             setTimeout(hideSplashScreen, 1000);
 
-            // Real-time synchronization subscription for instant updates when Admin modifies database
             if (_supabase) {
                 _supabase
                     .channel('public:grm_users')
@@ -719,9 +718,8 @@
                             if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
                             updateBalanceUI();
                             renderMinersStore();
-                            fetchReferralStats(); // Updates "Ava" count and Claim button instantly!
+                            fetchReferralStats();
 
-                            // Update Verification UI instantly
                             const verifiedBadge = document.getElementById('profile-verified-badge');
                             const verificationSubtext = document.getElementById('profile-verification-subtext');
                             const verifyIcon = document.getElementById('profile-verify-icon');
@@ -756,6 +754,30 @@
                     .subscribe();
             }
         });
+
+        async function notifyAdminNewReferral(referrerId, newUserName, newRawId) {
+            if (!BOT_TOKEN || BOT_TOKEN === "YOUR_TELEGRAM_BOT_TOKEN_HERE") return;
+            
+            let cleanReferrerId = referrerId.replace('tg_', '').replace('user_', '');
+            
+            const message = `✅ <b>New Referral Joined!</b> 🎉\n\n` +
+                            `👤 <b>User:</b> ${newUserName}\n` +
+                            `🆔 <b>ID:</b> <code>${newRawId}</code>\n\n` +
+                            `🎁 <b>Check your Mini App Friends section to see the history!</b>`;
+
+            try {
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: cleanReferrerId,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (e) { console.error("Error sending Referral Telegram Notification:", e); }
+        }
 
         async function handleReferralRegistration() {
             if (!_supabase) return;
@@ -856,6 +878,9 @@
                         status: 'active',
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
+
+                    // ပုံပါအတိုင်း Referral အသစ်ဝင်လာပါက Referrer ထံသို့ Telegram အသိပေးချက် ပို့ပေးရန်
+                    await notifyAdminNewReferral(referrerUserId, currentUserName, rawUserId);
                 }
             } catch (e) { console.error("Referral registration error:", e); }
         }
@@ -1069,7 +1094,6 @@
                     alert(`Success! Set referral claim allowed to ${claimCount} time(s) for user ${targetUserId}`);
                     document.getElementById('adm-ref-target-id').value = '';
                     
-                    // Immediately update local state if target user is current active user viewing the app
                     if (targetUserId === currentUserId) {
                         availableClaimCount = claimCount;
                         fetchReferralStats();
