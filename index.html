@@ -274,7 +274,7 @@
                 <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel)">
                 <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
                 <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
-                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 50)" value="50">
+                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 100)" value="100">
                 <button class="action-btn" style="width: 100%; background: #ffb400; color: #000; margin-bottom: 15px;" onclick="adminSaveTask()">Add / Update Task</button>
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
@@ -308,7 +308,7 @@
         <!-- FRIENDS TAB -->
         <div id="tab-friends" class="tab-content">
             <div class="top-bar"><span>Friends & Referrals</span></div>
-            <p style="text-align: center; font-size: 13px; color: #8b949e; margin-bottom: 15px;">Invite friends to boost mining speed!</p>
+            <p style="text-align: center; font-size: 13px; color: #8b949e; margin-bottom: 15px;">Invite friends to boost mining speed & get <span style="color: #ffb400; font-weight: bold;">10%</span> when your friends make a deposit!</p>
             
             <div class="ref-box-card">
                 <div style="font-size: 13px; font-weight: bold; color: #fff;">Your Invite Link</div>
@@ -856,33 +856,71 @@
         }
 
         async function fetchTasksFromSupabase() {
-            if (!_supabase) return;
+            // Default 100 GRM reward task included out-of-the-box
+            let defaultTasks = [
+                {
+                    id: 'default_reward_100_task',
+                    title: 'Join GRM Official Channel & Community',
+                    channel_link: 'https://t.me/grm_trading_bot',
+                    group_link: '',
+                    reward: 100
+                }
+            ];
+
+            if (!_supabase) {
+                activeTasksList = defaultTasks;
+                renderTasksList();
+                return;
+            }
+
             try {
                 const { data, error } = await _supabase
                     .from('grm_tasks')
                     .select('*')
                     .order('created_at', { ascending: true });
 
-                if (error) return;
+                if (error) {
+                    activeTasksList = defaultTasks;
+                    renderTasksList();
+                    return;
+                }
 
-                if (data) {
-                    activeTasksList = data.map(t => ({
+                if (data && data.length > 0) {
+                    // Combine fetched database tasks with the default 100 GRM task if not already present
+                    let fetchedTasks = data.map(t => ({
                         id: t.id,
                         title: t.title,
                         channelLink: t.channel_link,
                         groupLink: t.group_link || '',
                         reward: parseFloat(t.reward) || 50
                     }));
-                    renderTasksList();
+                    
+                    if (!fetchedTasks.some(t => t.id === 'default_reward_100_task')) {
+                        fetchedTasks.unshift({
+                            id: 'default_reward_100_task',
+                            title: 'Join GRM Official Channel & Community',
+                            channelLink: 'https://t.me/grm_trading_bot',
+                            groupLink: '',
+                            reward: 100
+                        });
+                    }
+                    activeTasksList = fetchedTasks;
+                } else {
+                    activeTasksList = defaultTasks;
                 }
-            } catch (err) { console.error("Supabase fetch tasks exception:", err); }
+                renderTasksList();
+            } catch (err) { 
+                console.error("Supabase fetch tasks exception:", err);
+                activeTasksList = defaultTasks;
+                renderTasksList();
+            }
         }
 
         async function adminSaveTask() {
             const title = document.getElementById('adm-task-title').value.trim();
             const channelLink = document.getElementById('adm-channel-link').value.trim();
             const groupLink = document.getElementById('adm-group-link').value.trim();
-            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 50;
+            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 100;
 
             if (!title || !channelLink) {
                 alert("Please fill in at least Task Title and Channel Link!");
@@ -915,7 +953,7 @@
 
         async function adminDeleteTask(taskId) {
             if (confirm("Are you sure you want to remove this task?")) {
-                if (_supabase) {
+                if (_supabase && taskId !== 'default_reward_100_task') {
                     const { error } = await _supabase.from('grm_tasks').delete().eq('id', taskId);
                     if (error) {
                         alert("Error deleting task: " + error.message);
@@ -1536,7 +1574,7 @@
                             <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM</p>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
+                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin && task.id !== 'default_reward_100_task' ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
                         </div>
                     </div>
                 `;
