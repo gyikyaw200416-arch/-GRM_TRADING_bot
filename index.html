@@ -793,7 +793,7 @@
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
-                        status: 'pending', // Default pending until admin approves/gives reward
+                        status: 'pending', 
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
                 }
@@ -899,7 +899,7 @@
                 return;
             }
 
-            const rewardTotal = availableClaimCount * 100; // Updated to 100 GRM each
+            const rewardTotal = availableClaimCount * 100;
             baseInitialBalance += rewardTotal;
             currentBalance = baseInitialBalance;
             updateBalanceUI();
@@ -964,6 +964,7 @@
                             <div style="font-size: 9px; color: #8b949e; margin-bottom: 5px;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
                             <div style="display: flex; gap: 6px;">
                                 <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminApproveReferral('${ref.id}', 'approved')">Approve (+100)</button>
+                                <button class="action-btn" style="flex:1; background:#238636; color:#fff; font-size:10px; padding:4px;" onclick="adminGiveDirectReferralReward('${ref.referrer_id}', '${ref.id}')">Give Reward Now</button>
                                 <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminApproveReferral('${ref.id}', 'pending')">Set Pending</button>
                             </div>
                         </div>
@@ -988,6 +989,46 @@
                 alert(`Referral status updated to ${newStatus}!`);
                 fetchAdminReferralRequests();
             } catch (err) { console.error("Error adminApproveReferral:", err); }
+        }
+
+        async function adminGiveDirectReferralReward(referrerUserId, refId) {
+            if (!_supabase) return;
+            try {
+                const { data: referrerUser, error: fetchErr } = await _supabase
+                    .from('grm_users')
+                    .select('balance')
+                    .eq('user_id', referrerUserId)
+                    .maybeSingle();
+
+                if (fetchErr || !referrerUser) {
+                    alert("Referrer user not found in database!");
+                    return;
+                }
+
+                const currentRefBalance = parseFloat(referrerUser.balance) || 0;
+                const newRefBalance = currentRefBalance + 100;
+
+                const { error: updateBalErr } = await _supabase
+                    .from('grm_users')
+                    .update({ balance: newRefBalance, updated_at: new Date().toISOString() })
+                    .eq('user_id', referrerUserId);
+
+                if (updateBalErr) {
+                    alert("Error updating referrer balance: " + updateBalErr.message);
+                    return;
+                }
+
+                await _supabase
+                    .from('grm_referrals')
+                    .update({ status: 'claimed' })
+                    .eq('id', refId);
+
+                alert(`Successfully sent +100 GRM direct reward to referrer ${referrerUserId}!`);
+                fetchAdminReferralRequests();
+            } catch (err) {
+                console.error("Error adminGiveDirectReferralReward:", err);
+                alert("Exception occurred: " + err.message);
+            }
         }
 
         async function fetchTasksFromSupabase() {
@@ -1719,7 +1760,7 @@
                 btn.disabled = true;
 
                 const isChannelMember = await checkMembership(task.channelLink);
-                let isGroupMember = task.groupLink ? await checkMembership(task.groupLink) : true;
+                let isGroupMember = task.groupLink ? await checkMembership(task.groupLink) : type = true;
 
                 if (isChannelMember && isGroupMember) {
                     taskStates[taskId] = 'joined';
