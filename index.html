@@ -1103,397 +1103,34 @@
             } catch (err) { alert("Exception occurred: " + err.message); }
         }
 
-        async function fetchAdminReferralRequests() {
-            const container = document.getElementById('admin-referrals-list');
-            if (!container || !_supabase) return;
-
-            try {
-                const { data } = await _supabase
-                    .from('grm_referrals')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 11px;">No referral relationships found.</div>';
-                    return;
-                }
-
-                let html = '';
-                data.forEach(ref => {
-                    let stBadge = ref.status === 'claimed' ? '<span style="color:#00f0ff;font-weight:bold;">[Claimed]</span>' : '<span style="color:#2ea043;font-weight:bold;">[Active]</span>';
-                    html += `
-                        <div class="withdraw-req-card">
-                            <div><strong>Referrer:</strong> ${ref.referrer_id}</div>
-                            <div><strong>Referred User:</strong> ${ref.referred_id} ${stBadge}</div>
-                            <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch (err) { console.error("Error admin referrals:", err); }
-        }
-
-        async function fetchTasksFromSupabase() {
-            if (!_supabase) return;
-            try {
-                const { data, error } = await _supabase
-                    .from('grm_tasks')
-                    .select('*')
-                    .order('created_at', { ascending: true });
-
-                if (error) return;
-
-                if (data) {
-                    activeTasksList = data.map(t => ({
-                        id: t.id,
-                        title: t.title,
-                        channelLink: t.channel_link,
-                        groupLink: t.group_link || '',
-                        reward: parseFloat(t.reward) || 100
-                    }));
-                    renderTasksList();
-                }
-            } catch (err) { console.error("Supabase fetch tasks exception:", err); }
-        }
-
-        async function adminSaveTask() {
-            const title = document.getElementById('adm-task-title').value.trim();
-            const channelLink = document.getElementById('adm-channel-link').value.trim();
-            const groupLink = document.getElementById('adm-group-link').value.trim();
-            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 100;
-
-            if (!title || !channelLink) {
-                alert("Please fill in at least Task Title and Channel Link!");
-                return;
-            }
-
-            const newTask = {
-                id: 'task_' + Date.now(),
-                title: title,
-                channel_link: channelLink,
-                group_link: groupLink,
-                reward: reward
-            };
-
-            if (_supabase) {
-                const { error } = await _supabase.from('grm_tasks').insert([newTask]);
-                if (error) {
-                    alert("Error saving task: " + error.message);
-                    return;
-                }
-            }
-
-            document.getElementById('adm-task-title').value = '';
-            document.getElementById('adm-channel-link').value = '';
-            document.getElementById('adm-group-link').value = '';
-
-            await fetchTasksFromSupabase();
-            alert("Task added successfully!");
-        }
-
-        async function adminDeleteTask(taskId) {
-            if (confirm("Are you sure you want to remove this task?")) {
-                if (_supabase) {
-                    const { error } = await _supabase.from('grm_tasks').delete().eq('id', taskId);
-                    if (error) {
-                        alert("Error deleting task: " + error.message);
-                        return;
-                    }
-                }
-                await fetchTasksFromSupabase();
-            }
-        }
-
-        async function adminUpdateUserLevel() {
-            let targetUserId = document.getElementById('adm-target-user-id').value.trim();
-            const targetLevel = parseInt(document.getElementById('adm-target-level').value);
-
-            if (!targetUserId) {
-                alert("Please enter a User ID!");
-                return;
-            }
-
-            if (isNaN(targetLevel) || targetLevel < 0 || targetLevel > 10) {
-                alert("Level must be between 0 and 10!");
-                return;
-            }
-
-            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
-                targetUserId = 'tg_' + targetUserId;
-            }
-
-            if (!_supabase) return;
-
-            try {
-                const { data, error } = await _supabase
-                    .from('grm_users')
-                    .update({ level: targetLevel, updated_at: new Date().toISOString() })
-                    .eq('user_id', targetUserId)
-                    .select();
-
-                if (error) {
-                    alert("Error updating level: " + error.message);
-                    return;
-                }
-
-                if (data && data.length > 0) {
-                    alert(`Success! Set level to ${targetLevel} for user ${targetUserId}`);
-                    if (targetUserId === currentUserId) {
-                        await loadUserDataFromSupabase();
-                        renderMinersStore();
-                    }
-                } else {
-                    alert("User ID not found in database!");
-                }
-            } catch (err) { alert("Exception occurred: " + err.message); }
-        }
-
-        async function adminSetUserVerification(status) {
-            let targetUserId = document.getElementById('adm-target-user-id').value.trim();
-            if (!targetUserId) {
-                alert("Please enter a User ID!");
-                return;
-            }
-
-            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
-                targetUserId = 'tg_' + targetUserId;
-            }
-
-            if (!_supabase) return;
-
-            try {
-                const { data: existingUser } = await _supabase
-                    .from('grm_users')
-                    .select('user_id')
-                    .eq('user_id', targetUserId)
-                    .maybeSingle();
-
-                if (!existingUser) {
-                    await _supabase.from('grm_users').upsert([{
-                        user_id: targetUserId,
-                        username: 'User_' + targetUserId,
-                        balance: 0,
-                        mined_amount: 0,
-                        mining_state: 'stopped',
-                        level: 0,
-                        is_verified: status,
-                        ref_claim_allowed: 0,
-                        updated_at: new Date().toISOString()
-                    }], { onConflict: 'user_id' });
-                }
-
-                const { data, error } = await _supabase
-                    .from('grm_users')
-                    .update({ is_verified: status, updated_at: new Date().toISOString() })
-                    .eq('user_id', targetUserId)
-                    .select();
-
-                if (error) {
-                    alert("Error setting verification: " + error.message);
-                    return;
-                }
-
-                alert(`User verification status set to ${status ? 'VERIFIED' : 'UNVERIFIED'} successfully!`);
-                if (targetUserId === currentUserId) {
-                    await loadUserDataFromSupabase();
-                }
-            } catch (e) { alert("Error: " + e.message); }
-        }
-
-        async function adminSendBonusReward() {
-            let targetUserId = document.getElementById('adm-bonus-user-id').value.trim();
-            const bonusAmount = parseFloat(document.getElementById('adm-bonus-amount').value);
-
-            if (!targetUserId) {
-                alert("Please enter a target User ID!");
-                return;
-            }
-
-            if (isNaN(bonusAmount) || bonusAmount <= 0) {
-                alert("Please enter a valid bonus amount!");
-                return;
-            }
-
-            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
-                targetUserId = 'tg_' + targetUserId;
-            }
-
-            if (!_supabase) return;
-
-            try {
-                const { data: userRecord, error: fetchErr } = await _supabase
-                    .from('grm_users')
-                    .select('balance')
-                    .eq('user_id', targetUserId)
-                    .maybeSingle();
-
-                if (fetchErr || !userRecord) {
-                    await _supabase.from('grm_users').upsert([{
-                        user_id: targetUserId,
-                        username: 'User_' + targetUserId,
-                        balance: bonusAmount,
-                        mined_amount: 0,
-                        mining_state: 'stopped',
-                        level: 0,
-                        is_verified: false,
-                        ref_claim_allowed: 0,
-                        updated_at: new Date().toISOString()
-                    }], { onConflict: 'user_id' });
-
-                    alert(`Successfully created user and sent +${bonusAmount} GRM bonus to ${targetUserId}!`);
-                    document.getElementById('adm-bonus-user-id').value = '';
-                    return;
-                }
-
-                const currentDbBalance = parseFloat(userRecord.balance) || 0;
-                const newBalance = currentDbBalance + bonusAmount;
-
-                const { error: updateErr } = await _supabase
-                    .from('grm_users')
-                    .update({ balance: newBalance, updated_at: new Date().toISOString() })
-                    .eq('user_id', targetUserId);
-
-                if (updateErr) {
-                    alert("Error sending bonus: " + updateErr.message);
-                    return;
-                }
-
-                alert(`Successfully sent +${bonusAmount} GRM bonus to user ${targetUserId}!`);
-                document.getElementById('adm-bonus-user-id').value = '';
-
-                if (targetUserId === currentUserId) {
-                    baseInitialBalance = newBalance;
-                    currentBalance = baseInitialBalance;
-                    updateBalanceUI();
-                }
-            } catch (err) { alert("Exception: " + err.message); }
-        }
-
-        tonConnectUI.onStatusChange(async (walletInfo) => {
-            let addressToSave = null;
-            try {
-                if (walletInfo) addressToSave = extractUserFriendlyAddress(walletInfo);
-                if (!addressToSave) addressToSave = getActiveWalletAddress();
-            } catch (err) { console.error("Wallet status change error:", err); }
-
-            if (addressToSave) {
-                await updateSupabaseField({ wallet_address: addressToSave });
-            } else {
-                await updateSupabaseField({ wallet_address: null });
-            }
-            checkWalletAndButtonState();
-        });
-
-        function hideSplashScreen() {
-            const splash = document.getElementById('splash-screen');
-            const mainApp = document.querySelector('.main-container');
-            if (splash && splash.style.display !== 'none') {
-                splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                    if (mainApp) mainApp.style.display = 'block';
-                }, 400);
-            }
-        }
-
-        function switchTab(tabName, element) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            const targetTab = document.getElementById('tab-' + tabName);
-            if (targetTab) targetTab.classList.add('active');
-            if (element) element.classList.add('active');
-            
-            if (tabName === 'tasks') {
-                fetchTasksFromSupabase();
-                checkAdminPermissions();
-            } else if (tabName === 'friends') {
-                fetchReferralStats();
-            }
-        }
-
-        function checkWalletAndButtonState() {
-            const btn = document.getElementById('mining-action-btn');
-            const activeAddr = getActiveWalletAddress();
-            
-            if (!activeAddr) {
-                btn.innerText = "START MINING";
-                btn.style.background = "linear-gradient(135deg, #555 0%, #333 100%)";
-                btn.style.color = "#aaa";
-            } else if (!isMining) {
-                btn.innerText = "START MINING";
-                btn.style.background = "linear-gradient(135deg, #00f0ff 0%, #0055ff 100%)";
-                btn.style.color = "#fff";
-            }
-        }
-
-        async function updateSupabaseField(fields) {
-            if (!_supabase) return;
-            try {
-                fields.updated_at = new Date().toISOString();
-                
-                const { data: existing } = await _supabase
-                    .from('grm_users')
-                    .select('user_id, wallet_address')
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
-
-                if (existing) {
-                    if (fields.wallet_address === null && existing.wallet_address) delete fields.wallet_address;
-                    await _supabase.from('grm_users').update(fields).eq('user_id', currentUserId);
-                } else {
-                    fields.user_id = currentUserId;
-                    fields.username = currentUserName;
-                    fields.balance = baseInitialBalance;
-                    fields.mined_amount = 0;
-                    fields.mining_state = 'stopped';
-                    fields.level = 0;
-                    fields.is_verified = false;
-                    fields.ref_claim_allowed = 0;
-                    
-                    if (!fields.wallet_address) {
-                        let activeAddr = getActiveWalletAddress();
-                        if (activeAddr) fields.wallet_address = activeAddr;
-                    }
-
-                    await _supabase.from('grm_users').upsert([fields], { onConflict: 'user_id' });
-                }
-            } catch (err) { console.error('Supabase update general error:', err); }
-        }
-
         async function loadUserDataFromSupabase() {
             if (!_supabase) return;
             try {
-                const { data } = await _supabase
+                let { data: userRecord, error } = await _supabase
                     .from('grm_users')
                     .select('*')
                     .eq('user_id', currentUserId)
                     .maybeSingle();
 
-                const verifiedBadge = document.getElementById('profile-verified-badge');
-                const verificationSubtext = document.getElementById('profile-verification-subtext');
-                const verifyIcon = document.getElementById('profile-verify-icon');
-
-                if (data) {
-                    baseInitialBalance = parseFloat(data.balance) || 0.000000;
+                if (userRecord) {
+                    baseInitialBalance = parseFloat(userRecord.balance) || 0;
                     currentBalance = baseInitialBalance;
-                    miningStartTime = parseInt(data.mining_start_time) || Date.now();
-                    currentLevel = (data.level !== undefined && data.level !== null) ? parseInt(data.level) : 0;
-                    
+                    currentLevel = userRecord.level !== undefined ? parseInt(userRecord.level) : 0;
+                    availableClaimCount = userRecord.ref_claim_allowed !== undefined ? parseInt(userRecord.ref_claim_allowed) : 0;
+
                     const lvlBadge = document.querySelector('.lvl-badge');
                     if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
 
-                    updateBalanceUI();
+                    const verifiedBadge = document.getElementById('profile-verified-badge');
+                    const verificationSubtext = document.getElementById('profile-verification-subtext');
+                    const verifyIcon = document.getElementById('profile-verify-icon');
 
-                    if (data.mining_state === 'mining') {
-                        startAutoMiningUI();
-                    } else {
-                        checkWalletAndButtonState();
-                    }
-
-                    if (data.is_verified === true) {
-                        verifiedBadge.innerText = "Verified ✔️";
-                        verifiedBadge.style.backgroundColor = "#238636";
-                        verifiedBadge.style.color = "#ffffff";
+                    if (userRecord.is_verified === true) {
+                        if (verifiedBadge) {
+                            verifiedBadge.innerText = "Verified ✔️";
+                            verifiedBadge.style.backgroundColor = "#238636";
+                            verifiedBadge.style.color = "#ffffff";
+                        }
                         if (verificationSubtext) verificationSubtext.innerText = "Verified User";
                         if (verifyIcon) {
                             verifyIcon.innerText = "✔";
@@ -1501,9 +1138,11 @@
                             verifyIcon.style.color = "#2ea043";
                         }
                     } else {
-                        verifiedBadge.innerText = "Unverified ❌";
-                        verifiedBadge.style.backgroundColor = "#da3633";
-                        verifiedBadge.style.color = "#ffffff";
+                        if (verifiedBadge) {
+                            verifiedBadge.innerText = "Unverified ❌";
+                            verifiedBadge.style.backgroundColor = "#da3633";
+                            verifiedBadge.style.color = "#ffffff";
+                        }
                         if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
                         if (verifyIcon) {
                             verifyIcon.innerText = "❌";
@@ -1512,111 +1151,366 @@
                         }
                     }
                 } else {
-                    currentLevel = 0;
-                    const lvlBadge = document.querySelector('.lvl-badge');
-                    if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
-                    updateBalanceUI();
-                    checkWalletAndButtonState();
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: currentUserId,
+                        username: currentUserName,
+                        balance: 0.000000,
+                        mined_amount: 0,
+                        mining_state: 'stopped',
+                        level: 0,
+                        is_verified: false,
+                        ref_claim_allowed: 0,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
                 }
-            } catch (err) { console.error('Load user data exception:', err); }
+            } catch (e) { console.error("Error loading user data from Supabase:", e); }
+            updateBalanceUI();
+            startMiningLoop();
         }
 
         function updateBalanceUI() {
-            const formatted = currentBalance.toFixed(6) + " GRM";
-            const mainAsset = document.getElementById('asset-balance');
-            const profilePool = document.getElementById('profile-pool-balance');
-            if (mainAsset) mainAsset.innerText = formatted;
-            if (profilePool) profilePool.innerText = formatted;
+            document.getElementById('asset-balance').innerText = currentBalance.toFixed(6) + ' GRM';
+            document.getElementById('profile-pool-balance').innerText = currentBalance.toFixed(6) + ' GRM';
+            document.getElementById('modal-available-balance').innerText = currentBalance.toFixed(6) + ' GRM';
         }
 
-        function handleMiningAction() {
-            const btn = document.getElementById('mining-action-btn');
-            const statusBadge = document.getElementById('mining-status-badge');
-            const coinBox = document.getElementById('coin-box-elem');
-            const amountDisplay = document.getElementById('mining-amount-display');
-            const activeAddr = getActiveWalletAddress();
-
-            if (!activeAddr) {
-                alert("Please connect your TON wallet first to start mining!");
-                return;
-            }
-
-            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000050;
-
-            if (btn.innerText === "START MINING") {
-                isMining = true;
-                miningStartTime = Date.now();
-                btn.innerText = "CLAIM";
-                btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
-                btn.style.color = "#fff";
-                
-                if (statusBadge) {
-                    statusBadge.innerText = "MINING AUTO";
-                    statusBadge.style.color = "#2ea043";
-                }
-                if (coinBox) coinBox.classList.add('mining-anim');
-
-                updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime });
-
-                if (miningInterval) clearInterval(miningInterval);
-                miningInterval = setInterval(() => {
-                    const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                    minedAmount = elapsed * currentRate;
-                    amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
-                }, 1000);
-
-            } else if (btn.innerText === "CLAIM") {
-                const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                const earnedMined = elapsed * currentRate;
-
-                baseInitialBalance += earnedMined; 
-                currentBalance = baseInitialBalance;
-                
-                miningStartTime = Date.now();
-                minedAmount = 0;
-                amountDisplay.innerText = "0.000000 GRM";
-                
-                updateBalanceUI();
-
-                updateSupabaseField({
-                    balance: baseInitialBalance,
-                    mined_amount: 0,
-                    mining_state: 'mining',
-                    mining_start_time: miningStartTime
-                });
-            }
-        }
-
-        function startAutoMiningUI() {
+        function startMiningLoop() {
+            if (isMining) return;
             isMining = true;
-            const btn = document.getElementById('mining-action-btn');
-            const statusBadge = document.getElementById('mining-status-badge');
-            const coinBox = document.getElementById('coin-box-elem');
-            const amountDisplay = document.getElementById('mining-amount-display');
-            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000050;
+            document.getElementById('coin-box-elem').classList.add('mining-anim');
 
-            btn.innerText = "CLAIM";
-            btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
-            btn.style.color = "#fff";
-
-            if (statusBadge) {
-                statusBadge.innerText = "MINING AUTO";
-                statusBadge.style.color = "#2ea043";
-            }
-            if (coinBox) coinBox.classList.add('mining-anim');
-
-            if (miningInterval) clearInterval(miningInterval);
+            const ratePerSec = levelMiningRates[currentLevel] || 0.000050;
             miningInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
-                minedAmount = elapsed * currentRate;
-                amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                minedAmount += ratePerSec;
+                document.getElementById('mining-amount-display').innerText = minedAmount.toFixed(6) + ' GRM';
             }, 1000);
         }
 
+        async function handleMiningAction() {
+            if (minedAmount <= 0) {
+                alert("No mined reward to claim yet!");
+                return;
+            }
+
+            baseInitialBalance += minedAmount;
+            currentBalance = baseInitialBalance;
+            let claimedNow = minedAmount;
+            minedAmount = 0;
+            document.getElementById('mining-amount-display').innerText = "0.000000 GRM";
+            updateBalanceUI();
+
+            if (_supabase) {
+                await _supabase
+                    .from('grm_users')
+                    .update({ balance: baseInitialBalance, updated_at: new Date().toISOString() })
+                    .eq('user_id', currentUserId);
+            }
+
+            alert(`🎉 Successfully claimed +${claimedNow.toFixed(6)} GRM into your assets!`);
+        }
+
+        async function fetchTasksFromSupabase() {
+            const container = document.getElementById('tasks-list-container');
+            if (!_supabase) {
+                container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 20px;">Tasks unavailable offline.</div>';
+                return;
+            }
+
+            try {
+                const { data: tasks } = await _supabase.from('grm_tasks').select('*').order('created_at', { ascending: false });
+                const { data: tStates } = await _supabase.from('grm_user_tasks').select('*').eq('user_id', currentUserId);
+
+                let completedTaskIds = new Set();
+                if (tStates) tStates.forEach(ts => { if (ts.status === 'completed') completedTaskIds.add(ts.task_id); });
+
+                if (!tasks || tasks.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 20px;">No active tasks available right now.</div>';
+                    return;
+                }
+
+                let html = '';
+                tasks.forEach(task => {
+                    let isDone = completedTaskIds.has(task.id);
+                    let btnText = isDone ? 'Completed ✔️' : 'Start Task';
+                    let btnStyle = isDone ? 'background: #2ea043; color: #fff; cursor: default;' : 'background: #00f0ff; color: #000;';
+
+                    html += `
+                        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 4px;">${task.title}</div>
+                                <div style="font-size: 12px; color: #ffb400; font-weight: bold;">+${task.reward} GRM</div>
+                            </div>
+                            <button class="action-btn" style="${btnStyle}" ${isDone ? 'disabled' : ''} onclick="executeTask('${task.id}', '${task.channel_link}', ${task.reward})">${btnText}</button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) { console.error("Error fetching tasks:", e); }
+        }
+
+        async function executeTask(taskId, link, reward) {
+            if (link && link !== 'null' && link !== '') {
+                if (tg && tg.openTelegramLink) tg.openTelegramLink(link);
+                else window.open(link, '_blank');
+            }
+
+            setTimeout(async () => {
+                baseInitialBalance += reward;
+                currentBalance = baseInitialBalance;
+                updateBalanceUI();
+
+                if (_supabase) {
+                    await _supabase.from('grm_user_tasks').upsert([{
+                        id: currentUserId + '_' + taskId,
+                        user_id: currentUserId,
+                        task_id: taskId,
+                        status: 'completed',
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'id' });
+
+                    await _supabase
+                        .from('grm_users')
+                        .update({ balance: baseInitialBalance, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+                }
+
+                alert(`🎉 Task completed successfully! +${reward} GRM added.`);
+                fetchTasksFromSupabase();
+            }, 3000);
+        }
+
+        async function adminSaveTask() {
+            const title = document.getElementById('adm-task-title').value.trim();
+            const channelLink = document.getElementById('adm-channel-link').value.trim();
+            const reward = parseFloat(document.getElementById('adm-reward-amount').value);
+
+            if (!title || !channelLink || isNaN(reward)) {
+                alert("Please fill in all task fields correctly!");
+                return;
+            }
+
+            if (!_supabase) return;
+            const taskId = 'task_' + Date.now();
+            const { error } = await _supabase.from('grm_tasks').upsert([{
+                id: taskId,
+                title: title,
+                channel_link: channelLink,
+                reward: reward,
+                created_at: new Date().toISOString()
+            }], { onConflict: 'id' });
+
+            if (error) {
+                alert("Error saving task: " + error.message);
+                return;
+            }
+
+            alert("Task successfully added/updated!");
+            document.getElementById('adm-task-title').value = '';
+            document.getElementById('adm-channel-link').value = '';
+            fetchTasksFromSupabase();
+        }
+
+        async function adminSetUserVerification(isVerified) {
+            let targetUserId = document.getElementById('adm-target-user-id').value.trim();
+            if (!targetUserId) {
+                alert("Please enter a Target User ID!");
+                return;
+            }
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) return;
+            const { error } = await _supabase
+                .from('grm_users')
+                .update({ is_verified: isVerified, updated_at: new Date().toISOString() })
+                .eq('user_id', targetUserId);
+
+            if (error) {
+                alert("Error updating verification: " + error.message);
+                return;
+            }
+
+            alert(`User ${targetUserId} verification status set to: ${isVerified ? 'VERIFIED' : 'UNVERIFIED'}`);
+            document.getElementById('adm-target-user-id').value = '';
+        }
+
+        async function adminUpdateUserLevel() {
+            let targetUserId = document.getElementById('adm-target-user-id').value.trim();
+            const newLevel = parseInt(document.getElementById('adm-target-level').value);
+
+            if (!targetUserId) {
+                alert("Please enter a Target User ID!");
+                return;
+            }
+            if (isNaN(newLevel) || newLevel < 0 || newLevel > 10) {
+                alert("Please enter a valid level between 0 and 10!");
+                return;
+            }
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) return;
+            const { error } = await _supabase
+                .from('grm_users')
+                .update({ level: newLevel, updated_at: new Date().toISOString() })
+                .eq('user_id', targetUserId);
+
+            if (error) {
+                alert("Error updating user level: " + error.message);
+                return;
+            }
+
+            alert(`User ${targetUserId} level successfully set to Lvl ${newLevel}!`);
+        }
+
+        async function adminSendBonusReward() {
+            let targetUserId = document.getElementById('adm-bonus-user-id').value.trim();
+            const bonusAmount = parseFloat(document.getElementById('adm-bonus-amount').value);
+
+            if (!targetUserId || isNaN(bonusAmount) || bonusAmount <= 0) {
+                alert("Please enter a valid User ID and bonus GRM amount!");
+                return;
+            }
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) return;
+            
+            const { data: targetUser } = await _supabase
+                .from('grm_users')
+                .select('balance')
+                .eq('user_id', targetUserId)
+                .maybeSingle();
+
+            let currentTargetBal = targetUser ? (parseFloat(targetUser.balance) || 0) : 0;
+            let newTargetBal = currentTargetBal + bonusAmount;
+
+            const { error } = await _supabase
+                .from('grm_users')
+                .upsert([{
+                    user_id: targetUserId,
+                    balance: newTargetBal,
+                    updated_at: new Date().toISOString()
+                }], { onConflict: 'user_id' });
+
+            if (error) {
+                alert("Error sending bonus reward: " + error.message);
+                return;
+            }
+
+            alert(`Successfully sent +${bonusAmount} GRM bonus to user ${targetUserId}!`);
+            document.getElementById('adm-bonus-user-id').value = '';
+        }
+
+        async function fetchAdminWithdrawalRequests() {
+            const container = document.getElementById('admin-withdrawals-list');
+            if (!_supabase) return;
+
+            try {
+                const { data: reqs } = await _supabase
+                    .from('grm_withdrawals')
+                    .select('*')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+
+                if (!reqs || reqs.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 11px; padding: 10px;">No pending withdrawal requests.</div>';
+                    return;
+                }
+
+                let html = '';
+                reqs.forEach(req => {
+                    let gramValue = (req.amount / 10000).toFixed(4);
+                    html += `
+                        <div class="withdraw-req-card">
+                            <div><b>User:</b> ${req.user_id}</div>
+                            <div><b>Amount:</b> ${req.amount} GRM (${gramValue} GRAM)</div>
+                            <div style="word-break: break-all; color: #00f0ff; margin: 4px 0;"><b>Address:</b> ${req.wallet_address}</div>
+                            <div style="display: flex; gap: 6px; margin-top: 6px;">
+                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; padding:4px; font-size:10px;" onclick="adminProcessWithdrawal('${req.id}', 'approved')">Approve</button>
+                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; padding:4px; font-size:10px;" onclick="adminProcessWithdrawal('${req.id}', 'rejected')">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) { console.error("Error fetching admin withdrawals:", e); }
+        }
+
+        async function adminProcessWithdrawal(reqId, status) {
+            if (!_supabase) return;
+            const { error } = await _supabase
+                .from('grm_withdrawals')
+                .update({ status: status, updated_at: new Date().toISOString() })
+                .eq('id', reqId);
+
+            if (error) {
+                alert("Error processing withdrawal: " + error.message);
+                return;
+            }
+
+            alert(`Withdrawal request marked as ${status.toUpperCase()}!`);
+            fetchAdminWithdrawalRequests();
+        }
+
+        async function fetchAdminReferralRequests() {
+            const container = document.getElementById('admin-referrals-list');
+            if (!_supabase) return;
+
+            try {
+                const { data: refs } = await _supabase
+                    .from('grm_referrals')
+                    .select('*')
+                    .eq('status', 'active')
+                    .order('created_at', { ascending: false });
+
+                if (!refs || refs.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 11px; padding: 10px;">No pending active referrals.</div>';
+                    return;
+                }
+
+                let html = '';
+                refs.forEach(ref => {
+                    html += `
+                        <div class="withdraw-req-card">
+                            <div><b>Referrer:</b> ${ref.referrer_id}</div>
+                            <div><b>Referred User:</b> ${ref.referred_id}</div>
+                            <div style="display: flex; gap: 6px; margin-top: 6px;">
+                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; padding:4px; font-size:10px;" onclick="adminVerifyReferral('${ref.id}', '${ref.referred_id}')">Verify & Credit Referral</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) { console.error("Error fetching admin referrals:", e); }
+        }
+
+        async function adminVerifyReferral(refId, referredUserId) {
+            if (!_supabase) return;
+            
+            const { error: errRef } = await _supabase
+                .from('grm_referrals')
+                .update({ status: 'verified' })
+                .eq('id', refId);
+
+            const { error: errUsr } = await _supabase
+                .from('grm_users')
+                .update({ is_verified: true, updated_at: new Date().toISOString() })
+                .eq('user_id', referredUserId);
+
+            if (errRef || errUsr) {
+                alert("Error verifying referral.");
+                return;
+            }
+
+            alert("Referral successfully verified!");
+            fetchAdminReferralRequests();
+        }
+
         function openWithdrawModal() {
-            document.getElementById('modal-available-balance').innerText = currentBalance.toFixed(6) + " GRM";
-            const activeWallet = getActiveWalletAddress();
-            if (activeWallet) document.getElementById('withdraw-address-input').value = activeWallet;
             document.getElementById('withdraw-modal').style.display = 'flex';
         }
 
@@ -1624,340 +1518,105 @@
             document.getElementById('withdraw-modal').style.display = 'none';
         }
 
-        async function notifyAdminWithdrawal(txRecord) {
-            if (!BOT_TOKEN || BOT_TOKEN === "YOUR_TELEGRAM_BOT_TOKEN_HERE") return;
-            
-            const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
-                            `👤 <b>User:</b> ${currentUserName}\n` +
-                            `🆔 <b>User ID:</b> <code>${rawUserId || currentUserId}</code>\n` +
-                            `💰 <b>Amount:</b> <code>${txRecord.amount} GRM</code>\n` +
-                            `💎 <b>Wallet Address:</b>\n<code>${txRecord.address}</code>\n` +
-                            `⏰ <b>Date:</b> ${txRecord.date}`;
-
-            try {
-                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-                await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: ADMIN_ID,
-                        text: message,
-                        parse_mode: 'HTML'
-                    })
-                });
-            } catch (e) { console.error("Error sending Telegram Notification:", e); }
-        }
-
         async function submitWithdrawal() {
-            const amountVal = parseFloat(document.getElementById('withdraw-amount-input').value);
-            const addressVal = document.getElementById('withdraw-address-input').value.trim();
+            const amountInput = parseFloat(document.getElementById('withdraw-amount-input').value);
+            const addressInput = document.getElementById('withdraw-address-input').value.trim();
 
-            if (isNaN(amountVal) || amountVal <= 0) {
-                alert("Please enter a valid amount!");
-                return;
-            }
-
-            if (amountVal < 500) {
+            if (isNaN(amountInput) || amountInput < 500) {
                 alert("Minimum withdrawal amount is 500 GRM!");
                 return;
             }
-
-            if (currentBalance < 500 || amountVal > currentBalance) {
-                alert("Insufficient balance! Minimum 500 GRM required.");
+            if (amountInput > currentBalance) {
+                alert("Insufficient balance!");
                 return;
             }
-
-            if (!addressVal) {
+            if (!addressInput) {
                 alert("Please enter a valid TON wallet address!");
                 return;
             }
 
-            baseInitialBalance -= amountVal;
+            baseInitialBalance -= amountInput;
             currentBalance = baseInitialBalance;
             updateBalanceUI();
 
-            const txRecord = {
-                id: 'tx_' + Date.now(),
-                user_id: currentUserId,
-                raw_user_id: rawUserId,
-                user_name: currentUserName,
-                amount: amountVal,
-                address: addressVal,
-                date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                status: 'Pending'
-            };
-
-            withdrawalHistory.unshift(txRecord);
-
             if (_supabase) {
                 await _supabase.from('grm_withdrawals').insert([{
-                    id: txRecord.id,
+                    id: 'wd_' + Date.now(),
                     user_id: currentUserId,
-                    amount: amountVal,
-                    address: addressVal,
-                    status: 'Pending'
+                    amount: amountInput,
+                    wallet_address: addressInput,
+                    status: 'pending',
+                    created_at: new Date().toISOString()
                 }]);
+
+                await _supabase
+                    .from('grm_users')
+                    .update({ balance: baseInitialBalance, updated_at: new Date().toISOString() })
+                    .eq('user_id', currentUserId);
             }
 
-            updateSupabaseField({ balance: baseInitialBalance });
-            notifyAdminWithdrawal(txRecord);
-            fetchAdminWithdrawalRequests();
-
-            alert(`Withdrawal request of ${amountVal} GRM submitted successfully! Admin will process it shortly.`);
             closeWithdrawModal();
-            document.getElementById('withdraw-amount-input').value = '';
-        }
-
-        async function fetchWithdrawalHistory() {
-            if (!_supabase) return;
-            try {
-                const { data } = await _supabase
-                    .from('grm_withdrawals')
-                    .select('*')
-                    .eq('user_id', currentUserId)
-                    .order('created_at', { ascending: false });
-
-                if (data && data.length > 0) {
-                    withdrawalHistory = data.map(tx => ({
-                        id: tx.id,
-                        amount: parseFloat(tx.amount),
-                        address: tx.address,
-                        date: new Date(tx.created_at).toLocaleDateString() + ' ' + new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        status: tx.status
-                    }));
-                }
-            } catch (err) { console.error("Error fetching withdrawal history:", err); }
+            alert("✅ Withdrawal request submitted successfully! It will be reviewed by admin.");
+            fetchWithdrawalHistory();
         }
 
         function openHistoryModal() {
-            renderHistoryList();
             document.getElementById('history-modal').style.display = 'flex';
+            fetchWithdrawalHistory();
         }
 
         function closeHistoryModal() {
             document.getElementById('history-modal').style.display = 'none';
         }
 
-        function renderHistoryList() {
+        async function fetchWithdrawalHistory() {
             const container = document.getElementById('history-list-container');
-            if (!container) return;
-
-            if (withdrawalHistory.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No transactions recorded yet.</div>';
-                return;
-            }
-
-            let html = '';
-            withdrawalHistory.forEach(tx => {
-                let statusColor = tx.status === 'Completed' ? '#2ea043' : (tx.status === 'Rejected' ? '#da3633' : '#ffb400');
-                html += `
-                    <div class="history-item">
-                        <div>
-                            <div style="font-weight: bold; color: #ffb400;">-${tx.amount.toFixed(2)} GRM</div>
-                            <div style="color: #8b949e; font-size: 10px;">${tx.date}</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="color: ${statusColor}; font-weight: bold;">${tx.status}</div>
-                            <div style="color: #8b949e; font-size: 10px;">${tx.address.substring(0, 4)}...${tx.address.substring(tx.address.length - 4)}</div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        async function fetchAdminWithdrawalRequests() {
-            const container = document.getElementById('admin-withdrawals-list');
-            if (!container || !_supabase) return;
+            if (!_supabase) return;
 
             try {
-                const { data, error } = await _supabase
+                const { data: history } = await _supabase
                     .from('grm_withdrawals')
                     .select('*')
-                    .eq('status', 'Pending')
+                    .eq('user_id', currentUserId)
                     .order('created_at', { ascending: false });
 
-                if (error || !data || data.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 11px;">No pending withdrawal requests.</div>';
+                if (!history || history.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No transactions recorded yet.</div>';
                     return;
                 }
 
                 let html = '';
-                data.forEach(req => {
+                history.forEach(item => {
+                    let statusColor = item.status === 'approved' ? '#2ea043' : (item.status === 'rejected' ? '#da3633' : '#ffb400');
                     html += `
-                        <div class="withdraw-req-card">
-                            <div><strong>User:</strong> ${req.user_id}</div>
-                            <div><strong>Amount:</strong> <span style="color: #ffb400;">${req.amount} GRM</span></div>
-                            <div style="word-break: break-all;"><strong>Address:</strong> ${req.address}</div>
-                            <div style="display: flex; gap: 8px; margin-top: 6px;">
-                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Completed')">Mark Completed</button>
-                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Rejected')">Reject</button>
+                        <div class="history-item">
+                            <div>
+                                <div style="font-weight: bold; color: #fff;">${item.amount} GRM</div>
+                                <div style="color: #8b949e; font-size: 10px; word-break: break-all;">${item.wallet_address}</div>
                             </div>
+                            <div style="font-weight: bold; color: ${statusColor}; text-transform: uppercase;">${item.status}</div>
                         </div>
                     `;
                 });
                 container.innerHTML = html;
-            } catch (err) { console.error("Error loading admin withdrawal requests:", err); }
+            } catch (e) { console.error("Error fetching withdrawal history:", e); }
         }
 
-        async function adminProcessWithdrawal(reqId, newStatus) {
-            if (!_supabase) return;
-            try {
-                const { error } = await _supabase
-                    .from('grm_withdrawals')
-                    .update({ status: newStatus })
-                    .eq('id', reqId);
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
-                if (error) {
-                    alert("Error updating status: " + error.message);
-                    return;
-                }
-
-                alert(`Request marked as ${newStatus}!`);
-                fetchAdminWithdrawalRequests();
-            } catch (err) { console.error("Error processing withdrawal:", err); }
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if (element) element.classList.add('active');
         }
 
-        function parseTelegramChatId(link) {
-            if (!link) return null;
-            let cleaned = link.trim();
-            if (cleaned.includes('t.me/')) {
-                let parts = cleaned.split('t.me/')[1].split('/')[0].split('?')[0];
-                let target = parts.replace('+', '');
-                if (target.startsWith('joinchat')) return null;
-                return target.startsWith('@') ? target : '@' + target;
+        function hideSplashScreen() {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => { splash.style.display = 'none'; }, 600);
             }
-            if (!cleaned.startsWith('@') && !cleaned.startsWith('-')) return '@' + cleaned;
-            return cleaned;
-        }
-
-        async function checkMembership(chatIdentifier) {
-            if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') return true;
-            if (!rawUserId) return true;
-
-            const targetChat = parseTelegramChatId(chatIdentifier);
-            if (!targetChat) return true;
-
-            try {
-                const targetUrl = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(targetChat)}&user_id=${rawUserId}`;
-                const response = await fetch(targetUrl);
-                const data = await response.json();
-
-                if (data.ok && data.result) {
-                    return ['member', 'administrator', 'creator'].includes(data.result.status);
-                } else {
-                    return true;
-                }
-            } catch (err) { return true; }
-        }
-
-        function renderTasksList() {
-            const container = document.getElementById('tasks-list-container');
-            if (!container) return;
-            
-            let html = '';
-            const isAdmin = (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID);
-
-            if (activeTasksList.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #8b949e; padding: 20px;">No active tasks available right now.</div>';
-                return;
-            }
-
-            const now = Date.now();
-            const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
-
-            activeTasksList.forEach(task => {
-                let lastCompleted = parseInt(localStorage.getItem(`task_cooldown_${currentUserId}_${task.id}`)) || 0;
-                let timeElapsed = now - lastCompleted;
-                let isCooldownActive = timeElapsed < THREE_HOURS_MS;
-
-                let btnText = 'Join';
-                let btnStyle = 'background-color: #00f0ff; color: #000;';
-                let isDisabled = false;
-
-                if (isCooldownActive) {
-                    let timeLeft = THREE_HOURS_MS - timeElapsed;
-                    let hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-                    let minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    btnText = `Wait ${hoursLeft}h ${minsLeft}m`;
-                    btnStyle = 'background-color: #333; color: #777;';
-                    isDisabled = true;
-                } else if (taskStates[task.id] === 'verify') {
-                    btnText = 'Verify Check';
-                    btnStyle = 'background-color: #ffb400; color: #000;';
-                } else if (taskStates[task.id] === 'joined') {
-                    btnText = `Claim (+${task.reward} GRM)`;
-                    btnStyle = 'background-color: #2ea043; color: #fff;';
-                }
-
-                html += `
-                    <div class="card profile-row" id="card-${task.id}">
-                        <div>
-                            <strong>${task.title}</strong>
-                            <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM (Every 3 Hours)</p>
-                        </div>
-                        <div style="display: flex; gap: 5px;">
-                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${isDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        setInterval(() => {
-            if (document.getElementById('tab-tasks').classList.contains('active')) {
-                renderTasksList();
-            }
-        }, 60000);
-
-        async function handleDynamicTaskAction(taskId) {
-            const task = activeTasksList.find(t => t.id === taskId);
-            if (!task) return;
-
-            const btn = document.getElementById(`btn-${taskId}`);
-            const currentState = taskStates[taskId] || 'join';
-
-            if (currentState === 'join') {
-                taskStates[taskId] = 'verify';
-                if (btn) {
-                    btn.innerText = 'Verify Check';
-                    btn.style.backgroundColor = '#ffb400';
-                    btn.style.color = '#000';
-                }
-                
-                let linkToOpen = task.channelLink;
-                if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(linkToOpen);
-                } else {
-                    window.open(linkToOpen, '_blank');
-                }
-            } else if (currentState === 'verify') {
-                const isMember = await checkMembership(task.channelLink);
-                if (isMember) {
-                    taskStates[taskId] = 'joined';
-                    if (btn) {
-                        btn.innerText = `Claim (+${task.reward} GRM)`;
-                        btn.style.backgroundColor = '#2ea043';
-                        btn.style.color = '#fff';
-                    }
-                } else {
-                    alert("❌ You haven't joined the channel yet! Please join first.");
-                }
-            } else if (currentState === 'joined') {
-                baseInitialBalance += task.reward;
-                currentBalance = baseInitialBalance;
-                updateBalanceUI();
-                await updateSupabaseField({ balance: baseInitialBalance });
-
-                localStorage.setItem(`task_cooldown_${currentUserId}_${task.id}`, Date.now().toString());
-
-                delete taskStates[task.id];
-                renderTasksList();
-                alert(`🎉 Successfully claimed +${task.reward} GRM! You can repeat this task after 3 hours.`);
-            }
+            document.querySelector('.main-container').style.display = 'block';
         }
     </script>
 </body>
