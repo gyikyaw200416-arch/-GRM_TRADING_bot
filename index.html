@@ -47,7 +47,6 @@
         .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
         .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
-        /* VPN Warning Banner Overlay */
         #vpn-warning-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(7, 13, 24, 0.95); backdrop-filter: blur(8px);
@@ -222,7 +221,6 @@
     <div class="app-bg"></div>
     <div class="tech-bg-overlay"></div>
 
-    <!-- Background VPN / Connection Warning Overlay -->
     <div id="vpn-warning-overlay">
         <div class="vpn-warning-box">
             <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
@@ -303,7 +301,7 @@
 
                 <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px; margin-top: 15px;">
 
-                <h4 style="color: #ffb400; margin-bottom: 8px;">👥 Admin Referral Verification & Tree Tracking</h4>
+                <h4 style="color: #ffb400; margin-bottom: 8px;">👥 Admin Referral Reward Control & Tree Tracking</h4>
                 <div id="admin-referrals-list">
                     <div style="text-align: center; color: #8b949e; font-size: 11px;">Loading pending referrals...</div>
                 </div>
@@ -335,7 +333,7 @@
                 <div style="font-size: 24px;">👥</div>
                 <div>
                     <div style="font-size: 13px; font-weight: bold; color: #fff;">Your Referrals</div>
-                    <div style="font-size: 12px; color: #8b949e; margin-top: 2px;" id="referral-stats-text">0 successful · 0 total</div>
+                    <div style="font-size: 12px; color: #8b949e; margin-top: 2px;" id="referral-stats-text">0 approved · 0 total</div>
                 </div>
             </div>
 
@@ -344,7 +342,7 @@
                     <div style="font-size: 24px;">🎁</div>
                     <div>
                         <div style="font-size: 13px; font-weight: bold; color: #fff;">Referral Reward</div>
-                        <div style="font-size: 11px; color: #8b949e; margin-top: 2px;" id="referral-claim-subtitle">0 available · +50 GRM each</div>
+                        <div style="font-size: 11px; color: #8b949e; margin-top: 2px;" id="referral-claim-subtitle">0 available · +100 GRM each</div>
                     </div>
                 </div>
                 <button class="claim-reward-btn" id="claim-referral-btn" onclick="claimReferralRewards()">Claim</button>
@@ -448,7 +446,6 @@
         </div>
     </div>
 
-    <!-- Buy Engine Modal with Address & User ID Copy Buttons -->
     <div id="buy-engine-modal" class="modal-overlay">
         <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -525,7 +522,6 @@
             console.warn("Supabase init error:", e);
         }
 
-        // Background Network & VPN Checker
         async function checkNetworkConnectivity() {
             const vpnOverlay = document.getElementById('vpn-warning-overlay');
             try {
@@ -797,7 +793,7 @@
                         id: newRefId,
                         referrer_id: referrerUserId,
                         referred_id: currentUserId,
-                        status: 'active',
+                        status: 'pending', // Default pending until admin approves/gives reward
                         created_at: new Date().toISOString()
                     }], { onConflict: 'id' });
                 }
@@ -816,8 +812,8 @@
                     .eq('referrer_id', currentUserId);
 
                 if (!refData || refData.length === 0) {
-                    document.getElementById('referral-stats-text').innerText = `0 successful · 0 total`;
-                    document.getElementById('referral-claim-subtitle').innerText = `0 available · +50 GRM each`;
+                    document.getElementById('referral-stats-text').innerText = `0 approved · 0 total`;
+                    document.getElementById('referral-claim-subtitle').innerText = `0 available · +100 GRM each`;
                     document.getElementById('claim-referral-btn').classList.remove('active-claim');
                     document.getElementById('referrals-user-list-container').innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No referrals yet. Share your link to invite friends!</div>';
                     return;
@@ -836,26 +832,26 @@
                 }
 
                 const totalCount = refData.length;
-                let successfulCount = 0;
+                let approvedCount = 0;
                 let availableClaims = 0;
                 let html = '';
 
                 refData.forEach(ref => {
                     const targetUser = userMap.get(ref.referred_id);
-                    const isVerified = targetUser && targetUser.is_verified === true;
+                    const isApproved = ref.status === 'approved';
                     const isClaimed = ref.status === 'claimed';
 
-                    if (isVerified) {
-                        successfulCount++;
-                        if (!isClaimed) {
-                            availableClaims++;
-                        }
+                    if (isApproved) {
+                        approvedCount++;
+                        availableClaims++;
+                    } else if (isClaimed) {
+                        approvedCount++;
                     }
 
                     let displayName = targetUser && targetUser.username ? (targetUser.username.startsWith('@') ? targetUser.username : '@' + targetUser.username) : ('ID:' + ref.referred_id.replace('tg_', '').replace('user_', ''));
-                    let statusLabel = isClaimed ? 'Claimed' : (isVerified ? 'Verified (Successful)' : 'Unverified (Pending)');
-                    let statusDotClass = isVerified ? 'status-active-dot' : 'status-inactive-dot';
-                    let statusTextClass = isVerified ? 'text-active' : 'text-inactive';
+                    let statusLabel = isClaimed ? 'Claimed' : (isApproved ? 'Approved by Admin (Ready)' : 'Pending Admin Approval');
+                    let statusDotClass = (isApproved || isClaimed) ? 'status-active-dot' : 'status-inactive-dot';
+                    let statusTextClass = (isApproved || isClaimed) ? 'text-active' : 'text-inactive';
 
                     html += `
                         <div class="ref-user-item">
@@ -876,8 +872,8 @@
                 });
 
                 availableClaimCount = availableClaims;
-                document.getElementById('referral-stats-text').innerText = `${successfulCount} successful · ${totalCount} total`;
-                document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +50 GRM each`;
+                document.getElementById('referral-stats-text').innerText = `${approvedCount} approved · ${totalCount} total`;
+                document.getElementById('referral-claim-subtitle').innerText = `${availableClaimCount} available · +100 GRM each`;
 
                 const claimBtn = document.getElementById('claim-referral-btn');
                 if (availableClaimCount > 0) {
@@ -899,11 +895,11 @@
 
         async function claimReferralRewards() {
             if (availableClaimCount <= 0) {
-                alert("❌ Cannot claim! You have no verified referrals available yet. Admin must verify them first.");
+                alert("❌ Cannot claim! You have no approved referrals available yet. Admin must approve them first.");
                 return;
             }
 
-            const rewardTotal = availableClaimCount * 50;
+            const rewardTotal = availableClaimCount * 100; // Updated to 100 GRM each
             baseInitialBalance += rewardTotal;
             currentBalance = baseInitialBalance;
             updateBalanceUI();
@@ -911,34 +907,21 @@
             if (_supabase) {
                 const { data: refData } = await _supabase
                     .from('grm_referrals')
-                    .select('id, referred_id')
+                    .select('id')
                     .eq('referrer_id', currentUserId)
-                    .neq('status', 'claimed');
+                    .eq('status', 'approved');
 
                 if (refData && refData.length > 0) {
-                    const referredIds = refData.map(r => r.referred_id);
-                    const { data: verifiedUsers } = await _supabase
-                        .from('grm_users')
-                        .select('user_id')
-                        .in('user_id', referredIds)
-                        .eq('is_verified', true);
-
-                    if (verifiedUsers && verifiedUsers.length > 0) {
-                        const verifiedIdsSet = new Set(verifiedUsers.map(u => u.user_id));
-                        const targetRefIds = refData.filter(r => verifiedIdsSet.has(r.referred_id)).map(r => r.id);
-
-                        if (targetRefIds.length > 0) {
-                            await _supabase
-                                .from('grm_referrals')
-                                .update({ status: 'claimed' })
-                                .in('id', targetRefIds);
-                        }
-                    }
+                    const targetRefIds = refData.map(r => r.id);
+                    await _supabase
+                        .from('grm_referrals')
+                        .update({ status: 'claimed' })
+                        .in('id', targetRefIds);
                 }
             }
 
             await updateSupabaseField({ balance: baseInitialBalance });
-            alert(`🎉 Successfully claimed +${rewardTotal} GRM for verified referrals!`);
+            alert(`🎉 Successfully claimed +${rewardTotal} GRM for approved referrals!`);
             fetchReferralStats();
         }
 
@@ -972,18 +955,39 @@
 
                 let html = '';
                 data.forEach(ref => {
-                    let stBadge = ref.status === 'claimed' ? '<span style="color:#00f0ff;font-weight:bold;">[Claimed]</span>' : '<span style="color:#2ea043;font-weight:bold;">[Active]</span>';
+                    let stBadge = ref.status === 'claimed' ? '<span style="color:#00f0ff;font-weight:bold;">[Claimed]</span>' : (ref.status === 'approved' ? '<span style="color:#2ea043;font-weight:bold;">[Approved]</span>' : '<span style="color:#ffb400;font-weight:bold;">[Pending]</span>');
                     
                     html += `
                         <div class="withdraw-req-card">
                             <div><strong>Referrer:</strong> ${ref.referrer_id}</div>
                             <div><strong>Referred User:</strong> ${ref.referred_id} ${stBadge}</div>
-                            <div style="font-size: 9px; color: #8b949e;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
+                            <div style="font-size: 9px; color: #8b949e; margin-bottom: 5px;">Date: ${new Date(ref.created_at).toLocaleString()}</div>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminApproveReferral('${ref.id}', 'approved')">Approve (+100)</button>
+                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminApproveReferral('${ref.id}', 'pending')">Set Pending</button>
+                            </div>
                         </div>
                     `;
                 });
                 container.innerHTML = html;
             } catch (err) { console.error("Error admin referrals:", err); }
+        }
+
+        async function adminApproveReferral(refId, newStatus) {
+            if (!_supabase) return;
+            try {
+                const { error } = await _supabase
+                    .from('grm_referrals')
+                    .update({ status: newStatus })
+                    .eq('id', refId);
+
+                if (error) {
+                    alert("Error updating referral status: " + error.message);
+                    return;
+                }
+                alert(`Referral status updated to ${newStatus}!`);
+                fetchAdminReferralRequests();
+            } catch (err) { console.error("Error adminApproveReferral:", err); }
         }
 
         async function fetchTasksFromSupabase() {
