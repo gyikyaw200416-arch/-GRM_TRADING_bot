@@ -94,7 +94,7 @@ bot.start(async (ctx) => {
     }
 
     const captionText = 
-      "👋 *Welcome to GRAM Mining Core!*\n\n" +
+      "⛏ *Welcome to GRAM Mining Core!*\n\n" +
       "📉 *Mine GRAM tokens directly to your Pool Wallet.*\n" +
       "⚡ *Tap to boost mining speed!*\n" +
       "🔗 *Connect your TON wallet.*\n" +
