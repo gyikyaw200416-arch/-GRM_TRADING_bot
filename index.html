@@ -1403,9 +1403,9 @@
             }, 1000);
         }
 
-        // --- INTERACTIVE ARCHERY CANVAS GAME LOGIC (WITH DRAG-TO-PULL BOW & PRE-DEDUCT 10 GRM) ---
+        // --- INTERACTIVE ARCHERY CANVAS GAME LOGIC ---
         let archeryCanvas, archeryCtx;
-        let gameState = 'IDLE'; // IDLE, FLYING, RESULT
+        let gameState = 'IDLE'; 
         let arrowX = 50, arrowY = 190;
         let targetX = 290, targetY = 90, targetRadius = 20;
         let targetSpeedY = 2.8; 
@@ -1426,7 +1426,6 @@
             archeryCanvas.addEventListener('pointerdown', async (e) => {
                 if (gameState !== 'IDLE') return;
                 
-                // Check balance before pulling bow
                 if (currentBalance < 10) {
                     alert("Insufficient balance! Minimum 10 GRM required.");
                     return;
@@ -1451,7 +1450,6 @@
                 let clientX = e.clientX - rect.left;
                 let clientY = e.clientY - rect.top;
 
-                // Limit pulling distance for tension effect
                 let dx = clientX - 50;
                 let dy = clientY - 190;
                 let dist = Math.hypot(dx, dy);
@@ -1499,7 +1497,6 @@
                 return;
             }
 
-            // Direct button shoot with automatic optimal tension
             powerPower = 16;
             powerAngle = Math.atan2(targetY - 190, targetX - 50);
             currentPullX = 50 - Math.cos(powerAngle) * 40;
@@ -1626,7 +1623,6 @@
             archeryCtx.arc(0, 0, 24, -Math.PI / 2, Math.PI / 2);
             archeryCtx.stroke();
 
-            // Bowstring
             archeryCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
             archeryCtx.lineWidth = 1;
             archeryCtx.beginPath();
@@ -1634,7 +1630,6 @@
             archeryCtx.lineTo(0, 24);
             archeryCtx.stroke();
 
-            // Arrow resting
             archeryCtx.strokeStyle = '#ffb400';
             archeryCtx.lineWidth = 3;
             archeryCtx.beginPath();
@@ -1657,7 +1652,6 @@
             let localPx = px - bx;
             let localPy = py - by;
 
-            // Elastic bowstring pulled back to user's finger (px, py)
             archeryCtx.strokeStyle = '#ffb400';
             archeryCtx.lineWidth = 1.5;
             archeryCtx.beginPath();
@@ -1666,7 +1660,6 @@
             archeryCtx.lineTo(0, 24);
             archeryCtx.stroke();
 
-            // Arrow shaft attached to pulling position
             let angle = Math.atan2(localPy, localPx);
             archeryCtx.rotate(angle);
             archeryCtx.strokeStyle = '#ffb400';
@@ -1676,7 +1669,6 @@
             archeryCtx.lineTo(15, 0);
             archeryCtx.stroke();
 
-            // Arrow head
             archeryCtx.fillStyle = '#00f0ff';
             archeryCtx.beginPath();
             archeryCtx.moveTo(15, 0);
@@ -2116,16 +2108,22 @@
                     return;
                 }
 
-                const h = Math.floor(remaining / 3600);
-                const m = Math.floor((remaining % 3600) / 60);
-                const s = remaining % 60;
-                const formatted = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                let hours = Math.floor(remaining / 3600);
+                let minutes = Math.floor((remaining % 3600) / 60);
+                let seconds = remaining % 60;
+                
+                let timeStr = '';
+                if (hours > 0) {
+                    timeStr = `${hours}h ${minutes}m`;
+                } else if (minutes > 0) {
+                    timeStr = `${minutes}m ${seconds}s`;
+                } else {
+                    timeStr = `${seconds}s`;
+                }
 
                 if (btn) {
-                    btn.innerText = formatted;
+                    btn.innerText = timeStr;
                     btn.disabled = true;
-                    btn.style.backgroundColor = '#333333';
-                    btn.style.color = '#888888';
                 }
                 remaining--;
             }, 1000);
