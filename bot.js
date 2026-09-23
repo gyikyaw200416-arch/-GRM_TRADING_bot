@@ -13,17 +13,17 @@ bot.start(async (ctx) => {
   try {
     const telegramUser = ctx.from;
     const rawUserId = telegramUser.id.toString();
-    const userId = 'tg_' + rawUserId; 
+    const userId = 'tg_' + rawUserId; // Database structure match: tg_ + id
     const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-    const startPayload = ctx.payload; 
+    const startPayload = ctx.payload; // Referral ID payload
 
     let assignedReferrerId = null;
 
     if (startPayload && startPayload.trim() !== '') {
       let refRaw = startPayload.trim();
-      let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw; 
+      let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw; // Fixed safe parse
       if (refParsed !== userId) {
-        assignedReferrerId = refParsed; 
+        assignedReferrerId = refParsed; // e.g. tg_6908636109
       }
     }
 
@@ -37,6 +37,7 @@ bot.start(async (ctx) => {
     if (fetchError) console.log('Fetch error:', fetchError.message);
 
     if (!existingUser) {
+      // New user registration: is_verified is strictly false, balance starts at 0 until admin verifies & reward claims
       let { error: insertError } = await supabase.from('grm_users').upsert([{
         user_id: userId,
         username: username,
@@ -45,13 +46,14 @@ bot.start(async (ctx) => {
         mined_amount: 0,
         mining_state: 'stopped',
         level: 0,
-        is_verified: false,
+        is_verified: false, // Requires admin verification before counting as successful/claimable
         updated_at: new Date().toISOString()
       }], { onConflict: 'user_id' });
 
       if (insertError) console.log('Insert error:', insertError.message);
 
     } else {
+      // Existing user: attach referrer if missing, keep verification state managed by admin
       if (!existingUser.referrer_id && assignedReferrerId) {
         let { error: updateError } = await supabase.from('grm_users')
           .update({ 
@@ -79,22 +81,23 @@ bot.start(async (ctx) => {
           id: refRelationId,
           referrer_id: assignedReferrerId,
           referred_id: userId,
-          status: 'pending',
+          status: 'pending', // Set to pending initially until admin verification updates it
           created_at: new Date().toISOString()
         }], { onConflict: 'id' });
 
         if (refError) console.log('Referral insert error:', refError.message);
 
+        // Notify Referrer about the new join
         let targetChatId = assignedReferrerId.replace('tg_', '');
         await bot.telegram.sendMessage(
           targetChatId,
-          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 **Note:** This user is currently unverified. Successful status and the reward will unlock once the admin verifies this account!`,
+          `✅ **New Referral Joined!** 🎉\n\n👤 **Username:** ${username}\n🆔 **ID:** \`${rawUserId}\`\n\n🎁 **Note:** This user is currently unverified. Successful status and the 100 GRM claim reward will unlock once the admin verifies this account!`,
           { parse_mode: 'Markdown' }
         ).catch((e) => console.log('Notification failed:', e.message));
       }
     }
 
-    // 3. Send Photo with Welcome Message and Web App / Channel Buttons
+    // 3. Send Photo with Channel Join & Start Mining Buttons (ပုံ ၂ ပုံစံအတိုင်း)
     const captionText = 
       "🚀 *To use this bot, you must join our channel:* [A-TOOLS X](https://t.me/A_ToolsX)\n\n" +
       "👋 *Welcome to GRAM Mining Core!*\n\n" +
@@ -110,7 +113,7 @@ bot.start(async (ctx) => {
       ]
     };
 
-    // Try sending photo first, fallback to text-only if photo ID fails
+    // ပုံနှင့်အတူ စာသားနှင့် ခလုတ်များကို ပို့ပေးခြင်း (အကယ်၍ ပုံမပွင့်ပါက စာသားသက်သက် ပို့ပေးမည်)
     try {
       await ctx.replyWithPhoto(
         "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
