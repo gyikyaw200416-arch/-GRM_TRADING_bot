@@ -39,8 +39,79 @@ export default async function handler(req, res) {
       } catch (e) {}
     }
 
+    // --- GAME START HANDLER (Deduct 10 GRM) ---
+    if (bodyData && bodyData.action === "start_game") {
+      const rawUserId = bodyData.user_id;
+      if (!rawUserId) {
+        return res.status(400).json({ ok: false, error: "Missing user_id for game start" });
+      }
+      const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
+
+      // Fetch current balance from grm_users
+      const { data: user, error: fetchError } = await supabase
+        .from('grm_users')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !user) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      if ((user.balance || 0) < 10) {
+        return res.status(400).json({ ok: false, error: "Insufficient balance (Need 10 GRM)" });
+      }
+
+      const newBalance = user.balance - 10;
+
+      // Update new balance
+      const { error: updateError } = await supabase
+        .from('grm_users')
+        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        return res.status(500).json({ ok: false, error: updateError.message });
+      }
+
+      return res.status(200).json({ ok: true, message: "10 GRM deducted successfully", balance: newBalance });
+    }
+
+    // --- GAME WIN HANDLER (Add 20 GRM to Winner) ---
+    if (bodyData && bodyData.action === "win_game") {
+      const rawUserId = bodyData.user_id;
+      if (!rawUserId) {
+        return res.status(400).json({ ok: false, error: "Missing user_id for game win" });
+      }
+      const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
+
+      // Fetch current balance
+      const { data: user, error: fetchError } = await supabase
+        .from('grm_users')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !user) {
+        return res.status(404).json({ ok: false, error: "User not found" });
+      }
+
+      const newBalance = (user.balance || 0) + 20;
+
+      // Update winner balance with 20 GRM added
+      const { error: updateError } = await supabase
+        .from('grm_users')
+        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        return res.status(500).json({ ok: false, error: updateError.message });
+      }
+
+      return res.status(200).json({ ok: true, message: "20 GRM added to winner balance", balance: newBalance });
+    }
+
     // --- ADMIN PANEL REFERRAL CLAIM COUNT UPDATE HANDLER ---
-    // Handles requests coming from Admin Panel to update max_reward_limit safely (Integer instead of Boolean)
     if (bodyData && (bodyData.action === "update_claim_count" || bodyData.max_reward_limit !== undefined || bodyData.claim_count !== undefined)) {
       const targetUserId = bodyData.user_id ? (bodyData.user_id.toString().startsWith('tg_') ? bodyData.user_id : 'tg_' + bodyData.user_id) : null;
       const newLimit = parseInt(bodyData.max_reward_limit || bodyData.claim_count || 100, 10);
@@ -49,7 +120,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ ok: false, error: "Missing user_id for claim count update" });
       }
 
-      // Update max_reward_limit as an integer in grm_users table
       const { data, error } = await supabase
         .from('grm_users')
         .update({ max_reward_limit: newLimit })
@@ -138,7 +208,7 @@ export default async function handler(req, res) {
                 mining_state: 'stopped',
                 level: 0,
                 is_verified: false,
-                max_reward_limit: 1, // Default initial limit
+                max_reward_limit: 1,
                 updated_at: new Date().toISOString()
               }], { onConflict: 'user_id' });
 
