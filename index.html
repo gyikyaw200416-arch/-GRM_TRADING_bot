@@ -312,19 +312,21 @@
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
-        <!-- GAME TAB (ARCHERY / ARROW GAME) -->
+        <!-- GAME TAB (ARCHERY TARGET SHOOTING GAME) -->
         <div id="tab-game" class="tab-content">
             <div class="top-bar"><span>🎯 Archery Target Game</span></div>
-            <div class="card" style="text-align: center; padding: 25px;">
-                <h3 style="color: #00f0ff; margin-bottom: 10px;">Arrow Hit Challenge</h3>
-                <p style="font-size: 13px; color: #8b949e; margin-bottom: 20px;">Play the archery game! Each attempt costs <span style="color: #ffb400; font-weight: bold;">10 GRM</span>. Hit the target successfully to win <span style="color: #2ea043; font-weight: bold;">20 GRM</span>!</p>
+            <div class="card" style="text-align: center; padding: 15px;">
+                <h3 style="color: #00f0ff; margin-bottom: 5px;">Arrow Hit Challenge</h3>
+                <p style="font-size: 12px; color: #8b949e; margin-bottom: 10px;">Cost: <span style="color: #ffb400; font-weight: bold;">10 GRM</span> | Win: <span style="color: #2ea043; font-weight: bold;">20 GRM</span></p>
                 
-                <div style="background: rgba(0, 240, 255, 0.05); border: 1px dashed rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">🏹🎯</div>
-                    <div id="game-status-text" style="font-size: 14px; font-weight: bold; color: #ffb400;">Ready to Play?</div>
+                <!-- Interactive Canvas Game Area -->
+                <div style="position: relative; width: 100%; max-width: 340px; height: 260px; margin: 0 auto 12px auto; background: #050b14; border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 12px; overflow: hidden; touch-action: none;">
+                    <canvas id="archery-canvas" width="340" height="260" style="display: block; width: 100%; height: 100%;"></canvas>
                 </div>
 
-                <button class="action-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 14px; font-size: 16px;" onclick="playArcheryGame()">🎯 Shoot Arrow (Cost: 10 GRM)</button>
+                <div id="game-status-text" style="font-size: 13px; font-weight: bold; color: #ffb400; margin-bottom: 12px;">လက်ဖြင့် ချိန်၍ ပစ်မှတ်အဝိုင်းသေးပေါ်သို့ လွှတ်ပါ (သို့) ပစ်ခတ်ပါ</div>
+
+                <button class="action-btn" id="shoot-arrow-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 12px; font-size: 15px;" onclick="startArcheryShot()">🎯 Shoot Arrow (Cost: 10 GRM)</button>
             </div>
         </div>
 
@@ -710,6 +712,7 @@
             renderMinersStore();
             checkAdminPermissions();
             await fetchTasksFromSupabase();
+            initArcheryCanvasGame();
             setTimeout(hideSplashScreen, 1000);
         });
 
@@ -1176,6 +1179,9 @@
                 checkAdminPermissions();
             } else if (tabName === 'friends') {
                 fetchReferralStats();
+            } else if (tabName === 'game') {
+                // Resize canvas correctly when switching to game tab
+                setTimeout(resizeArcheryCanvas, 50);
             }
         }
 
@@ -1397,82 +1403,279 @@
             }, 1000);
         }
 
-        // --- NEW ARCHERY GAME LOGIC (Deduct 10 GRM / Win 20 GRM) ---
-        async function playArcheryGame() {
-            const statusText = document.getElementById('game-status-text');
+        // --- INTERACTIVE ARCHERY CANVAS GAME LOGIC ---
+        let archeryCanvas, archeryCtx;
+        let gameState = 'IDLE'; // IDLE, AIMING, FLYING, RESULT
+        let arrowX = 60, arrowY = 190;
+        let targetX = 270, targetY = 90, targetRadius = 24;
+        let targetSpeedY = 1.5;
+        let powerPower = 0;
+        let powerAngle = -Math.PI / 4;
+        let arrowVelX = 0, arrowVelY = 0;
+        let isDragging = false;
+        let dragStartX = 0, dragStartY = 0;
+
+        function initArcheryCanvasGame() {
+            archeryCanvas = document.getElementById('archery-canvas');
+            if (!archeryCanvas) return;
+            archeryCtx = archeryCanvas.getContext('2d');
+
+            resizeArcheryCanvas();
+
+            // Touch / Mouse interaction for aiming (ဆွဲပစ်ရန်)
+            archeryCanvas.addEventListener('pointerdown', (e) => {
+                if (gameState !== 'IDLE') return;
+                const rect = archeryCanvas.getBoundingClientRect();
+                const clientX = e.clientX - rect.left;
+                const clientY = e.clientY - rect.top;
+
+                // Check if touch is near arrow start position
+                if (Math.hypot(clientX - arrowX, clientY - arrowY) < 50) {
+                    isDragging = true;
+                    dragStartX = clientX;
+                    dragStartY = clientY;
+                    powerAngle = -Math.PI / 4;
+                    powerPower = 0;
+                }
+            });
+
+            archeryCanvas.addEventListener('pointermove', (e) => {
+                if (!isDragging || gameState !== 'IDLE') return;
+                const rect = archeryCanvas.getBoundingClientRect();
+                const clientX = e.clientX - rect.left;
+                const clientY = e.clientY - rect.top;
+
+                let dx = dragStartX - clientX;
+                let dy = dragStartY - clientY;
+                powerPower = Math.min(Math.hypot(dx, dy) * 0.25, 22);
+                if (powerPower > 2) {
+                    powerAngle = Math.atan2(dy, dx);
+                }
+            });
+
+            archeryCanvas.addEventListener('pointerup', async () => {
+                if (!isDragging || gameState !== 'IDLE') return;
+                isDragging = false;
+
+                if (powerPower > 3) {
+                    await fireArrowAction();
+                } else {
+                    powerPower = 0;
+                }
+            });
+
+            // Start game loop
+            requestAnimationFrame(archeryGameLoop);
+        }
+
+        function resizeArcheryCanvas() {
+            if (!archeryCanvas) return;
+            // Keep internal resolution fixed
+            archeryCanvas.width = 340;
+            archeryCanvas.height = 260;
+        }
+
+        function archeryGameLoop() {
+            if (archeryCtx) {
+                // Clear background
+                archeryCtx.fillStyle = '#050b14';
+                archeryCtx.fillRect(0, 0, archeryCanvas.width, archeryCanvas.height);
+
+                // Draw background grid lines
+                archeryCtx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+                archeryCtx.lineWidth = 1;
+                for (let x = 0; x < archeryCanvas.width; x += 20) {
+                    archeryCtx.beginPath(); archeryCtx.moveTo(x, 0); archeryCtx.lineTo(x, archeryCanvas.height); archeryCtx.stroke();
+                }
+                for (let y = 0; y < archeryCanvas.height; y += 20) {
+                    archeryCtx.beginPath(); archeryCtx.moveTo(0, y); archeryCtx.lineTo(archeryCanvas.width, y); archeryCtx.stroke();
+                }
+
+                // Move target up and down gently
+                if (gameState === 'IDLE' || gameState === 'AIMING') {
+                    targetY += targetSpeedY;
+                    if (targetY < 50 || targetY > 210) targetSpeedY *= -1;
+                }
+
+                // Draw Target (ပစ်မှတ်အဝိုင်းသေး)
+                drawTarget(targetX, targetY, targetRadius);
+
+                // Draw Bow and Arrow
+                if (gameState === 'FLYING') {
+                    arrowX += arrowVelX;
+                    arrowY += arrowVelY;
+                    arrowVelY += 0.15; // gravity
+
+                    // Check collision with target
+                    let dist = Math.hypot(arrowX - targetX, arrowY - targetY);
+                    if (dist < targetRadius) {
+                        // Hit success!
+                        gameState = 'RESULT';
+                        onArrowHitResult(true);
+                    } else if (arrowX > archeryCanvas.width || arrowY > archeryCanvas.height || arrowX < 0) {
+                        // Missed!
+                        gameState = 'RESULT';
+                        onArrowHitResult(false);
+                    }
+                }
+
+                drawBowAndArrow(arrowX, arrowY, isDragging ? powerAngle : -0.5, isDragging ? powerPower : 0);
+            }
+            requestAnimationFrame(archeryGameLoop);
+        }
+
+        function drawTarget(x, y, radius) {
+            // Outer Red Ring
+            archeryCtx.fillStyle = '#da3633';
+            archeryCtx.beginPath(); archeryCtx.arc(x, y, radius, 0, Math.PI * 2); archeryCtx.fill();
+            // White Ring
+            archeryCtx.fillStyle = '#ffffff';
+            archeryCtx.beginPath(); archeryCtx.arc(x, y, radius * 0.7, 0, Math.PI * 2); archeryCtx.fill();
+            // Inner Red Ring
+            archeryCtx.fillStyle = '#da3633';
+            archeryCtx.beginPath(); archeryCtx.arc(x, y, radius * 0.4, 0, Math.PI * 2); archeryCtx.fill();
+            // Center Bullseye (အဝိုင်းသေး အလယ်ဗဟို)
+            archeryCtx.fillStyle = '#ffb400';
+            archeryCtx.beginPath(); archeryCtx.arc(x, y, radius * 0.18, 0, Math.PI * 2); archeryCtx.fill();
+            
+            // Glow effect
+            archeryCtx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+            archeryCtx.lineWidth = 2;
+            archeryCtx.beginPath(); archeryCtx.arc(x, y, radius, 0, Math.PI * 2); archeryCtx.stroke();
+        }
+
+        function drawBowAndArrow(x, y, angle, power) {
+            // Draw Bow arc
+            archeryCtx.save();
+            archeryCtx.translate(x, y);
+            archeryCtx.rotate(angle);
+
+            archeryCtx.strokeStyle = '#00f0ff';
+            archeryCtx.lineWidth = 3;
+            archeryCtx.beginPath();
+            archeryCtx.arc(0, 0, 25, -Math.PI / 2, Math.PI / 2);
+            archeryCtx.stroke();
+
+            // Draw Bow string & pulling arrow
+            if (power > 0) {
+                archeryCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                archeryCtx.lineWidth = 1;
+                archeryCtx.beginPath();
+                archeryCtx.moveTo(0, -25);
+                archeryCtx.lineTo(-power * 2, 0);
+                archeryCtx.lineTo(0, 25);
+                archeryCtx.stroke();
+
+                // Draw Arrow shaft
+                archeryCtx.strokeStyle = '#ffb400';
+                archeryCtx.lineWidth = 3;
+                archeryCtx.beginPath();
+                archeryCtx.moveTo(-power * 2 - 20, 0);
+                archeryCtx.lineTo(20, 0);
+                archeryCtx.stroke();
+            } else {
+                // Normal arrow loaded
+                archeryCtx.strokeStyle = '#ffb400';
+                archeryCtx.lineWidth = 3;
+                archeryCtx.beginPath();
+                archeryCtx.moveTo(-20, 0);
+                archeryCtx.lineTo(25, 0);
+                archeryCtx.stroke();
+            }
+
+            archeryCtx.restore();
+        }
+
+        async function startArcheryShot() {
+            if (gameState === 'FLYING' || gameState === 'AIMING') return;
+
             if (currentBalance < 10) {
-                alert("Insufficient balance! You need at least 10 GRM to play the game.");
+                alert("လက်ကျန်ငွေ မလုံလောက်ပါ။ (အနည်းဆုံး 10 GRM လိုအပ်ပါသည်)");
                 return;
             }
 
-            statusText.innerText = "Shooting arrow... 🏹🎯";
-
+            // Deduct 10 GRM
             try {
-                // Call API or Supabase to deduct 10 GRM for starting the game
                 if (_supabase) {
-                    const { data: userData, error: fetchErr } = await _supabase
+                    const { data: userData } = await _supabase
                         .from('grm_users')
                         .select('balance')
                         .eq('user_id', currentUserId)
                         .single();
 
-                    if (fetchErr || !userData || (userData.balance || 0) < 10) {
+                    if (!userData || (userData.balance || 0) < 10) {
                         alert("Insufficient balance on server!");
-                        statusText.innerText = "Ready to Play?";
                         return;
                     }
 
                     const newBalance = userData.balance - 10;
-                    const { error: updateErr } = await _supabase
+                    await _supabase
                         .from('grm_users')
                         .update({ balance: newBalance, updated_at: new Date().toISOString() })
                         .eq('user_id', currentUserId);
-
-                    if (updateErr) {
-                        alert("Error processing game start: " + updateErr.message);
-                        statusText.innerText = "Ready to Play?";
-                        return;
-                    }
 
                     baseInitialBalance = newBalance;
                     currentBalance = baseInitialBalance;
                     updateBalanceUI();
                 }
 
-                // Simulate game outcome after 1.5 seconds (50% win chance)
-                setTimeout(async () => {
-                    const isWin = Math.random() >= 0.4; // 60% chance to win
+                arrowX = 60;
+                arrowY = 190;
+                powerPower = 15; // default automatic shoot force if button clicked directly
+                powerAngle = Math.atan2(targetY - arrowY, targetX - arrowX);
 
-                    if (isWin) {
-                        if (_supabase) {
-                            const { data: winData } = await _supabase
-                                .from('grm_users')
-                                .select('balance')
-                                .eq('user_id', currentUserId)
-                                .single();
-
-                            const winBalance = (winData ? winData.balance : currentBalance) + 20;
-                            await _supabase
-                                .from('grm_users')
-                                .update({ balance: winBalance, updated_at: new Date().toISOString() })
-                                .eq('user_id', currentUserId);
-
-                            baseInitialBalance = winBalance;
-                            currentBalance = baseInitialBalance;
-                            updateBalanceUI();
-                        }
-                        statusText.innerHTML = "🎉 Bullseye! You hit the target and won <span style='color: #2ea043;'>+20 GRM</span>!";
-                        alert("Congratulations! You won 20 GRM!");
-                    } else {
-                        statusText.innerHTML = "❌ Missed the target! Better luck next time (-10 GRM).";
-                        alert("Aww, you missed the target!");
-                    }
-                }, 1500);
+                await fireArrowAction();
 
             } catch (err) {
-                console.error("Game error:", err);
-                statusText.innerText = "Ready to Play?";
+                console.error("Archery shoot error:", err);
             }
+        }
+
+        async function fireArrowAction() {
+            gameState = 'FLYING';
+            document.getElementById('game-status-text').innerText = "🏹 လေးကို ပစ်လွှတ်လိုက်ပါပြီ...";
+            document.getElementById('shoot-arrow-btn').disabled = true;
+
+            // Calculate velocity based on angle and power
+            let force = Math.max(powerPower, 10);
+            arrowVelX = Math.cos(powerAngle) * force;
+            arrowVelY = Math.sin(powerAngle) * force;
+        }
+
+        async function onArrowHitResult(isHit) {
+            const statusText = document.getElementById('game-status-text');
+            const shootBtn = document.getElementById('shoot-arrow-btn');
+
+            if (isHit) {
+                if (_supabase) {
+                    const { data: winData } = await _supabase
+                        .from('grm_users')
+                        .select('balance')
+                        .eq('user_id', currentUserId)
+                        .single();
+
+                    const winBalance = (winData ? winData.balance : currentBalance) + 20;
+                    await _supabase
+                        .from('grm_users')
+                        .update({ balance: winBalance, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+
+                    baseInitialBalance = winBalance;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
+                }
+                statusText.innerHTML = "🎉 ထိမှန်ပါပြီ! ဆုကြေးအဖြစ် <span style='color: #2ea043;'>+20 GRM</span> ရရှိသွားပါပြီ!";
+            } else {
+                statusText.innerHTML = "❌ လွဲသွားပါသည်! နောက်တစ်ကြိမ် ထပ်ကြိုးစားပါ။ (-10 GRM)";
+            }
+
+            setTimeout(() => {
+                arrowX = 60;
+                arrowY = 190;
+                gameState = 'IDLE';
+                shootBtn.disabled = false;
+                statusText.innerText = "လက်ဖြင့် ချိန်၍ ပစ်မှတ်အဝိုင်းသေးပေါ်သို့ လွှတ်ပါ (သို့) ပစ်ခတ်ပါ";
+            }, 2000);
         }
 
         function openWithdrawModal() {
