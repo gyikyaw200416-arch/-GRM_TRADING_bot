@@ -442,18 +442,20 @@
         </div>
     </div>
 
-    <!-- 1 VS 1 PVP GAME MODAL -->
+    <!-- 1 VS 1 DICE BATTLE MODAL -->
     <div id="pvp-modal" class="modal-overlay">
         <div class="modal-card" style="text-align: center;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="color: #ffb400;">1 Vs 1 Spin Battle</h3>
+                <h3 style="color: #ffb400;">1 Vs 1 Dice Battle 🎲</h3>
                 <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closePvpModal()">✕</button>
             </div>
-            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;">Stake 10 GRM and spin your luck! Highest number wins the entire pot.</p>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;">Stake 10 GRM and roll the dice! Highest number wins the entire pot.</p>
             
             <div id="pvp-status-box" style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
                 <div style="font-size: 13px; color: #00f0ff; font-weight: bold; margin-bottom: 10px;" id="pvp-battle-title">Ready to Battle</div>
                 
+                <div style="font-size: 45px; margin: 10px 0;" id="dice-graphic">🎲</div>
+
                 <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px;">
                     <div>
                         <div style="font-size: 11px; color: #8b949e;" id="pvp-p1-name">Player 1</div>
@@ -468,7 +470,7 @@
                 <div id="pvp-result-announcement" style="font-size: 13px; font-weight: bold; color: #2ea043; margin-top: 8px;"></div>
             </div>
 
-            <button class="action-btn" id="pvp-spin-btn" style="width: 100%; background: #ffb400; color: #000; padding: 12px; font-size: 15px;" onclick="spinPvpWheel()">Spin & Play (Cost: 10 GRM)</button>
+            <button class="action-btn" id="pvp-play-btn" style="width: 100%; background: #ffb400; color: #000; padding: 12px; font-size: 15px;" onclick="handleDiceAction()">Play (10 GRM)</button>
         </div>
     </div>
 
@@ -1419,7 +1421,7 @@
             }, 1000);
         }
 
-        // 1 VS 1 PVP GAME LOGIC
+        // 1 VS 1 DICE GAME LOGIC
         async function openPvpModal() {
             document.getElementById('pvp-modal').style.display = 'flex';
             await checkAndUpdatePvpDisplay();
@@ -1432,12 +1434,13 @@
         async function checkAndUpdatePvpDisplay() {
             if (!_supabase) return;
             try {
-                // Look for an open waiting match where player_2 is empty
                 let { data: openMatch } = await _supabase
                     .from('grm_pvp_matches')
                     .select('*')
                     .eq('status', 'waiting')
                     .maybeSingle();
+
+                const playBtn = document.getElementById('pvp-play-btn');
 
                 if (openMatch) {
                     if (openMatch.player_1_id === currentUserId) {
@@ -1446,42 +1449,77 @@
                         document.getElementById('pvp-p1-score').innerText = openMatch.player_1_score || '-';
                         document.getElementById('pvp-p2-name').innerText = "Searching...";
                         document.getElementById('pvp-p2-score').innerText = '-';
-                        document.getElementById('pvp-result-announcement').innerText = "Your spin is saved. Waiting for player 2 to join!";
-                        document.getElementById('pvp-spin-btn').innerText = "Match in Progress...";
-                        document.getElementById('pvp-spin-btn').disabled = true;
+                        document.getElementById('dice-graphic').innerText = getDiceEmoji(openMatch.player_1_score);
+                        document.getElementById('pvp-result-announcement').innerText = "Your dice roll is saved. Waiting for player 2!";
+                        playBtn.innerText = "Waiting...";
+                        playBtn.disabled = true;
                     } else {
                         document.getElementById('pvp-battle-title').innerText = "Join Open Battle (10 GRM)";
                         document.getElementById('pvp-p1-name').innerText = openMatch.player_1_name || 'Player 1';
                         document.getElementById('pvp-p1-score').innerText = openMatch.player_1_score;
                         document.getElementById('pvp-p2-name').innerText = currentUserName;
                         document.getElementById('pvp-p2-score').innerText = '-';
-                        document.getElementById('pvp-result-announcement').innerText = "Opponent is waiting! Spin to complete the match.";
-                        document.getElementById('pvp-spin-btn').innerText = "Spin & Complete Match (Cost: 10 GRM)";
-                        document.getElementById('pvp-spin-btn').disabled = false;
+                        document.getElementById('dice-graphic').innerText = '🎲';
+                        document.getElementById('pvp-result-announcement').innerText = "Opponent is waiting! Roll the dice to complete the match.";
+                        playBtn.innerText = "Start (10 GRM)";
+                        playBtn.disabled = false;
                     }
                 } else {
-                    // Check if user has an active completed match to view or can create new
-                    document.getElementById('pvp-battle-title').innerText = "New Spin Battle";
+                    document.getElementById('pvp-battle-title').innerText = "New Dice Battle";
                     document.getElementById('pvp-p1-name').innerText = currentUserName;
                     document.getElementById('pvp-p1-score').innerText = '-';
                     document.getElementById('pvp-p2-name').innerText = "Opponent";
                     document.getElementById('pvp-p2-score').innerText = '-';
+                    document.getElementById('dice-graphic').innerText = '🎲';
                     document.getElementById('pvp-result-announcement').innerText = "";
-                    document.getElementById('pvp-spin-btn').innerText = "Spin & Create Battle (Cost: 10 GRM)";
-                    document.getElementById('pvp-spin-btn').disabled = false;
+                    playBtn.innerText = "Play (10 GRM)";
+                    playBtn.disabled = false;
                 }
             } catch (e) {
                 console.error("Error loading PVP match:", e);
             }
         }
 
-        async function spinPvpWheel() {
-            if (currentBalance < 10) {
-                alert("Insufficient balance! You need at least 10 GRM to play.");
-                return;
-            }
+        function getDiceEmoji(num) {
+            const diceEmojis = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
+            return diceEmojis[num] || '🎲';
+        }
 
-            const mySpinScore = Math.floor(Math.random() * 100) + 1; // 1 to 100 random score
+        async function handleDiceAction() {
+            const playBtn = document.getElementById('pvp-play-btn');
+            
+            if (playBtn.innerText.includes("Play") || playBtn.innerText.includes("Start")) {
+                if (currentBalance < 10) {
+                    alert("Insufficient balance! You need at least 10 GRM to play.");
+                    return;
+                }
+
+                // Deduct 10 GRM entry fee
+                baseInitialBalance -= 10;
+                currentBalance = baseInitialBalance;
+                updateBalanceUI();
+                await updateSupabaseField({ balance: baseInitialBalance });
+
+                playBtn.innerText = "Rolling...";
+                playBtn.disabled = true;
+
+                // Animate rolling dice
+                let rollAnimCount = 0;
+                const rollInterval = setInterval(() => {
+                    let tempVal = Math.floor(Math.random() * 6) + 1;
+                    document.getElementById('dice-graphic').innerText = getDiceEmoji(tempVal);
+                    rollAnimCount++;
+                    if (rollAnimCount > 10) {
+                        clearInterval(rollInterval);
+                        finalizeDiceRoll();
+                    }
+                }, 100);
+            }
+        }
+
+        async function finalizeDiceRoll() {
+            const myDiceScore = Math.floor(Math.random() * 6) + 1; // 1 to 6
+            document.getElementById('dice-graphic').innerText = getDiceEmoji(myDiceScore);
 
             if (!_supabase) {
                 alert("Supabase connection missing!");
@@ -1489,12 +1527,6 @@
             }
 
             try {
-                // Deduct 10 GRM entry fee
-                baseInitialBalance -= 10;
-                currentBalance = baseInitialBalance;
-                updateBalanceUI();
-                await updateSupabaseField({ balance: baseInitialBalance });
-
                 let { data: openMatch } = await _supabase
                     .from('grm_pvp_matches')
                     .select('*')
@@ -1502,39 +1534,38 @@
                     .maybeSingle();
 
                 if (!openMatch) {
-                    // Create new waiting match as Player 1
                     const newMatchId = 'pvp_' + Date.now();
                     await _supabase.from('grm_pvp_matches').insert([{
                         id: newMatchId,
                         player_1_id: currentUserId,
                         player_1_name: currentUserName,
-                        player_1_score: mySpinScore,
+                        player_1_score: myDiceScore,
                         status: 'waiting'
                     }]);
 
-                    document.getElementById('pvp-p1-score').innerText = mySpinScore;
+                    document.getElementById('pvp-p1-score').innerText = myDiceScore;
                     document.getElementById('pvp-battle-title').innerText = "Waiting for Opponent...";
-                    document.getElementById('pvp-result-announcement').innerText = `You spun: ${mySpinScore}. Waiting for another player!`;
-                    document.getElementById('pvp-spin-btn').innerText = "Waiting...";
-                    document.getElementById('pvp-spin-btn').disabled = true;
-                    alert(`You spun ${mySpinScore}! Match created. Waiting for opponent.`);
+                    document.getElementById('pvp-result-announcement').innerText = `You rolled: ${myDiceScore}. Waiting for another player!`;
+                    const playBtn = document.getElementById('pvp-play-btn');
+                    playBtn.innerText = "Waiting...";
+                    playBtn.disabled = true;
+                    alert(`You rolled ${myDiceScore} 🎲! Match created. Waiting for opponent.`);
                 } else {
-                    // Join existing match as Player 2
                     const p1Score = openMatch.player_1_score;
-                    const p2Score = mySpinScore;
+                    const p2Score = myDiceScore;
                     let winnerText = "";
-                    let prizePool = 20; // 10 + 10 GRM
+                    let prizePool = 20;
 
                     if (p2Score > p1Score) {
                         baseInitialBalance += prizePool;
                         currentBalance = baseInitialBalance;
-                        winedText = `${currentUserName} Won the ${prizePool} GRM pot!`;
+                        winnerText = `${currentUserName} Won the ${prizePool} GRM pot!`;
                     } else if (p1Score > p2Score) {
-                        winedText = `${openMatch.player_1_name} Won the ${prizePool} GRM pot!`;
+                        winnerText = `${openMatch.player_1_name} Won the ${prizePool} GRM pot!`;
                     } else {
-                        baseInitialBalance += 10; // Refund on tie
+                        baseInitialBalance += 10;
                         currentBalance = baseInitialBalance;
-                        winedText = "It's a Tie! Entry fee refunded.";
+                        winnerText = "It's a Tie! Entry fee refunded.";
                     }
 
                     updateBalanceUI();
@@ -1553,14 +1584,16 @@
                     document.getElementById('pvp-p2-name').innerText = currentUserName;
                     document.getElementById('pvp-p2-score').innerText = p2Score;
                     document.getElementById('pvp-battle-title').innerText = "Battle Completed!";
-                    document.getElementById('pvp-result-announcement').innerText = winedText;
-                    document.getElementById('pvp-spin-btn').innerText = "Play Again";
-                    document.getElementById('pvp-spin-btn').disabled = false;
+                    document.getElementById('pvp-result-announcement').innerText = winnerText;
+                    
+                    const playBtn = document.getElementById('pvp-play-btn');
+                    playBtn.innerText = "Play (10 GRM)";
+                    playBtn.disabled = false;
 
-                    alert(`Match finished!\n${openMatch.player_1_name} (${p1Score}) vs ${currentUserName} (${p2Score})\n${winedText}`);
+                    alert(`Dice Battle Finished!\n${openMatch.player_1_name} (${p1Score}) vs ${currentUserName} (${p2Score})\n${winnerText}`);
                 }
             } catch (e) {
-                console.error("PVP spin error:", e);
+                console.error("Dice roll error:", e);
                 alert("An error occurred during the battle. Please try again.");
             }
         }
