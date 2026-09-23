@@ -324,7 +324,7 @@
                     <canvas id="archery-canvas" width="340" height="260" style="display: block; width: 100%; height: 100%;"></canvas>
                 </div>
 
-                <div id="game-status-text" style="font-size: 13px; font-weight: bold; color: #ffb400; margin-bottom: 12px;">လက်ဖြင့် ချိန်၍ ပစ်မှတ်အဝိုင်းသေးပေါ်သို့ လွှတ်ပါ (သို့) ပစ်ခတ်ပါ</div>
+                <div id="game-status-text" style="font-size: 13px; font-weight: bold; color: #ffb400; margin-bottom: 12px;">Drag back to aim and release, or shoot directly! (Cost 10 GRM)</div>
 
                 <button class="action-btn" id="shoot-arrow-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 12px; font-size: 15px;" onclick="startArcheryShot()">🎯 Shoot Arrow (Cost: 10 GRM)</button>
             </div>
@@ -1180,7 +1180,6 @@
             } else if (tabName === 'friends') {
                 fetchReferralStats();
             } else if (tabName === 'game') {
-                // Resize canvas correctly when switching to game tab
                 setTimeout(resizeArcheryCanvas, 50);
             }
         }
@@ -1403,14 +1402,14 @@
             }, 1000);
         }
 
-        // --- INTERACTIVE ARCHERY CANVAS GAME LOGIC ---
+        // --- UPDATED INTERACTIVE ARCHERY CANVAS GAME LOGIC ---
         let archeryCanvas, archeryCtx;
-        let gameState = 'IDLE'; // IDLE, AIMING, FLYING, RESULT
-        let arrowX = 60, arrowY = 190;
-        let targetX = 270, targetY = 90, targetRadius = 24;
-        let targetSpeedY = 1.5;
+        let gameState = 'IDLE'; 
+        let arrowX = 50, arrowY = 190;
+        let targetX = 300, targetY = 90, targetRadius = 22;
+        let targetSpeedY = 2.5; // Increased target speed
         let powerPower = 0;
-        let powerAngle = -Math.PI / 4;
+        let powerAngle = 0;
         let arrowVelX = 0, arrowVelY = 0;
         let isDragging = false;
         let dragStartX = 0, dragStartY = 0;
@@ -1422,19 +1421,17 @@
 
             resizeArcheryCanvas();
 
-            // Touch / Mouse interaction for aiming (ဆွဲပစ်ရန်)
             archeryCanvas.addEventListener('pointerdown', (e) => {
                 if (gameState !== 'IDLE') return;
                 const rect = archeryCanvas.getBoundingClientRect();
                 const clientX = e.clientX - rect.left;
                 const clientY = e.clientY - rect.top;
 
-                // Check if touch is near arrow start position
                 if (Math.hypot(clientX - arrowX, clientY - arrowY) < 50) {
                     isDragging = true;
                     dragStartX = clientX;
                     dragStartY = clientY;
-                    powerAngle = -Math.PI / 4;
+                    powerAngle = 0;
                     powerPower = 0;
                 }
             });
@@ -1447,7 +1444,7 @@
 
                 let dx = dragStartX - clientX;
                 let dy = dragStartY - clientY;
-                powerPower = Math.min(Math.hypot(dx, dy) * 0.25, 22);
+                powerPower = Math.min(Math.hypot(dx, dy) * 0.25, 25);
                 if (powerPower > 2) {
                     powerAngle = Math.atan2(dy, dx);
                 }
@@ -1458,30 +1455,26 @@
                 isDragging = false;
 
                 if (powerPower > 3) {
-                    await fireArrowAction();
+                    await processDeductAndShoot(powerAngle, powerPower);
                 } else {
                     powerPower = 0;
                 }
             });
 
-            // Start game loop
             requestAnimationFrame(archeryGameLoop);
         }
 
         function resizeArcheryCanvas() {
             if (!archeryCanvas) return;
-            // Keep internal resolution fixed
             archeryCanvas.width = 340;
             archeryCanvas.height = 260;
         }
 
         function archeryGameLoop() {
             if (archeryCtx) {
-                // Clear background
                 archeryCtx.fillStyle = '#050b14';
                 archeryCtx.fillRect(0, 0, archeryCanvas.width, archeryCanvas.height);
 
-                // Draw background grid lines
                 archeryCtx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
                 archeryCtx.lineWidth = 1;
                 for (let x = 0; x < archeryCanvas.width; x += 20) {
@@ -1491,110 +1484,108 @@
                     archeryCtx.beginPath(); archeryCtx.moveTo(0, y); archeryCtx.lineTo(archeryCanvas.width, y); archeryCtx.stroke();
                 }
 
-                // Move target up and down gently
                 if (gameState === 'IDLE' || gameState === 'AIMING') {
                     targetY += targetSpeedY;
-                    if (targetY < 50 || targetY > 210) targetSpeedY *= -1;
+                    if (targetY < 45 || targetY > 215) targetSpeedY *= -1;
                 }
 
-                // Draw Target (ပစ်မှတ်အဝိုင်းသေး)
                 drawTarget(targetX, targetY, targetRadius);
 
-                // Draw Bow and Arrow
                 if (gameState === 'FLYING') {
                     arrowX += arrowVelX;
                     arrowY += arrowVelY;
-                    arrowVelY += 0.15; // gravity
+                    arrowVelY += 0.12; 
 
-                    // Check collision with target
                     let dist = Math.hypot(arrowX - targetX, arrowY - targetY);
                     if (dist < targetRadius) {
-                        // Hit success!
                         gameState = 'RESULT';
                         onArrowHitResult(true);
                     } else if (arrowX > archeryCanvas.width || arrowY > archeryCanvas.height || arrowX < 0) {
-                        // Missed!
                         gameState = 'RESULT';
                         onArrowHitResult(false);
                     }
                 }
 
-                drawBowAndArrow(arrowX, arrowY, isDragging ? powerAngle : -0.5, isDragging ? powerPower : 0);
+                let currentDrawAngle = isDragging ? powerAngle : 0;
+                drawBowAndCorrectArrow(arrowX, arrowY, currentDrawAngle, isDragging ? powerPower : 0);
             }
             requestAnimationFrame(archeryGameLoop);
         }
 
         function drawTarget(x, y, radius) {
-            // Outer Red Ring
             archeryCtx.fillStyle = '#da3633';
             archeryCtx.beginPath(); archeryCtx.arc(x, y, radius, 0, Math.PI * 2); archeryCtx.fill();
-            // White Ring
             archeryCtx.fillStyle = '#ffffff';
             archeryCtx.beginPath(); archeryCtx.arc(x, y, radius * 0.7, 0, Math.PI * 2); archeryCtx.fill();
-            // Inner Red Ring
             archeryCtx.fillStyle = '#da3633';
             archeryCtx.beginPath(); archeryCtx.arc(x, y, radius * 0.4, 0, Math.PI * 2); archeryCtx.fill();
-            // Center Bullseye (အဝိုင်းသေး အလယ်ဗဟို)
             archeryCtx.fillStyle = '#ffb400';
             archeryCtx.beginPath(); archeryCtx.arc(x, y, radius * 0.18, 0, Math.PI * 2); archeryCtx.fill();
             
-            // Glow effect
             archeryCtx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
             archeryCtx.lineWidth = 2;
             archeryCtx.beginPath(); archeryCtx.arc(x, y, radius, 0, Math.PI * 2); archeryCtx.stroke();
         }
 
-        function drawBowAndArrow(x, y, angle, power) {
-            // Draw Bow arc
+        function drawBowAndCorrectArrow(x, y, angle, power) {
             archeryCtx.save();
             archeryCtx.translate(x, y);
-            archeryCtx.rotate(angle);
 
+            // Draw Bow Arc (Fixed position)
             archeryCtx.strokeStyle = '#00f0ff';
             archeryCtx.lineWidth = 3;
             archeryCtx.beginPath();
             archeryCtx.arc(0, 0, 25, -Math.PI / 2, Math.PI / 2);
             archeryCtx.stroke();
 
-            // Draw Bow string & pulling arrow
+            // Rotate for Arrow aiming direction
+            archeryCtx.rotate(angle);
+
             if (power > 0) {
                 archeryCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
                 archeryCtx.lineWidth = 1;
                 archeryCtx.beginPath();
                 archeryCtx.moveTo(0, -25);
-                archeryCtx.lineTo(-power * 2, 0);
+                archeryCtx.lineTo(-power * 1.5, 0);
                 archeryCtx.lineTo(0, 25);
                 archeryCtx.stroke();
-
-                // Draw Arrow shaft
-                archeryCtx.strokeStyle = '#ffb400';
-                archeryCtx.lineWidth = 3;
-                archeryCtx.beginPath();
-                archeryCtx.moveTo(-power * 2 - 20, 0);
-                archeryCtx.lineTo(20, 0);
-                archeryCtx.stroke();
-            } else {
-                // Normal arrow loaded
-                archeryCtx.strokeStyle = '#ffb400';
-                archeryCtx.lineWidth = 3;
-                archeryCtx.beginPath();
-                archeryCtx.moveTo(-20, 0);
-                archeryCtx.lineTo(25, 0);
-                archeryCtx.stroke();
             }
+
+            // Corrected Arrow Head facing forward (Right side -> Tip at positive X)
+            archeryCtx.strokeStyle = '#ffb400';
+            archeryCtx.lineWidth = 3;
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(-35, 0);
+            archeryCtx.lineTo(15, 0);
+            archeryCtx.stroke();
+
+            // Arrow Head Triangle (pointing forward to the right)
+            archeryCtx.fillStyle = '#ffb400';
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(20, 0);
+            archeryCtx.lineTo(10, -5);
+            archeryCtx.lineTo(10, 5);
+            archeryCtx.closePath();
+            archeryCtx.fill();
+
+            // Arrow Fletching (Feathers at the back)
+            archeryCtx.fillStyle = '#00f0ff';
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(-30, 0);
+            archeryCtx.lineTo(-38, -6);
+            archeryCtx.lineTo(-33, 0);
+            archeryCtx.closePath();
+            archeryCtx.fill();
 
             archeryCtx.restore();
         }
 
-        async function startArcheryShot() {
-            if (gameState === 'FLYING' || gameState === 'AIMING') return;
-
+        async function processDeductAndShoot(angle, power) {
             if (currentBalance < 10) {
-                alert("လက်ကျန်ငွေ မလုံလောက်ပါ။ (အနည်းဆုံး 10 GRM လိုအပ်ပါသည်)");
-                return;
+                alert("Insufficient balance! Minimum 10 GRM required.");
+                return false;
             }
 
-            // Deduct 10 GRM
             try {
                 if (_supabase) {
                     const { data: userData } = await _supabase
@@ -1605,7 +1596,7 @@
 
                     if (!userData || (userData.balance || 0) < 10) {
                         alert("Insufficient balance on server!");
-                        return;
+                        return false;
                     }
 
                     const newBalance = userData.balance - 10;
@@ -1619,16 +1610,31 @@
                     updateBalanceUI();
                 }
 
-                arrowX = 60;
+                arrowX = 50;
                 arrowY = 190;
-                powerPower = 15; // default automatic shoot force if button clicked directly
-                powerAngle = Math.atan2(targetY - arrowY, targetX - arrowX);
+                powerAngle = angle;
+                powerPower = power;
 
                 await fireArrowAction();
-
+                return true;
             } catch (err) {
-                console.error("Archery shoot error:", err);
+                console.error("Deduct and shoot error:", err);
+                return false;
             }
+        }
+
+        async function startArcheryShot() {
+            if (gameState === 'FLYING' || gameState === 'AIMING') return;
+
+            if (currentBalance < 10) {
+                alert("လက်ကျန်ငွေ မလုံလောက်ပါ။ (အနည်းဆုံး 10 GRM လိုအပ်ပါသည်)");
+                return;
+            }
+
+            let defaultAngle = Math.atan2(targetY - arrowY, targetX - arrowX);
+            let defaultPower = 18;
+
+            await processDeductAndShoot(defaultAngle, defaultPower);
         }
 
         async function fireArrowAction() {
@@ -1636,8 +1642,7 @@
             document.getElementById('game-status-text').innerText = "🏹 လေးကို ပစ်လွှတ်လိုက်ပါပြီ...";
             document.getElementById('shoot-arrow-btn').disabled = true;
 
-            // Calculate velocity based on angle and power
-            let force = Math.max(powerPower, 10);
+            let force = Math.max(powerPower, 12);
             arrowVelX = Math.cos(powerAngle) * force;
             arrowVelY = Math.sin(powerAngle) * force;
         }
@@ -1670,11 +1675,11 @@
             }
 
             setTimeout(() => {
-                arrowX = 60;
+                arrowX = 50;
                 arrowY = 190;
                 gameState = 'IDLE';
                 shootBtn.disabled = false;
-                statusText.innerText = "လက်ဖြင့် ချိန်၍ ပစ်မှတ်အဝိုင်းသေးပေါ်သို့ လွှတ်ပါ (သို့) ပစ်ခတ်ပါ";
+                statusText.innerText = "Drag back to aim and release, or shoot directly! (Cost 10 GRM)";
             }, 2000);
         }
 
