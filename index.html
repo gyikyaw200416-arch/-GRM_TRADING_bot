@@ -312,6 +312,22 @@
             <div class="miners-grid" id="miners-store-grid"></div>
         </div>
 
+        <!-- GAME TAB (ARCHERY / ARROW GAME) -->
+        <div id="tab-game" class="tab-content">
+            <div class="top-bar"><span>🎯 Archery Target Game</span></div>
+            <div class="card" style="text-align: center; padding: 25px;">
+                <h3 style="color: #00f0ff; margin-bottom: 10px;">Arrow Hit Challenge</h3>
+                <p style="font-size: 13px; color: #8b949e; margin-bottom: 20px;">Play the archery game! Each attempt costs <span style="color: #ffb400; font-weight: bold;">10 GRM</span>. Hit the target successfully to win <span style="color: #2ea043; font-weight: bold;">20 GRM</span>!</p>
+                
+                <div style="background: rgba(0, 240, 255, 0.05); border: 1px dashed rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">🏹🎯</div>
+                    <div id="game-status-text" style="font-size: 14px; font-weight: bold; color: #ffb400;">Ready to Play?</div>
+                </div>
+
+                <button class="action-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 14px; font-size: 16px;" onclick="playArcheryGame()">🎯 Shoot Arrow (Cost: 10 GRM)</button>
+            </div>
+        </div>
+
         <!-- FRIENDS TAB -->
         <div id="tab-friends" class="tab-content">
             <div class="top-bar"><span>Friends & Referrals</span></div>
@@ -468,10 +484,12 @@
         </div>
     </div>
 
+    <!-- Bottom Navigation with Game Tab Added -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">✈️</span><span>Mine</span></button>
         <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
         <button class="nav-item" onclick="switchTab('miners', this)"><span class="icon">⚡</span><span>Miners</span></button>
+        <button class="nav-item" onclick="switchTab('game', this)"><span class="icon">🎯</span><span>Game</span></button>
         <button class="nav-item" onclick="switchTab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
         <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
     </div>
@@ -1377,6 +1395,84 @@
                 minedAmount = elapsed * currentRate;
                 amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
             }, 1000);
+        }
+
+        // --- NEW ARCHERY GAME LOGIC (Deduct 10 GRM / Win 20 GRM) ---
+        async function playArcheryGame() {
+            const statusText = document.getElementById('game-status-text');
+            if (currentBalance < 10) {
+                alert("Insufficient balance! You need at least 10 GRM to play the game.");
+                return;
+            }
+
+            statusText.innerText = "Shooting arrow... 🏹🎯";
+
+            try {
+                // Call API or Supabase to deduct 10 GRM for starting the game
+                if (_supabase) {
+                    const { data: userData, error: fetchErr } = await _supabase
+                        .from('grm_users')
+                        .select('balance')
+                        .eq('user_id', currentUserId)
+                        .single();
+
+                    if (fetchErr || !userData || (userData.balance || 0) < 10) {
+                        alert("Insufficient balance on server!");
+                        statusText.innerText = "Ready to Play?";
+                        return;
+                    }
+
+                    const newBalance = userData.balance - 10;
+                    const { error: updateErr } = await _supabase
+                        .from('grm_users')
+                        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+
+                    if (updateErr) {
+                        alert("Error processing game start: " + updateErr.message);
+                        statusText.innerText = "Ready to Play?";
+                        return;
+                    }
+
+                    baseInitialBalance = newBalance;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
+                }
+
+                // Simulate game outcome after 1.5 seconds (50% win chance)
+                setTimeout(async () => {
+                    const isWin = Math.random() >= 0.4; // 60% chance to win
+
+                    if (isWin) {
+                        if (_supabase) {
+                            const { data: winData } = await _supabase
+                                .from('grm_users')
+                                .select('balance')
+                                .eq('user_id', currentUserId)
+                                .single();
+
+                            const winBalance = (winData ? winData.balance : currentBalance) + 20;
+                            await _supabase
+                                .from('grm_users')
+                                .update({ balance: winBalance, updated_at: new Date().toISOString() })
+                                .eq('user_id', currentUserId);
+
+                            baseInitialBalance = winBalance;
+                            currentBalance = baseInitialBalance;
+                            updateBalanceUI();
+                        }
+                        statusText.innerHTML = "🎉 Bullseye! You hit the target and won <span style='color: #2ea043;'>+20 GRM</span>!";
+                        alert("Congratulations! You won 20 GRM!");
+                    } else {
+                        statusText.innerHTML = "❌ Missed the target! Better luck next time (-10 GRM).";
+                        alert("Aww, you missed the target!");
+                    }
+                }, 1500);
+
+            } catch (err) {
+                console.error("Game error:", err);
+                statusText.innerText = "Ready to Play?";
+            }
         }
 
         function openWithdrawModal() {
