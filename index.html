@@ -419,7 +419,7 @@
                     <div class="profile-icon-box">↗️</div>
                     <div>
                         <div class="profile-label">Withdraw</div>
-                        <div class="profile-sublabel">Transfer Balance to Wallet<br><span style="color: #00f0ff; font-size: 10px; font-weight: bold;">5000 GRM = 1GRAM</span></div>
+                        <div class="profile-sublabel">Transfer Balance to Wallet<br><span style="color: #00f0ff; font-size: 10px; font-weight: bold;">10000 GRM = 1GRAM</span></div>
                     </div>
                 </div>
                 <button class="profile-btn-yellow" onclick="openWithdrawModal()">Withdraw</button>
@@ -496,7 +496,7 @@
                 <h3 style="color: #ffb400;">🎲 Dice Battle Rooms</h3>
                 <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeDiceRoomsModal()">✕</button>
             </div>
-            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;" id="dice-room-desc-text">အခန်းတစ်ခုကို ရွေးချယ်ပြီး အန်စာတုံးတိုက်ပွဲ စတင်လိုက်ပါ (အနိုင်ရသူက 19 GRM ရမည်)</p>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;" id="dice-room-desc-text">Choose a room to start the dice battle (Winner takes 19 GRM)</p>
             
             <div class="dice-room-grid">
                 <div class="dice-room-card" onclick="startDiceBattle(10)">
@@ -676,7 +676,7 @@
 
         function startDiceBattle(betAmount) {
             if (currentBalance < betAmount) {
-                alert(`Balance မလုံလောက်ပါ။ ဤအခန်းအတွက် ${betAmount} GRM လိုအပ်ပါသည်။`);
+                alert(`Insufficient balance! This room requires ${betAmount} GRM.`);
                 return;
             }
 
@@ -761,24 +761,23 @@
             let prizeAmount = currentDiceBet === 10 ? 19 : (currentDiceBet === 20 ? 38 : (currentDiceBet === 30 ? 57 : 95));
 
             if (playerDiceVal > opponentDiceVal) {
-                // Net win addition: prizeAmount - currentDiceBet (e.g., win 19, net profit +9 added to balance)
                 let netProfit = prizeAmount - currentDiceBet;
                 baseInitialBalance += netProfit;
                 currentBalance = baseInitialBalance;
                 updateBalanceUI();
                 await updateSupabaseField({ balance: baseInitialBalance });
                 resultEl.style.color = '#2ea043';
-                resultEl.innerText = `🎉 You Win! +${prizeAmount} GRM ရရှိပါပြီ။`;
+                resultEl.innerText = `🎉 You Win! Received +${prizeAmount} GRM.`;
             } else if (playerDiceVal < opponentDiceVal) {
                 baseInitialBalance -= currentDiceBet;
                 currentBalance = baseInitialBalance;
                 updateBalanceUI();
                 await updateSupabaseField({ balance: baseInitialBalance });
                 resultEl.style.color = '#da3633';
-                resultEl.innerText = `😢 You Lose! -${currentDiceBet} GRM ရှုံးနိမ့်သွားပါသည်။`;
+                resultEl.innerText = `😢 You Lose! Lost -${currentDiceBet} GRM.`;
             } else {
                 resultEl.style.color = '#ffb400';
-                resultEl.innerText = `🤝 Draw! အမှတ်တူညီနေသဖြင့် ဒင်္ဂါးပြန်အမ်းပါသည်။`;
+                resultEl.innerText = `🤝 Draw! Scores are equal, bet amount refunded.`;
             }
         }
 
@@ -1910,7 +1909,7 @@
                     taskStates[taskId] = 'joined';
                     renderTasksList();
                 } else {
-                    alert("Please join the channel first✅");
+                    alert("Please join the channel first ✅");
                     btn.innerText = "Verify Check";
                     btn.disabled = false;
                 }
