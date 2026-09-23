@@ -127,6 +127,13 @@
         }
         .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
 
+        .dice-menu-btn {
+            background: linear-gradient(135deg, #ff8800 0%, #ffb400 100%);
+            color: #000; width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 180, 0, 0.4); margin-top: 10px; letter-spacing: 1px;
+        }
+
         .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .miner-card { background: rgba(13, 20, 33, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; }
         .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
@@ -149,9 +156,7 @@
         .badge-lock { background-color: #1a2333; color: #8b949e; cursor: not-allowed; }
 
         /* 3D Dice Styles */
-        .dice-battle-container { text-align: center; padding: 10px; display: none; }
-        .dice-battle-container.active { display: block; }
-        
+        .dice-battle-container { text-align: center; padding: 10px; }
         .scene { width: 80px; height: 80px; margin: 10px auto; perspective: 600px; }
         .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s ease-in-out; }
         .cube.rolling { animation: rollDiceAnim 1.2s infinite linear; }
@@ -168,10 +173,10 @@
             display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
             padding: 8px; box-shadow: inset 0 0 12px rgba(0,0,0,0.2);
         }
-        .dot { background: #111; border-radius: 50%; width: 10px; height: 10px; align-self: center; justify-self: center; box-shadow: inset 0 2px 3px rgba(0,0,0,0.6); }
+        .dot { background: #111; border-radius: 50%; width: 10px; height: 10px; align-self: center; justify-self: center; box-shadow: inset 0 1px 2px rgba(0,0,0,0.6); }
         .dot.red { background: #e74c3c; }
 
-        /* Cube Face Positions for 80x80 size (translateZ = 40px) */
+        /* Cube Face Positions */
         .cube__face--1 { transform: rotateY(0deg) translateZ(40px); }
         .cube__face--2 { transform: rotateY(-90deg) translateZ(40px); }
         .cube__face--3 { transform: rotateY(180deg) translateZ(40px); }
@@ -187,7 +192,7 @@
         .cube.show-5 { transform: rotateX(-90deg); }
         .cube.show-6 { transform: rotateX(90deg); }
 
-        .battle-arena-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin: 15px 0; }
+        .battle-arena-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin: 10px 0; }
         .battle-player-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(0,240,255,0.2); border-radius: 12px; padding: 10px; text-align: center; }
 
         .ref-box-card { background: rgba(13, 22, 38, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 14px; padding: 15px; margin-bottom: 12px; }
@@ -252,6 +257,13 @@
         .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
 
         .withdraw-req-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 11px; }
+        
+        /* Rooms Grid Styles */
+        .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .room-card { background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .room-card:hover { background: rgba(0, 240, 255, 0.15); border-color: #00f0ff; transform: translateY(-2px); }
+        .room-title { font-size: 14px; font-weight: bold; color: #ffb400; margin-bottom: 5px; }
+        .room-desc { font-size: 11px; color: #8b949e; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -305,9 +317,58 @@
             </div>
             
             <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
-            <button class="action-btn" id="open-dice-modal-btn" style="width: 100%; background: #ffb400; color: #000; margin-top: 10px; padding: 14px; font-size: 16px; border-radius: 12px;" onclick="openDiceBattleModal()">🎲 Play Dice Battle</button>
+            
+            <!-- Play Dice Battle Button (Right below Claim) -->
+            <button class="dice-menu-btn" onclick="openDiceRoomsModal()">🎲 Play Dice Battle</button>
 
-            <!-- 1 VS 1 DICE BATTLE CARD (Inside Modal or Embedded) -->
+            <!-- 1 VS 1 DICE BATTLE ARENA CARD -->
+            <div class="card" id="dice-battle-arena-card" style="margin-top: 20px; display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="color: #ffb400; font-size: 15px;" id="active-dice-room-title">🎲 1 Vs 1 Dice Battle</h3>
+                    <span style="font-size: 11px; color: #00f0ff;" id="active-dice-stake-label">Stake: 10 GRM</span>
+                </div>
+                <p style="font-size: 11px; color: #8b949e; margin-bottom: 12px;">Roll your 3D dice! Highest number wins the entire pot (ကြီးသူစား).</p>
+                
+                <div class="battle-arena-grid">
+                    <!-- Player 1 Side -->
+                    <div class="battle-player-box">
+                        <div style="font-size: 11px; color: #8b949e; margin-bottom: 4px;" id="battle-p1-name">You</div>
+                        <div class="scene" style="width: 70px; height: 70px; margin: 5px auto;">
+                            <div class="cube show-1" id="p1-dice-cube">
+                                <div class="cube__face cube__face--1"><div></div><div></div><div></div><div></div><div class="dot red"></div><div></div><div></div><div></div><div></div></div>
+                                <div class="cube__face cube__face--2"><div class="dot"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--3"><div class="dot"></div><div></div><div></div><div></div><div class="dot"></div><div></div><div></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--4"><div class="dot"></div><div></div><div class="dot"></div><div></div><div></div><div></div><div class="dot"></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--5"><div class="dot"></div><div></div><div class="dot"></div><div></div><div class="dot"></div><div></div><div class="dot"></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--6"><div class="dot"></div><div></div><div class="dot"></div><div class="dot"></div><div></div><div class="dot"></div><div class="dot"></div><div></div><div class="dot"></div></div>
+                            </div>
+                        </div>
+                        <div style="font-size: 14px; font-weight: bold; color: #ffb400; margin-top: 4px;" id="battle-p1-score">-</div>
+                    </div>
+
+                    <div style="font-weight: bold; color: #00f0ff; font-size: 13px;">VS</div>
+
+                    <!-- Player 2 / Opponent Side -->
+                    <div class="battle-player-box">
+                        <div style="font-size: 11px; color: #8b949e; margin-bottom: 4px;" id="battle-p2-name">Opponent</div>
+                        <div class="scene" style="width: 70px; height: 70px; margin: 5px auto;">
+                            <div class="cube show-1" id="p2-dice-cube">
+                                <div class="cube__face cube__face--1"><div></div><div></div><div></div><div></div><div class="dot red"></div><div></div><div></div><div></div><div></div></div>
+                                <div class="cube__face cube__face--2"><div class="dot"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--3"><div class="dot"></div><div></div><div></div><div></div><div class="dot"></div><div></div><div></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--4"><div class="dot"></div><div></div><div class="dot"></div><div></div><div></div><div></div><div class="dot"></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--5"><div class="dot"></div><div></div><div class="dot"></div><div></div><div class="dot"></div><div></div><div class="dot"></div><div></div><div class="dot"></div></div>
+                                <div class="cube__face cube__face--6"><div class="dot"></div><div></div><div class="dot"></div><div class="dot"></div><div></div><div class="dot"></div><div class="dot"></div><div></div><div class="dot"></div></div>
+                            </div>
+                        </div>
+                        <div style="font-size: 14px; font-weight: bold; color: #8b949e; margin-top: 4px;" id="battle-p2-score">Waiting...</div>
+                    </div>
+                </div>
+
+                <div id="dice-result-text" style="font-size: 13px; font-weight: bold; color: #00f0ff; margin: 10px 0; text-align: center;">Ready to Roll</div>
+
+                <button class="action-btn" id="dice-battle-btn" style="width: 100%; background: #ffb400; color: #000; margin-top: 5px;" onclick="executeUserDiceRoll()">Roll Your Dice</button>
+            </div>
         </div>
 
         <!-- TASKS TAB -->
@@ -462,121 +523,41 @@
         </div>
     </div>
 
-    <!-- Modals -->
-    <div id="dice-battle-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 380px;">
+    <!-- Dice Rooms Selection Modal -->
+    <div id="dice-rooms-modal" class="modal-overlay">
+        <div class="modal-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="color: #ffb400;">🎲 1 Vs 1 Dice Battle</h3>
-                <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeDiceBattleModal()">✕</button>
+                <h3 style="color: #ffb400;">🎲 Select Dice Battle Room</h3>
+                <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeDiceRoomsModal()">✕</button>
             </div>
-            <p style="font-size: 11px; color: #8b949e; margin-bottom: 12px;">Choose your staking room. Highest number wins the entire pot (ကြီးသူစား).</p>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 10px;">Choose your stake room to start a 1 vs 1 turn-based battle:</p>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
-                <button class="action-btn room-btn" id="room-10" style="background: #132744; border: 1px solid #00f0ff; color: #fff;" onclick="selectDiceRoom(10)">Room: 10 GRM</button>
-                <button class="action-btn room-btn" id="room-20" style="background: #132744; border: 1px solid rgba(0,240,255,0.3); color: #8b949e;" onclick="selectDiceRoom(20)">Room: 20 GRM</button>
-                <button class="action-btn room-btn" id="room-30" style="background: #132744; border: 1px solid rgba(0,240,255,0.3); color: #8b949e;" onclick="selectDiceRoom(30)">Room: 30 GRM</button>
-                <button class="action-btn room-btn" id="room-50" style="background: #132744; border: 1px solid rgba(0,240,255,0.3); color: #8b949e;" onclick="selectDiceRoom(50)">Room: 50 GRM</button>
-            </div>
-
-            <div class="dice-battle-container active">
-                <div class="battle-arena-grid">
-                    <div class="battle-player-box">
-                        <div style="font-size: 10px; color: #8b949e;" id="battle-p1-name">You</div>
-                        <div class="scene">
-                            <div class="cube show-1" id="p1-dice-cube">
-                                <!-- Face 1 -->
-                                <div class="cube__face cube__face--1">
-                                    <div></div><div></div><div></div>
-                                    <div></div><div class="dot red"></div><div></div>
-                                    <div></div><div></div><div></div>
-                                </div>
-                                <!-- Face 2 -->
-                                <div class="cube__face cube__face--2">
-                                    <div class="dot"></div><div></div><div></div>
-                                    <div></div><div></div><div></div>
-                                    <div></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 3 -->
-                                <div class="cube__face cube__face--3">
-                                    <div class="dot"></div><div></div><div></div>
-                                    <div></div><div class="dot"></div><div></div>
-                                    <div></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 4 -->
-                                <div class="cube__face cube__face--4">
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div></div><div></div><div></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 5 -->
-                                <div class="cube__face cube__face--5">
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div></div><div class="dot"></div><div></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 6 -->
-                                <div class="cube__face cube__face--6">
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="font-size: 14px; font-weight: bold; color: #ffb400;" id="battle-p1-score">-</div>
-                    </div>
-                    <div style="font-weight: bold; color: #00f0ff;">VS</div>
-                    <div class="battle-player-box">
-                        <div style="font-size: 10px; color: #8b949e;" id="battle-p2-name">Opponent</div>
-                        <div class="scene">
-                            <div class="cube show-1" id="p2-dice-cube">
-                                <!-- Face 1 -->
-                                <div class="cube__face cube__face--1">
-                                    <div></div><div></div><div></div>
-                                    <div></div><div class="dot red"></div><div></div>
-                                    <div></div><div></div><div></div>
-                                </div>
-                                <!-- Face 2 -->
-                                <div class="cube__face cube__face--2">
-                                    <div class="dot"></div><div></div><div></div>
-                                    <div></div><div></div><div></div>
-                                    <div></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 3 -->
-                                <div class="cube__face cube__face--3">
-                                    <div class="dot"></div><div></div><div></div>
-                                    <div></div><div class="dot"></div><div></div>
-                                    <div></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 4 -->
-                                <div class="cube__face cube__face--4">
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div></div><div></div><div></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 5 -->
-                                <div class="cube__face cube__face--5">
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div></div><div class="dot"></div><div></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                </div>
-                                <!-- Face 6 -->
-                                <div class="cube__face cube__face--6">
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                    <div class="dot"></div><div></div><div class="dot"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="font-size: 14px; font-weight: bold; color: #8b949e;" id="battle-p2-score">-</div>
-                    </div>
+            <div class="rooms-grid">
+                <div class="room-card" onclick="selectDiceRoom(10)">
+                    <div class="room-title">Room 1</div>
+                    <div class="room-desc">Stake: 10 GRM</div>
+                    <div style="color: #00f0ff; font-size: 11px; font-weight: bold;">Pot: 20 GRM</div>
                 </div>
-                <div id="dice-result-text" style="font-size: 13px; font-weight: bold; color: #00f0ff; margin-bottom: 10px; min-height: 18px;">Ready to Battle</div>
+                <div class="room-card" onclick="selectDiceRoom(20)">
+                    <div class="room-title">Room 2</div>
+                    <div class="room-desc">Stake: 20 GRM</div>
+                    <div style="color: #00f0ff; font-size: 11px; font-weight: bold;">Pot: 40 GRM</div>
+                </div>
+                <div class="room-card" onclick="selectDiceRoom(30)">
+                    <div class="room-title">Room 3</div>
+                    <div class="room-desc">Stake: 30 GRM</div>
+                    <div style="color: #00f0ff; font-size: 11px; font-weight: bold;">Pot: 60 GRM</div>
+                </div>
+                <div class="room-card" onclick="selectDiceRoom(50)">
+                    <div class="room-title">Room 4</div>
+                    <div class="room-desc">Stake: 50 GRM</div>
+                    <div style="color: #00f0ff; font-size: 11px; font-weight: bold;">Pot: 100 GRM</div>
+                </div>
             </div>
-
-            <button class="action-btn" id="dice-battle-btn" style="width: 100%; background: #ffb400; color: #000; margin-top: 5px;" onclick="startDiceBattle()">Roll Dice (Stake: 10 GRM)</button>
         </div>
     </div>
 
+    <!-- Modals -->
     <div id="withdraw-modal" class="modal-overlay">
         <div class="modal-card">
             <h3 style="color: #ffb400; margin-bottom: 5px;">Withdraw Funds</h3>
@@ -720,7 +701,6 @@
         let miningInterval;
         let miningStartTime = Date.now();
         let availableReferralClaims = 0;
-        let selectedStakeAmount = 10;
         
         const levelMiningRates = {
             0: 0.000050, 1: 0.000100, 2: 0.000150, 3: 0.000250,
@@ -735,6 +715,109 @@
         let taskStates = {}; 
         let withdrawalHistory = [];
 
+        // --- DICE ROOMS & TURN-BASED BATTLE LOGIC ---
+        let selectedStake = 10;
+        let oppNameCache = "";
+
+        function openDiceRoomsModal() {
+            document.getElementById('dice-rooms-modal').style.display = 'flex';
+        }
+
+        function closeDiceRoomsModal() {
+            document.getElementById('dice-rooms-modal').style.display = 'none';
+        }
+
+        async function selectDiceRoom(stakeAmount) {
+            if (currentBalance < stakeAmount) {
+                alert(`Insufficient balance! You need ${stakeAmount} GRM to enter this room.`);
+                return;
+            }
+
+            selectedStake = stakeAmount;
+            closeDiceRoomsModal();
+
+            // Show battle arena card
+            const arenaCard = document.getElementById('dice-battle-arena-card');
+            arenaCard.style.display = 'block';
+            arenaCard.scrollIntoView({ behavior: 'smooth' });
+
+            document.getElementById('active-dice-room-title').innerText = `🎲 1 Vs 1 Dice Battle (${selectedStake} GRM)`;
+            document.getElementById('active-dice-stake-label').innerText = `Stake: ${selectedStake} GRM`;
+            
+            oppNameCache = "Rival_" + Math.floor(Math.random() * 899 + 100);
+            document.getElementById('battle-p2-name').innerText = oppNameCache;
+
+            // Reset scores for new match
+            document.getElementById('battle-p1-score').innerText = "-";
+            document.getElementById('battle-p2-score').innerText = "Waiting...";
+            document.getElementById('dice-result-text').innerText = "Your turn! Roll your dice.";
+            
+            const rollBtn = document.getElementById('dice-battle-btn');
+            rollBtn.disabled = false;
+            rollBtn.innerText = `Roll Your Dice (${selectedStake} GRM)`;
+
+            // Deduct stake immediately
+            baseInitialBalance -= selectedStake;
+            currentBalance = baseInitialBalance;
+            updateBalanceUI();
+            await updateSupabaseField({ balance: baseInitialBalance });
+        }
+
+        async function executeUserDiceRoll() {
+            const rollBtn = document.getElementById('dice-battle-btn');
+            const p1DiceCube = document.getElementById('p1-dice-cube');
+            const p2DiceCube = document.getElementById('p2-dice-cube');
+            const p1ScoreElem = document.getElementById('battle-p1-score');
+            const p2ScoreElem = document.getElementById('battle-p2-score');
+            const resultText = document.getElementById('dice-result-text');
+
+            rollBtn.disabled = true;
+            p1DiceCube.className = "cube rolling";
+            resultText.innerText = "You are rolling your dice...";
+            p1ScoreElem.innerText = "...";
+
+            const userRoll = Math.floor(Math.random() * 6) + 1;
+
+            setTimeout(() => {
+                p1DiceCube.className = `cube show-${userRoll}`;
+                p1ScoreElem.innerText = userRoll;
+                
+                resultText.innerText = `${oppNameCache} is rolling their dice...`;
+                p2DiceCube.className = "cube rolling";
+                p2ScoreElem.innerText = "Rolling...";
+
+                const oppRoll = Math.floor(Math.random() * 6) + 1;
+
+                setTimeout(async () => {
+                    p2DiceCube.className = `cube show-${oppRoll}`;
+                    p2ScoreElem.innerText = oppRoll;
+
+                    let outcomeMsg = "";
+                    let totalPot = selectedStake * 2;
+
+                    if (userRoll > oppRoll) {
+                        baseInitialBalance += totalPot;
+                        currentBalance = baseInitialBalance;
+                        outcomeMsg = `🎉 You Won! Rolled ${userRoll} vs ${oppRoll}. +${totalPot} GRM!`;
+                    } else if (userRoll < oppRoll) {
+                        outcomeMsg = `❌ You Lost! Opponent rolled ${oppRoll} vs Your ${userRoll}.`;
+                    } else {
+                        baseInitialBalance += selectedStake; // refund stake
+                        currentBalance = baseInitialBalance;
+                        outcomeMsg = `🤝 Draw! Both rolled ${userRoll}. Stake refunded.`;
+                    }
+
+                    updateBalanceUI();
+                    await updateSupabaseField({ balance: baseInitialBalance });
+
+                    resultText.innerText = outcomeMsg;
+                    rollBtn.disabled = false;
+                    rollBtn.innerText = "Choose Room / Play Again";
+                    rollBtn.onclick = openDiceRoomsModal;
+                }, 1200);
+            }, 1200);
+        }
+
         function openVerificationSupport() {
             const supportBotUrl = 'https://t.me/GRM_VerificationSupport_Bot';
             if (tg && tg.openTelegramLink) {
@@ -742,97 +825,6 @@
             } else {
                 window.open(supportBotUrl, '_blank');
             }
-        }
-
-        function openDiceBattleModal() {
-            document.getElementById('dice-battle-modal').style.display = 'flex';
-        }
-
-        function closeDiceBattleModal() {
-            document.getElementById('dice-battle-modal').style.display = 'none';
-        }
-
-        function selectDiceRoom(amount) {
-            selectedStakeAmount = amount;
-            document.querySelectorAll('.room-btn').forEach(btn => {
-                btn.style.background = '#132744';
-                btn.style.borderColor = 'rgba(0,240,255,0.3)';
-                btn.style.color = '#8b949e';
-            });
-            const activeRoomBtn = document.getElementById(`room-${amount}`);
-            if (activeRoomBtn) {
-                activeRoomBtn.style.background = '#132744';
-                activeRoomBtn.style.borderColor = '#00f0ff';
-                activeRoomBtn.style.color = '#fff';
-            }
-            document.getElementById('dice-battle-btn').innerText = `Roll Dice (Stake: ${amount} GRM)`;
-        }
-
-        // --- 1 VS 1 DICE BATTLE LOGIC ---
-        async function startDiceBattle() {
-            if (currentBalance < selectedStakeAmount) {
-                alert(`Insufficient balance! You need ${selectedStakeAmount} GRM to play this room.`);
-                return;
-            }
-
-            const battleBtn = document.getElementById('dice-battle-btn');
-            const p1DiceCube = document.getElementById('p1-dice-cube');
-            const p2DiceCube = document.getElementById('p2-dice-cube');
-            const resultText = document.getElementById('dice-result-text');
-            const p1ScoreElem = document.getElementById('battle-p1-score');
-            const p2ScoreElem = document.getElementById('battle-p2-score');
-            const p2NameElem = document.getElementById('battle-p2-name');
-
-            battleBtn.disabled = true;
-            p1DiceCube.className = "cube rolling";
-            p2DiceCube.className = "cube rolling";
-            resultText.innerText = "Rolling dices...";
-            p1ScoreElem.innerText = "...";
-            p2ScoreElem.innerText = "...";
-
-            // Deduct stake
-            baseInitialBalance -= selectedStakeAmount;
-            currentBalance = baseInitialBalance;
-            updateBalanceUI();
-            await updateSupabaseField({ balance: baseInitialBalance });
-
-            // Generate user roll (1 to 6)
-            const userRoll = Math.floor(Math.random() * 6) + 1;
-            // Generate opponent simulated roll (1 to 6)
-            const oppRoll = Math.floor(Math.random() * 6) + 1;
-            const oppName = "Rival_" + Math.floor(Math.random() * 899 + 100);
-            p2NameElem.innerText = oppName;
-
-            setTimeout(async () => {
-                p1DiceCube.className = `cube show-${userRoll}`;
-                p2DiceCube.className = `cube show-${oppRoll}`;
-                p1ScoreElem.innerText = userRoll;
-                p2ScoreElem.innerText = oppRoll;
-
-                let outcomeMsg = "";
-                let prizeWon = 0;
-
-                if (userRoll > oppRoll) {
-                    prizeWon = selectedStakeAmount * 2; // Win entire pot
-                    baseInitialBalance += prizeWon;
-                    currentBalance = baseInitialBalance;
-                    outcomeMsg = `🎉 You Won! Rolled ${userRoll} vs Rival's ${oppRoll}. +${prizeWon} GRM!`;
-                } else if (userRoll < oppRoll) {
-                    outcomeMsg = `❌ You Lost! Rival rolled ${oppRoll} vs Your ${userRoll}.`;
-                } else {
-                    prizeWon = selectedStakeAmount; // Draw, refund stake
-                    baseInitialBalance += prizeWon;
-                    currentBalance = baseInitialBalance;
-                    outcomeMsg = `🤝 Draw! Both rolled ${userRoll}. Stake refunded.`;
-                }
-
-                updateBalanceUI();
-                await updateSupabaseField({ balance: baseInitialBalance });
-
-                resultText.innerText = outcomeMsg;
-                battleBtn.disabled = false;
-                battleBtn.innerText = `Play Again (${selectedStakeAmount} GRM)`;
-            }, 1500);
         }
 
         function renderMinersStore() {
