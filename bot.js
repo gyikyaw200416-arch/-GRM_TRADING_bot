@@ -4,8 +4,8 @@ const { createClient } = require('@supabase/supabase-js');
 const BOT_TOKEN = process.env.BOT_TOKEN || "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://uyblmdckdvqgammrfati.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
-const MINI_APP_URL = process.env.MINI_APP_URL || "https://t.me/GRM_TRADING_bot/app";
-const COMMUNITY_URL = "https://t.me/A_ToolsX";
+const MINI_APP_URL = process.env.MINI_APP_URL || "https://grm-trading-bot.vercel.app/";
+const COMMUNITY_URL = "https://discord.gg/NwsPcvukX";
 
 const bot = new Telegraf(BOT_TOKEN);
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
