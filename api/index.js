@@ -1,259 +1,1859 @@
-import { createClient } from "@supabase/supabase-js";
-
-const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
-const SUPABASE_URL = "https://uyblmdckdvqgammrfati.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-async function callTelegramAPI(method, payload) {
-  try {
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/${method}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    return await response.json();
-  } catch (err) {
-    console.error("Telegram API Error:", err);
-    return null;
-  }
-}
-
-export default async function handler(req, res) {
-  // CORS headers for admin/mini-app requests if needed
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  try {
-    let bodyData = req.body;
-    if (typeof bodyData === "string") {
-      try {
-        bodyData = JSON.parse(bodyData);
-      } catch (e) {}
-    }
-
-    // --- GAME START HANDLER (Deduct 10 GRM) ---
-    if (bodyData && bodyData.action === "start_game") {
-      const rawUserId = bodyData.user_id;
-      if (!rawUserId) {
-        return res.status(400).json({ ok: false, error: "Missing user_id for game start" });
-      }
-      const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
-
-      // Fetch current balance from grm_users
-      const { data: user, error: fetchError } = await supabase
-        .from('grm_users')
-        .select('balance')
-        .eq('user_id', userId)
-        .single();
-
-      if (fetchError || !user) {
-        return res.status(404).json({ ok: false, error: "User not found" });
-      }
-
-      if ((user.balance || 0) < 10) {
-        return res.status(400).json({ ok: false, error: "Insufficient balance (Need 10 GRM)" });
-      }
-
-      const newBalance = user.balance - 10;
-
-      // Update new balance
-      const { error: updateError } = await supabase
-        .from('grm_users')
-        .update({ balance: newBalance, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
-
-      if (updateError) {
-        return res.status(500).json({ ok: false, error: updateError.message });
-      }
-
-      return res.status(200).json({ ok: true, message: "10 GRM deducted successfully", balance: newBalance });
-    }
-
-    // --- GAME WIN HANDLER (Add 20 GRM to Winner) ---
-    if (bodyData && bodyData.action === "win_game") {
-      const rawUserId = bodyData.user_id;
-      if (!rawUserId) {
-        return res.status(400).json({ ok: false, error: "Missing user_id for game win" });
-      }
-      const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
-
-      // Fetch current balance
-      const { data: user, error: fetchError } = await supabase
-        .from('grm_users')
-        .select('balance')
-        .eq('user_id', userId)
-        .single();
-
-      if (fetchError || !user) {
-        return res.status(404).json({ ok: false, error: "User not found" });
-      }
-
-      const newBalance = (user.balance || 0) + 20;
-
-      // Update winner balance with 20 GRM added
-      const { error: updateError } = await supabase
-        .from('grm_users')
-        .update({ balance: newBalance, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
-
-      if (updateError) {
-        return res.status(500).json({ ok: false, error: updateError.message });
-      }
-
-      return res.status(200).json({ ok: true, message: "20 GRM added to winner balance", balance: newBalance });
-    }
-
-    // --- ADMIN PANEL REFERRAL CLAIM COUNT UPDATE HANDLER ---
-    if (bodyData && (bodyData.action === "update_claim_count" || bodyData.max_reward_limit !== undefined || bodyData.claim_count !== undefined)) {
-      const targetUserId = bodyData.user_id ? (bodyData.user_id.toString().startsWith('tg_') ? bodyData.user_id : 'tg_' + bodyData.user_id) : null;
-      const newLimit = parseInt(bodyData.max_reward_limit || bodyData.claim_count || 100, 10);
-
-      if (!targetUserId) {
-        return res.status(400).json({ ok: false, error: "Missing user_id for claim count update" });
-      }
-
-      const { data, error } = await supabase
-        .from('grm_users')
-        .update({ max_reward_limit: newLimit })
-        .eq('user_id', targetUserId)
-        .select();
-
-      if (error) {
-        console.error("Admin claim count update error:", error);
-        return res.status(500).json({ ok: false, error: error.message });
-      }
-
-      return res.status(200).json({ ok: true, message: "Claim count updated successfully", data });
-    }
-
-    // --- TELEGRAM BOT WEBHOOK HANDLER ---
-    if (bodyData && bodyData.message && bodyData.message.text) {
-      const chatId = bodyData.message.chat.id;
-      const text = bodyData.message.text.trim();
-
-      if (text.startsWith("/start")) {
-        const telegramUser = bodyData.message.from;
-        const rawUserId = telegramUser.id.toString();
-        const userId = 'tg_' + rawUserId;
-        const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRM Mining Core</title>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- TON Connect UI SDK -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { width: 100%; height: 100%; background-color: #070d18; color: #ffffff; overflow: hidden; }
         
-        const parts = text.split(" ");
-        const startPayload = parts.length > 1 ? parts[1].trim() : null;
-
-        const captionText = 
-          "👋 *Welcome to GRAM Mining Core!*\n\n" +
-          "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
-          "⚡ *Tap to boost mining speed!*\n" +
-          "🔗 *Connect your TON wallet.*\n" +
-          "💰 *GRAM to upgrade your miner level!*\n\n" +
-          "Click below to start.";
-
-        const replyMarkup = {
-          inline_keyboard: [
-            [{ text: "🚀 Start Mining", web_app: { url: "https://grm-trading-bot.vercel.app/" } }],
-            [{ text: "🌐 Community", url: "https://discord.gg/NwsPcvukX" }]
-          ]
-        };
-
-        const photoResult = await callTelegramAPI("sendPhoto", {
-          chat_id: chatId,
-          photo: "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
-          caption: captionText,
-          parse_mode: "Markdown",
-          reply_markup: replyMarkup,
-        });
-
-        if (!photoResult || !photoResult.ok) {
-          await callTelegramAPI("sendMessage", {
-            chat_id: chatId,
-            text: captionText,
-            parse_mode: "Markdown",
-            reply_markup: replyMarkup,
-          });
+        .app-bg { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background-color: #070d18;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+                radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.18) 0%, rgba(7, 13, 24, 0.98) 75%);
+            background-size: 40px 40px, 40px 40px, 100% 100%;
+            z-index: -2; 
         }
 
-        // Background Database & Referral Process
-        (async () => {
-          try {
-            let { data: existingUser } = await supabase
-              .from('grm_users')
-              .select('user_id, referrer_id')
-              .eq('user_id', userId)
-              .maybeSingle();
+        .tech-bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 25%, rgba(0, 240, 255, 0.12) 0%, rgba(255, 180, 0, 0.04) 40%, transparent 75%),
+                        linear-gradient(180deg, rgba(7, 13, 24, 0.4) 0%, rgba(2, 5, 10, 0.8) 100%);
+            z-index: -1; pointer-events: none;
+        }
 
-            if (!existingUser) {
-              let assignedReferrerId = null;
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #070d18; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.6s ease;
+        }
+        .logo-box {
+            width: 150px; height: 150px; border-radius: 50%;
+            background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%);
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.6); margin-bottom: 30px;
+        }
+        .logo-inner { width: 138px; height: 138px; border-radius: 50%; background-color: #070d18; display: flex; justify-content: center; align-items: center; }
+        .logo-box span { background: linear-gradient(135deg, #00f0ff, #ffb400); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; font-weight: 900; letter-spacing: 2px; }
+        .loading-text { color: #00f0ff; font-size: 16px; font-weight: 600; background: rgba(0, 240, 255, 0.1); padding: 12px 30px; border-radius: 30px; border: 1px solid rgba(0, 240, 255, 0.4); }
 
-              if (startPayload && startPayload !== '') {
-                let refParsed = startPayload.startsWith('tg_') ? startPayload : 'tg_' + startPayload;
-                if (refParsed !== userId) {
-                  assignedReferrerId = refParsed;
-                }
-              }
+        #vpn-warning-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(7, 13, 24, 0.95); backdrop-filter: blur(8px);
+            z-index: 99999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 25px; text-align: center;
+        }
+        .vpn-warning-box {
+            background: #0d1626; border: 1px solid rgba(218, 54, 51, 0.6); border-radius: 16px;
+            max-width: 380px; width: 100%; padding: 25px; box-shadow: 0 0 30px rgba(218, 54, 51, 0.3);
+        }
 
-              await supabase.from('grm_users').upsert([{
-                user_id: userId,
-                username: username,
-                referrer_id: assignedReferrerId,
-                balance: 0,
-                mined_amount: 0,
-                mining_state: 'stopped',
-                level: 0,
-                is_verified: false,
-                max_reward_limit: 1,
-                updated_at: new Date().toISOString()
-              }], { onConflict: 'user_id' });
+        .main-container { display: none; width: 100%; height: calc(100% - 65px); overflow-y: auto; padding: 15px; padding-bottom: 80px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-              if (assignedReferrerId) {
-                const refRelationId = 'ref_' + rawUserId;
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 15px; font-weight: bold; position: relative; }
+        .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; background: rgba(13, 22, 38, 0.9); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 10px rgba(0,240,255,0.1); }
+        .lvl-badge { background: #132744; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); }
+        #ton-connect-button { display: flex; align-items: center; }
+
+        .card { background: rgba(13, 22, 38, 0.88); backdrop-filter: blur(8px); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 14px; padding: 15px; margin-bottom: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(0,240,255,0.15); }
+        .mine-header { text-align: center; margin-bottom: 5px; }
+        .asset-title { color: #8b949e; font-size: 12px; letter-spacing: 1px; margin-bottom: 3px; }
+        .asset-amount { font-size: 24px; font-weight: bold; color: #00f0ff; text-shadow: 0 0 12px rgba(0,240,255,0.5); }
+        
+        .mining-amount-display { text-align: center; color: #ffb400; font-size: 20px; font-weight: bold; margin: 4px 0 2px 0; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,180,0,0.4); }
+        .mining-subtitle { text-align: center; color: #8b949e; font-size: 10px; letter-spacing: 0.5px; margin-bottom: 18px; text-transform: uppercase; }
+        
+        .coin-box {
+            width: 190px; height: 190px; margin: 15px auto 25px auto;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(7, 13, 24, 0.95) 80%), 
+                        linear-gradient(135deg, #0d213f 0%, #03070f 100%);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.5), inset 0 0 25px rgba(0, 240, 255, 0.5); 
+            border: 3px solid #00f0ff;
+            position: relative;
+            transition: transform 0.1s ease;
+        }
+        
+        .coin-box::before {
+            content: ''; position: absolute; top: -8px; left: -8px; right: -8px; bottom: -8px;
+            border-radius: 50%; border: 1px dashed rgba(0, 240, 255, 0.7);
+            animation: spinRing 20s linear infinite;
+        }
+
+        .coin-box::after {
+            content: ''; position: absolute; top: -15px; left: -15px; right: -15px; bottom: -15px;
+            border-radius: 50%; border: 2px solid rgba(255, 180, 0, 0.4); border-top-color: transparent;
+            animation: spinRingReverse 15s linear infinite;
+        }
+
+        @keyframes spinRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spinRingReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+
+        .coin-box.mining-anim { animation: pulseCoin 1.5s infinite; }
+        @keyframes pulseCoin {
+            0% { transform: scale(1); box-shadow: 0 0 35px rgba(0, 240, 255, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 55px rgba(0, 240, 255, 0.9), inset 0 0 35px rgba(0, 240, 255, 0.7); }
+            100% { transform: scale(1); box-shadow: 0 0 35px rgba(0, 240, 255, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.4); }
+        }
+
+        .coin-inner-graphic {
+            width: 154px; height: 154px; border-radius: 50%;
+            background: radial-gradient(circle, #102d4f 0%, #040914 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 2px solid rgba(255, 180, 0, 0.7);
+            box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.6);
+            position: relative; overflow: hidden;
+        }
+
+        .coin-gear-icon { font-size: 30px; margin-bottom: 4px; filter: drop-shadow(0 0 10px #00f0ff); }
+        .coin-inner-text { font-size: 26px; font-weight: 900; color: #ffb400; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255, 180, 0, 0.8); }
+        
+        .claim-btn {
+            background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+            color: #fff; width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4); margin-top: 10px; letter-spacing: 1px;
+        }
+        .claim-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; }
+
+        .miners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .miner-card { background: rgba(13, 20, 33, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 12px; position: relative; text-align: center; }
+        .miner-card.active-border { border: 1px solid #00f0ff; box-shadow: 0 0 12px rgba(0, 240, 255, 0.3); }
+        .miner-card.unlock-border { border: 1px solid #2ea043; }
+        .miner-card.locked-border { border: 1px solid #333; opacity: 0.7; }
+        
+        .engine-img-box {
+            width: 100%; height: 80px; background: #0f1624; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; margin-bottom: 8px;
+            overflow: hidden; border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+        .engine-img-box img { width: 50px; height: 50px; object-fit: contain; }
+
+        .lvl-text { font-size: 11px; color: #8b949e; margin-bottom: 4px; text-align: left; }
+        .miner-price-box { font-size: 16px; font-weight: bold; color: #2ea043; margin-bottom: 4px; text-align: left; }
+        .miner-speed { font-size: 11px; color: #8b949e; margin-bottom: 8px; text-align: left; }
+        .status-badge { width: 100%; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; text-align: center; border: none; cursor: pointer; }
+        .badge-active { background-color: #0077ff; color: #fff; box-shadow: 0 0 8px rgba(0, 119, 255, 0.4); }
+        .badge-need { background-color: #2ea043; color: #fff; }
+        .badge-lock { background-color: #1a2333; color: #8b949e; cursor: not-allowed; }
+
+        .ref-box-card { background: rgba(13, 22, 38, 0.9); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 14px; padding: 15px; margin-bottom: 12px; }
+        .ref-link-input-group { display: flex; background: rgba(7, 13, 24, 0.8); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 10px; padding: 6px 10px; align-items: center; margin-top: 10px; }
+        .ref-link-text { flex: 1; font-size: 11px; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .copy-btn-yellow { background: #ffb400; color: #000; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 10px rgba(255, 180, 0, 0.3); }
+
+        .ref-user-item {
+            background: rgba(13, 22, 38, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            border-radius: 14px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .ref-user-info { display: flex; align-items: center; gap: 12px; }
+        .ref-avatar-box {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: #112238; border: 1px solid rgba(0, 240, 255, 0.3);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 18px; color: #00f0ff; position: relative;
+        }
+        .ref-avatar-status {
+            width: 10px; height: 10px; border-radius: 50%;
+            position: absolute; bottom: 0; right: 0;
+            border: 2px solid #070d18;
+        }
+        .status-active-dot { background-color: #2ea043; box-shadow: 0 0 6px #2ea043; }
+
+        .ref-username { font-size: 13px; font-weight: bold; color: #ffffff; }
+        .ref-status-text { font-size: 11px; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+        .text-active { color: #2ea043; font-weight: bold; }
+
+        .profile-row { display: flex; justify-content: space-between; align-items: center; }
+        .profile-icon-box { width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); display: flex; justify-content: center; align-items: center; font-size: 20px; color: #00f0ff; }
+        .profile-info-block { display: flex; align-items: center; gap: 12px; }
+        .profile-label { font-size: 14px; font-weight: bold; color: #ffffff; }
+        .profile-sublabel { font-size: 11px; color: #8b949e; margin-top: 2px; }
+        .verified-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+        .section-header-title { font-size: 13px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 8px 4px; }
+        .profile-btn-yellow { background: #ffb400; color: #000000; border: none; padding: 8px 18px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 12px rgba(255, 180, 0, 0.3); transition: all 0.2s ease; }
+        .profile-btn-yellow:active { transform: scale(0.96); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal-card { background: #0d1626; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 16px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 0 30px rgba(0,240,255,0.2); }
+        .history-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+
+        .action-btn { background-color: #00f0ff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        .action-btn:disabled { background-color: #333; color: #888; box-shadow: none; cursor: not-allowed; }
+
+        .admin-input { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; background: #070d18; border: 1px solid rgba(0,240,255,0.4); border-radius: 6px; color: #fff; font-size: 12px; }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+            background-color: rgba(7, 13, 24, 0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 240, 255, 0.25);
+            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+        }
+        .nav-item { background: none; border: none; color: #8b949e; display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 11px; }
+        .nav-item.active { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
+        .nav-item span.icon { font-size: 18px; margin-bottom: 3px; }
+
+        .withdraw-req-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-bg"></div>
+    <div class="tech-bg-overlay"></div>
+
+    <div id="vpn-warning-overlay">
+        <div class="vpn-warning-box">
+            <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
+            <h3 style="color: #da3633; margin-bottom: 8px;">Connection Refused</h3>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;">Network or VPN connection failure detected. Please check your internet connection or turn on your VPN to load resources correctly.</p>
+            <button class="action-btn" style="width: 100%; background: #00f0ff; color: #000;" onclick="checkNetworkConnectivity()">Retry Connection</button>
+        </div>
+    </div>
+
+    <div id="splash-screen">
+        <div class="logo-box">
+            <div class="logo-inner"><span>GRM</span></div>
+        </div>
+        <div class="loading-text">Loading GRM Miner...</div>
+    </div>
+
+    <div class="main-container">
+        <!-- MINE TAB -->
+        <div id="tab-mine" class="tab-content active">
+            <div class="top-bar">
+                <div class="user-info">
+                    <span class="lvl-badge">Lvl 0</span>
+                    <span id="telegram-username">Miner</span>
+                    <span style="font-size: 10px; color: #2ea043;" id="mining-status-badge">MINING AUTO</span>
+                </div>
+                <div id="ton-connect-button"></div>
+            </div>
+
+            <div style="font-size: 10px; color: #2ea043; margin-bottom: 8px;">0.07 GRAM left to Lvl UP</div>
+
+            <div class="mine-header">
+                <div class="asset-title">ASSETS</div>
+                <div class="asset-amount" id="asset-balance">0.000000 GRM</div>
+            </div>
+
+            <div class="mining-amount-display" id="mining-amount-display">0.000000 GRM</div>
+            <div class="mining-subtitle">Current Mined Reward</div>
+
+            <div class="coin-box" id="coin-box-elem">
+                <div class="coin-inner-graphic">
+                    <div class="coin-gear-icon">⚙️</div>
+                    <div class="coin-inner-text">GRM</div>
+                </div>
+            </div>
+            
+            <button class="claim-btn" id="mining-action-btn" onclick="handleMiningAction()">CLAIM</button>
+        </div>
+
+        <!-- TASKS TAB -->
+        <div id="tab-tasks" class="tab-content">
+            <div class="top-bar"><span>Tasks & Community Joins</span></div>
+            
+            <div id="admin-panel" class="card" style="display: none; border: 1px dashed #ffb400; background: rgba(255, 180, 0, 0.05);">
+                <h4 style="color: #ffb400; margin-bottom: 8px;">⚙️ Admin Task Control Panel</h4>
+                <input type="text" id="adm-task-title" class="admin-input" placeholder="Task Title (e.g. Join Official Channel)">
+                <input type="text" id="adm-channel-link" class="admin-input" placeholder="Channel Link (https://t.me/...)">
+                <input type="text" id="adm-group-link" class="admin-input" placeholder="Group Link (Optional: https://t.me/...)">
+                <input type="number" id="adm-reward-amount" class="admin-input" placeholder="Reward Amount (e.g. 100)" value="100">
+                <button class="action-btn" style="width: 100%; background: #ffb400; color: #000; margin-bottom: 15px;" onclick="adminSaveTask()">Add / Update Task</button>
+
+                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
+
+                <h4 style="color: #00f0ff; margin-bottom: 8px;">🎁 Admin Referral Reward Allowance</h4>
+                <input type="text" id="adm-ref-user-id" class="admin-input" placeholder="User ID (e.g. tg_5020977059)">
+                <input type="number" id="adm-ref-available-input" class="admin-input" placeholder="Set Available Referral Claims Count" min="0" value="0">
+                <button class="action-btn" style="width: 100%; background: #00f0ff; color: #000; margin-bottom: 15px;" onclick="adminUpdateUserReferralRewards()">Set Referral Claims</button>
+
+                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
+
+                <h4 style="color: #00f0ff; margin-bottom: 8px;">👑 Admin User Verification & Level Control</h4>
+                <input type="text" id="adm-target-user-id" class="admin-input" placeholder="User ID (e.g. tg_5020977059 or 5020977059)">
+                <input type="number" id="adm-target-level" class="admin-input" placeholder="Set Level (0 to 10)" min="0" max="10" value="1">
+                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <button class="action-btn" style="flex:1; background: #2ea043; color: #fff;" onclick="adminSetUserVerification(true)">Verify User</button>
+                    <button class="action-btn" style="flex:1; background: #da3633; color: #fff;" onclick="adminSetUserVerification(false)">Unverify User</button>
+                    <button class="action-btn" style="flex:1; background: #00f0ff; color: #000;" onclick="adminUpdateUserLevel()">Set Level</button>
+                </div>
+
+                <hr style="border: 0.5px solid rgba(255, 180, 0, 0.3); margin-bottom: 12px;">
+
+                <h4 style="color: #2ea043; margin-bottom: 8px;">💸 Pending Withdrawal Requests</h4>
+                <div id="admin-withdrawals-list">
+                    <div style="text-align: center; color: #8b949e; font-size: 11px;">Loading pending requests...</div>
+                </div>
+            </div>
+
+            <div id="tasks-list-container"></div>
+        </div>
+
+        <!-- MINERS TAB -->
+        <div id="tab-miners" class="tab-content">
+            <div class="top-bar"><span>Jet Engine Miner Store (0 - 10)</span></div>
+            <div class="miners-grid" id="miners-store-grid"></div>
+        </div>
+
+        <!-- GAME TAB (ARCHERY / ARROW GAME) -->
+        <div id="tab-game" class="tab-content">
+            <div class="top-bar"><span>🎯 Archery Target Game</span></div>
+            <div class="card" style="text-align: center; padding: 25px;">
+                <h3 style="color: #00f0ff; margin-bottom: 10px;">Arrow Hit Challenge</h3>
+                <p style="font-size: 13px; color: #8b949e; margin-bottom: 20px;">Play the archery game! Each attempt costs <span style="color: #ffb400; font-weight: bold;">10 GRM</span>. Hit the target successfully to win <span style="color: #2ea043; font-weight: bold;">20 GRM</span>!</p>
                 
-                let { data: existingRef } = await supabase
-                  .from('grm_referrals')
-                  .select('*')
-                  .eq('id', refRelationId)
-                  .maybeSingle();
+                <div style="background: rgba(0, 240, 255, 0.05); border: 1px dashed rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">🏹🎯</div>
+                    <div id="game-status-text" style="font-size: 14px; font-weight: bold; color: #ffb400;">Ready to Play?</div>
+                </div>
+
+                <button class="action-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 14px; font-size: 16px;" onclick="playArcheryGame()">🎯 Shoot Arrow (Cost: 10 GRM)</button>
+            </div>
+        </div>
+
+        <!-- FRIENDS TAB -->
+        <div id="tab-friends" class="tab-content">
+            <div class="top-bar"><span>Friends & Referrals</span></div>
+            <p style="text-align: center; font-size: 13px; color: #8b949e; margin-bottom: 15px;">Invite friends to boost mining speed & get <span style="color: #ffb400; font-weight: bold;">10%</span> when your friends make a deposit!</p>
+            
+            <div class="ref-box-card">
+                <div style="font-size: 13px; font-weight: bold; color: #fff;">Your Invite Link</div>
+                <div class="ref-link-input-group">
+                    <span class="ref-link-text" id="referral-link-display">Loading invite link...</span>
+                    <button class="copy-btn-yellow" onclick="copyReferralLink()">Copy</button>
+                </div>
+            </div>
+
+            <div class="ref-box-card" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 24px;">👥</div>
+                    <div>
+                        <div style="font-size: 13px; font-weight: bold; color: #fff;">Your Referrals</div>
+                        <div style="font-size: 12px; color: #8b949e; margin-top: 2px;" id="referral-stats-text">0 total</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box" style="border-color: rgba(255, 180, 0, 0.4);">🎁</div>
+                    <div>
+                        <div class="profile-label">Referral Reward</div>
+                        <div class="profile-sublabel"><span id="referral-available-count" style="color: #00f0ff;">0 available</span> · +100 GRM each</div>
+                    </div>
+                </div>
+                <button class="profile-btn-yellow" id="claim-ref-reward-btn" onclick="claimReferralReward()" disabled style="background: #333; color: #888; cursor: not-allowed;">Claim</button>
+            </div>
+
+            <div class="section-header-title">Invited Friends</div>
+            <div id="referrals-user-list-container">
+                <div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">Loading referrals...</div>
+            </div>
+        </div>
+
+        <!-- PROFILE TAB -->
+        <div id="tab-profile" class="tab-content">
+            <div class="top-bar">
+                <span style="font-size: 18px; font-weight: bold;">Profile</span>
+                <button class="action-btn" style="background:none; color:#fff; font-size: 14px;" onclick="switchTab('mine', document.querySelectorAll('.nav-item')[0])">✕ Close</button>
+            </div>
+
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box">👤</div>
+                    <div>
+                        <div class="profile-label">User ID <span style="color: #00f0ff;">✔</span></div>
+                        <div class="profile-sublabel" id="profile-display-id">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card profile-row" onclick="openVerificationSupport()" style="cursor: pointer;">
+                <div class="profile-info-block" id="profile-verification-icon-box">
+                    <div class="profile-icon-box" style="border-color: rgba(218, 54, 51, 0.4);" id="profile-verify-icon">❌</div>
+                    <div>
+                        <div class="profile-label">Account Verification</div>
+                        <div class="profile-sublabel" id="profile-verification-subtext">Unverified User</div>
+                    </div>
+                </div>
+                <div class="verified-badge" id="profile-verified-badge" style="background-color: #da3633; color: #ffffff;">Unverified ❌</div>
+            </div>
+
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box" style="border-color: rgba(255, 180, 0, 0.4);">🏦</div>
+                    <div>
+                        <div class="profile-label">Mining Balance</div>
+                        <div class="profile-sublabel">Withdrawable Balance</div>
+                    </div>
+                </div>
+                <div style="font-size: 16px; font-weight: bold; color: #2ea043;" id="profile-pool-balance">0.000000 GRM</div>
+            </div>
+
+            <div class="section-header-title">Controls</div>
+
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box">↗️</div>
+                    <div>
+                        <div class="profile-label">Withdraw</div>
+                        <div class="profile-sublabel">Transfer Balance to Wallet<br><span style="color: #00f0ff; font-size: 10px; font-weight: bold;">5000 GRM = 1GRAM</span></div>
+                    </div>
+                </div>
+                <button class="profile-btn-yellow" onclick="openWithdrawModal()">Withdraw</button>
+            </div>
+
+            <div class="card profile-row">
+                <div class="profile-info-block">
+                    <div class="profile-icon-box">📋</div>
+                    <div>
+                        <div class="profile-label">History</div>
+                        <div class="profile-sublabel">Your withdrawals log</div>
+                    </div>
+                </div>
+                <button class="profile-btn-yellow" onclick="openHistoryModal()">Open</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="withdraw-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 style="color: #ffb400; margin-bottom: 5px;">Withdraw Funds</h3>
+            <p style="font-size: 11px; color: #ffb400; margin-bottom: 10px; font-weight: bold;">⚡ Minimum Withdrawal: 500 GRM</p>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 10px;">Available: <span id="modal-available-balance" style="color: #00f0ff;">0.00 GRM</span></p>
+            <input type="number" id="withdraw-amount-input" class="admin-input" placeholder="Amount to withdraw (Min 500)" style="font-size: 14px; padding: 10px;">
+            <input type="text" id="withdraw-address-input" class="admin-input" placeholder="TON Wallet Address" style="font-size: 14px; padding: 10px;">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="action-btn" style="flex: 1; background: #2ea043; color: #fff;" onclick="submitWithdrawal()">Confirm</button>
+                <button class="action-btn" style="flex: 1; background: #da3633; color: #fff;" onclick="closeWithdrawModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: #00f0ff;">Withdrawal History</h3>
+                <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeHistoryModal()">✕</button>
+            </div>
+            <div id="history-list-container" style="max-height: 250px; overflow-y: auto;">
+                <div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No transactions recorded yet.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="buy-engine-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="color: #ffb400;" id="buy-modal-title">Purchase Engine</h3>
+                <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeBuyEngineModal()">✕</button>
+            </div>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;">Send the required GRAM to the address below and include your User ID as a comment, then contact support.</p>
+            
+            <div style="font-size: 11px; color: #00f0ff; font-weight: bold; margin-bottom: 4px;">Payment Address:</div>
+            <div class="ref-link-input-group" style="margin-top: 0; margin-bottom: 12px;">
+                <span class="ref-link-text" id="buy-modal-address">UQDj2bVdQKdlEAPgSFEeX-GB9-VDRlk2rRPO5KvvKZyyTvHB</span>
+                <button class="copy-btn-yellow" onclick="copyModalText('UQDj2bVdQKdlEAPgSFEeX-GB9-VDRlk2rRPO5KvvKZyyTvHB', 'Payment Address')">Copy</button>
+            </div>
+
+            <div style="font-size: 11px; color: #00f0ff; font-weight: bold; margin-bottom: 4px;">Your User ID (Comment):</div>
+            <div class="ref-link-input-group" style="margin-top: 0; margin-bottom: 20px;">
+                <span class="ref-link-text" id="buy-modal-userid">Loading...</span>
+                <button class="copy-btn-yellow" onclick="copyUserIdForBuy()">Copy</button>
+            </div>
+
+            <button class="action-btn" style="width: 100%; background: #2ea043; color: #fff;" onclick="openVerificationSupport()">Contact Support Bot</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation with Game Tab Added -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('mine', this)"><span class="icon">✈️</span><span>Mine</span></button>
+        <button class="nav-item" onclick="switchTab('tasks', this)"><span class="icon">📋</span><span>Tasks</span></button>
+        <button class="nav-item" onclick="switchTab('miners', this)"><span class="icon">⚡</span><span>Miners</span></button>
+        <button class="nav-item" onclick="switchTab('game', this)"><span class="icon">🎯</span><span>Game</span></button>
+        <button class="nav-item" onclick="switchTab('friends', this)"><span class="icon">👥</span><span>Friends</span></button>
+        <button class="nav-item" onclick="switchTab('profile', this)"><span class="icon">👤</span><span>Profile</span></button>
+    </div>
+
+    <script>
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (tg) tg.expand();
+
+        const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
+        const BOT_USERNAME = "grm_trading_bot"; 
+
+        let rawUserId = '';
+        let currentUserId = '';
+        let currentUserName = 'Miner';
+        const ADMIN_ID = '5020977059'; 
+
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+            rawUserId = tg.initDataUnsafe.user.id.toString();
+            currentUserId = 'tg_' + rawUserId;
+            currentUserName = tg.initDataUnsafe.user.first_name || (tg.initDataUnsafe.user.username ? '@' + tg.initDataUnsafe.user.username : 'Miner');
+            localStorage.setItem('grm_saved_user_id', currentUserId);
+            localStorage.setItem('grm_saved_raw_id', rawUserId);
+            localStorage.setItem('grm_saved_username', currentUserName);
+        } else {
+            currentUserId = localStorage.getItem('grm_saved_user_id') || localStorage.getItem('grm_user_id') || ('user_' + Math.random().toString(36).substring(2, 9));
+            rawUserId = localStorage.getItem('grm_saved_raw_id') || currentUserId.replace('tg_', '').replace('user_', '');
+            currentUserName = localStorage.getItem('grm_saved_username') || 'Shadow';
+            localStorage.setItem('grm_user_id', currentUserId);
+        }
+
+        document.getElementById('telegram-username').innerText = currentUserName + ' ✈️';
+        document.getElementById('profile-display-id').innerText = rawUserId || currentUserId;
+
+        const userInviteLink = `https://t.me/${BOT_USERNAME}?start=${rawUserId}`;
+        document.getElementById('referral-link-display').innerText = userInviteLink;
+
+        const SUPABASE_URL = 'https://uyblmdckdvqgammrfati.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ';
+        
+        let _supabase = null;
+        try {
+            if (typeof supabase !== 'undefined') {
+                _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.warn("Supabase init error:", e);
+        }
+
+        async function checkNetworkConnectivity() {
+            const vpnOverlay = document.getElementById('vpn-warning-overlay');
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    method: 'HEAD',
+                    signal: controller.signal,
+                    headers: { 'apikey': SUPABASE_ANON_KEY }
+                });
+                clearTimeout(timeoutId);
+
+                if (response.ok || response.status < 500) {
+                    if (vpnOverlay) vpnOverlay.style.display = 'none';
+                    return true;
+                } else {
+                    throw new Error("Server unhealthy");
+                }
+            } catch (err) {
+                console.warn("Network connectivity error / VPN check failed:", err);
+                if (vpnOverlay) vpnOverlay.style.display = 'flex';
+                return false;
+            }
+        }
+
+        setInterval(checkNetworkConnectivity, 15000);
+
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://raw.githubusercontent.com/gyikyaw200416-arch/-GRM_TRADING_bot/main/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect-button'
+        });
+
+        let baseInitialBalance = 0.000000; 
+        let currentBalance = baseInitialBalance;
+        let minedAmount = 0;
+        let isMining = false;
+        let miningInterval;
+        let miningStartTime = Date.now();
+        let availableReferralClaims = 0;
+        
+        const levelMiningRates = {
+            0: 0.000050, 
+            1: 0.000100, 
+            2: 0.000150, 
+            3: 0.000250,
+            4: 0.000300, 
+            5: 0.000400, 
+            6: 0.000500, 
+            7: 0.000650, 
+            8: 0.000800, 
+            9: 0.001000,
+           10: 0.001200
+        };
+
+        let currentLevel = 0;
+        const COOLDOWN_TIME = 3 * 60 * 60 * 1000; 
+
+        let activeTasksList = [];
+        let taskStates = {}; 
+        let withdrawalHistory = [];
+
+        function openVerificationSupport() {
+            const supportBotUrl = 'https://t.me/GRM_VerificationSupport_Bot';
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(supportBotUrl);
+            } else {
+                window.open(supportBotUrl, '_blank');
+            }
+        }
+
+        function renderMinersStore() {
+            const grid = document.getElementById('miners-store-grid');
+            if (!grid) return;
+            let html = '';
+            
+            const colorFilters = [
+                'grayscale(100%) brightness(0.8)', 'hue-rotate(0deg)', 'hue-rotate(180deg) saturate(1.8)',
+                'hue-rotate(90deg) brightness(1.2)', 'hue-rotate(270deg) brightness(1.3)', 'hue-rotate(45deg) saturate(2)',
+                'hue-rotate(140deg) saturate(1.5)', 'hue-rotate(310deg) brightness(1.2)', 'hue-rotate(220deg) saturate(2)',
+                'hue-rotate(30deg) brightness(1.4)', 'hue-rotate(250deg) saturate(1.7)'
+            ];
+
+            for (let i = 0; i <= 10; i++) {
+                let price = i === 0 ? "0.00" : (i * 1.00).toFixed(2);
+                let speedRate = levelMiningRates[i] || 0.000050;
+                let borderClass = i === currentLevel ? 'active-border' : (i === currentLevel + 1 ? 'unlock-border' : 'locked-border');
+                let btnClass = i === currentLevel ? 'badge-active' : (i === currentLevel + 1 ? 'badge-need' : 'badge-lock');
+                let btnText = i === currentLevel ? 'ACTIVE' : (i === currentLevel + 1 ? 'BUY NOW' : 'LOCKED');
+
+                let engineImg = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+                let filterStyle = colorFilters[i % colorFilters.length];
+
+                html += `
+                    <div class="miner-card ${borderClass}">
+                        <div class="engine-img-box">
+                            <img src="${engineImg}" alt="Miner Level ${i}" style="filter: ${filterStyle};">
+                        </div>
+                        <div class="lvl-text">Lvl ${i} Engine</div>
+                        <div class="miner-price-box">${price} GRAM</div>
+                        <div class="miner-speed">${speedRate.toFixed(6)} GRM/s</div>
+                        <button class="status-badge ${btnClass}" onclick="buyMiner(${i}, ${price})">${btnText}</button>
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+        }
+
+        function buyMiner(level, price) {
+            if (level === currentLevel) {
+                alert(`Level ${level} Engine is already active!`);
+            } else if (level === currentLevel + 1 || level > currentLevel) {
+                document.getElementById('buy-modal-title').innerText = `Purchase Lvl ${level} Engine (${price} GRAM)`;
+                document.getElementById('buy-modal-userid').innerText = rawUserId || currentUserId;
+                document.getElementById('buy-engine-modal').style.display = 'flex';
+            } else {
+                alert(`You have already passed Level ${level}!`);
+            }
+        }
+
+        function closeBuyEngineModal() {
+            document.getElementById('buy-engine-modal').style.display = 'none';
+        }
+
+        function copyModalText(textToCopy, labelName) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(`${labelName} copied to clipboard!`);
+            });
+        }
+
+        function copyUserIdForBuy() {
+            const uid = rawUserId || currentUserId;
+            navigator.clipboard.writeText(uid).then(() => {
+                alert("User ID copied to clipboard!");
+            });
+        }
+
+        function extractUserFriendlyAddress(walletObj) {
+            if (!walletObj) return null;
+            try {
+                if (walletObj.account && walletObj.account.userFriendlyAddress) return walletObj.account.userFriendlyAddress;
+                if (walletObj.userFriendlyAddress) return walletObj.userFriendlyAddress;
+                let rawAddr = (walletObj.account && walletObj.account.address) ? walletObj.account.address : walletObj.address;
+                if (rawAddr) {
+                    if (typeof TON_CONNECT_UI !== 'undefined' && TON_CONNECT_UI.toUserFriendlyAddress) {
+                        let isTestnet = walletObj.account && walletObj.account.chain && walletObj.account.chain.toString() === '-3';
+                        return TON_CONNECT_UI.toUserFriendlyAddress(rawAddr, isTestnet);
+                    }
+                    return rawAddr;
+                }
+            } catch (e) { console.error("Error formatting address:", e); }
+            return null;
+        }
+
+        function getActiveWalletAddress() {
+            try {
+                if (tonConnectUI && tonConnectUI.wallet) return extractUserFriendlyAddress(tonConnectUI.wallet);
+            } catch (e) { console.error("Error reading active wallet:", e); }
+            return null;
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const isConnected = await checkNetworkConnectivity();
+            if (!isConnected) return;
+
+            await handleReferralRegistration();
+            await loadUserDataFromSupabase();
+            await fetchWithdrawalHistory();
+            await fetchReferralStats();
+            renderMinersStore();
+            checkAdminPermissions();
+            await fetchTasksFromSupabase();
+            setTimeout(hideSplashScreen, 1000);
+        });
+
+        async function handleReferralRegistration() {
+            if (!_supabase) return;
+
+            let startParam = null;
+            if (tg && tg.initDataUnsafe) {
+                startParam = tg.initDataUnsafe.start_param || null;
+            }
+            if (!startParam) {
+                const urlParams = new URLSearchParams(window.location.search);
+                startParam = urlParams.get('tgWebAppStartParam') || urlParams.get('start');
+            }
+            if (!startParam) {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                startParam = hashParams.get('tgWebAppStartParam');
+            }
+
+            try {
+                let { data: userRecord } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, referrer_id')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
+                if (userRecord && userRecord.referrer_id) {
+                    return; 
+                }
+
+                if (!startParam) {
+                    if (!userRecord) {
+                        await _supabase.from('grm_users').upsert([{
+                            user_id: currentUserId,
+                            username: currentUserName,
+                            referrer_id: null,
+                            balance: baseInitialBalance,
+                            mined_amount: 0,
+                            mining_state: 'stopped',
+                            level: 0,
+                            is_verified: false,
+                            available_referral_claims: 0,
+                            updated_at: new Date().toISOString()
+                        }], { onConflict: 'user_id' });
+                    }
+                    return;
+                }
+
+                const referrerRawId = startParam.toString().trim();
+                const referrerUserId = referrerRawId.startsWith('tg_') ? referrerRawId : 'tg_' + referrerRawId;
+
+                if (referrerUserId === currentUserId) {
+                    if (!userRecord) {
+                        await _supabase.from('grm_users').upsert([{
+                            user_id: currentUserId,
+                            username: currentUserName,
+                            referrer_id: null,
+                            balance: baseInitialBalance,
+                            mined_amount: 0,
+                            mining_state: 'stopped',
+                            level: 0,
+                            is_verified: false,
+                            available_referral_claims: 0,
+                            updated_at: new Date().toISOString()
+                        }], { onConflict: 'user_id' });
+                    }
+                    return;
+                }
+
+                if (userRecord) {
+                    await _supabase
+                        .from('grm_users')
+                        .update({ referrer_id: referrerUserId, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+                } else {
+                    await _supabase.from('grm_users').upsert([{
+                        user_id: currentUserId,
+                        username: currentUserName,
+                        referrer_id: referrerUserId,
+                        balance: baseInitialBalance,
+                        mined_amount: 0,
+                        mining_state: 'stopped',
+                        level: 0,
+                        is_verified: false,
+                        available_referral_claims: 0,
+                        updated_at: new Date().toISOString()
+                    }], { onConflict: 'user_id' });
+                }
+
+                const { data: existingRef } = await _supabase
+                    .from('grm_referrals')
+                    .select('*')
+                    .eq('referred_id', currentUserId)
+                    .maybeSingle();
 
                 if (!existingRef) {
-                  await supabase.from('grm_referrals').upsert([{
-                    id: refRelationId,
-                    referrer_id: assignedReferrerId,
-                    referred_id: userId,
-                    status: 'active',
-                    created_at: new Date().toISOString()
-                  }], { onConflict: 'id' });
-
-                  let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
-                  await callTelegramAPI("sendMessage", {
-                    chat_id: targetChatId,
-                    text: `✅ *New Referral Joined!* 🎉\n\n👤 *User:* ${username}\n🆔 *ID:* \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
-                    parse_mode: 'Markdown'
-                  });
+                    const newRefId = 'ref_' + currentUserId.replace('tg_', '').replace('user_', '');
+                    
+                    await _supabase.from('grm_referrals').upsert([{
+                        id: newRefId,
+                        referrer_id: referrerUserId,
+                        referred_id: currentUserId,
+                        status: 'approved', 
+                        created_at: new Date().toISOString()
+                    }], { onConflict: 'id' });
                 }
-              }
-            }
-          } catch (dbErr) {
-            console.error("Database referral error:", dbErr);
-          }
-        })();
-      } else {
-        await callTelegramAPI("sendMessage", {
-          chat_id: chatId,
-          text: "Please type /start to open the GRAM Mining bot."
-        });
-      }
-    }
 
-    return res.status(200).json({ ok: true });
-  } catch (error) {
-    console.error("Handler error:", error);
-    return res.status(200).json({ error: error.message });
-  }
-}
+            } catch (e) { 
+                console.error("Referral registration error:", e); 
+            }
+        }
+
+        async function fetchReferralStats() {
+            if (!_supabase) return;
+            try {
+                const { data: refData } = await _supabase
+                    .from('grm_referrals')
+                    .select('referred_id, status')
+                    .eq('referrer_id', currentUserId);
+
+                if (!refData || refData.length === 0) {
+                    document.getElementById('referral-stats-text').innerText = `0 total`;
+                    document.getElementById('referrals-user-list-container').innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No referrals yet. Share your link to invite friends!</div>';
+                    return;
+                }
+
+                const referredIds = refData.map(r => r.referred_id);
+
+                const { data: usersData } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, username, is_verified')
+                    .in('user_id', referredIds);
+
+                const userMap = new Map();
+                if (usersData) {
+                    usersData.forEach(u => userMap.set(u.user_id, u));
+                }
+
+                const totalCount = refData.length;
+                let html = '';
+
+                refData.forEach(ref => {
+                    const targetUser = userMap.get(ref.referred_id);
+                    let displayName = targetUser && targetUser.username ? (targetUser.username.startsWith('@') ? targetUser.username : '@' + targetUser.username) : ('ID:' + ref.referred_id.replace('tg_', '').replace('user_', ''));
+
+                    html += `
+                        <div class="ref-user-item">
+                            <div class="ref-user-info">
+                                <div class="ref-avatar-box">
+                                    👤
+                                    <div class="ref-avatar-status status-active-dot"></div>
+                                </div>
+                                <div>
+                                    <div class="ref-username">${displayName}</div>
+                                    <div class="ref-status-text text-active">
+                                        <span>●</span> Active
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('referral-stats-text').innerText = `${totalCount} total`;
+                document.getElementById('referrals-user-list-container').innerHTML = html;
+            } catch (e) { console.error("Error fetching ref stats:", e); }
+        }
+
+        async function claimReferralReward() {
+            if (availableReferralClaims <= 0) {
+                alert("No available referral rewards to claim!");
+                return;
+            }
+
+            const rewardToAdd = availableReferralClaims * 100;
+            baseInitialBalance += rewardToAdd;
+            currentBalance = baseInitialBalance;
+            availableReferralClaims = 0;
+
+            updateBalanceUI();
+            updateReferralClaimUI();
+
+            await updateSupabaseField({
+                balance: baseInitialBalance,
+                available_referral_claims: 0
+            });
+
+            alert(`Successfully claimed +${rewardToAdd} GRM from referrals!`);
+        }
+
+        function updateReferralClaimUI() {
+            const countSpan = document.getElementById('referral-available-count');
+            const claimBtn = document.getElementById('claim-ref-reward-btn');
+            if (countSpan) countSpan.innerText = `${availableReferralClaims} available`;
+            if (claimBtn) {
+                if (availableReferralClaims > 0) {
+                    claimBtn.disabled = false;
+                    claimBtn.style.background = "#ffb400";
+                    claimBtn.style.color = "#000000";
+                    claimBtn.style.cursor = "pointer";
+                } else {
+                    claimBtn.disabled = true;
+                    claimBtn.style.background = "#333";
+                    claimBtn.style.color = "#888";
+                    claimBtn.style.cursor = "not-allowed";
+                }
+            }
+        }
+
+        function copyReferralLink() {
+            const linkText = document.getElementById('referral-link-display').innerText;
+            navigator.clipboard.writeText(linkText).then(() => {
+                alert("Referral link copied to clipboard!");
+            });
+        }
+
+        function checkAdminPermissions() {
+            const adminPanel = document.getElementById('admin-panel');
+            if (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID) {
+                if (adminPanel) {
+                    adminPanel.style.display = 'block';
+                    fetchAdminWithdrawalRequests();
+                }
+            } else {
+                if (adminPanel) adminPanel.style.display = 'none';
+            }
+        }
+
+        async function fetchTasksFromSupabase() {
+            if (!_supabase) {
+                activeTasksList = [];
+                renderTasksList();
+                return;
+            }
+
+            try {
+                const { data, error } = await _supabase
+                    .from('grm_tasks')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (error) {
+                    activeTasksList = [];
+                    renderTasksList();
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    activeTasksList = data.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        channelLink: t.channel_link,
+                        groupLink: t.group_link || '',
+                        reward: parseFloat(t.reward) || 50
+                    }));
+                } else {
+                    activeTasksList = [];
+                }
+                renderTasksList();
+            } catch (err) { 
+                console.error("Supabase fetch tasks exception:", err);
+                activeTasksList = [];
+                renderTasksList();
+            }
+        }
+
+        async function adminSaveTask() {
+            const title = document.getElementById('adm-task-title').value.trim();
+            const channelLink = document.getElementById('adm-channel-link').value.trim();
+            const groupLink = document.getElementById('adm-group-link').value.trim();
+            const reward = parseFloat(document.getElementById('adm-reward-amount').value) || 100;
+
+            if (!title || !channelLink) {
+                alert("Please fill in at least Task Title and Channel Link!");
+                return;
+            }
+
+            const newTask = {
+                id: 'task_' + Date.now(),
+                title: title,
+                channel_link: channelLink,
+                group_link: groupLink,
+                reward: reward
+            };
+
+            if (_supabase) {
+                const { error } = await _supabase.from('grm_tasks').insert([newTask]);
+                if (error) {
+                    alert("Error saving task: " + error.message);
+                    return;
+                }
+            }
+
+            document.getElementById('adm-task-title').value = '';
+            document.getElementById('adm-channel-link').value = '';
+            document.getElementById('adm-group-link').value = '';
+
+            await fetchTasksFromSupabase();
+            alert("Task added successfully!");
+        }
+
+        async function adminDeleteTask(taskId) {
+            if (confirm("Are you sure you want to remove this task?")) {
+                if (_supabase) {
+                    const { error } = await _supabase.from('grm_tasks').delete().eq('id', taskId);
+                    if (error) {
+                        alert("Error deleting task: " + error.message);
+                        return;
+                    }
+                }
+                await fetchTasksFromSupabase();
+            }
+        }
+
+        async function adminUpdateUserLevel() {
+            let targetUserId = document.getElementById('adm-target-user-id').value.trim();
+            const targetLevel = parseInt(document.getElementById('adm-target-level').value);
+
+            if (!targetUserId) {
+                alert("Please enter a User ID!");
+                return;
+            }
+
+            if (isNaN(targetLevel) || targetLevel < 0 || targetLevel > 10) {
+                alert("Level must be between 0 and 10!");
+                return;
+            }
+
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) {
+                alert("Supabase connection not initialized!");
+                return;
+            }
+
+            try {
+                const { data, error } = await _supabase
+                    .from('grm_users')
+                    .update({ level: targetLevel, updated_at: new Date().toISOString() })
+                    .eq('user_id', targetUserId)
+                    .select();
+
+                if (error) {
+                    alert("Error updating level: " + error.message);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    alert(`Success! Set level to ${targetLevel} for user ${targetUserId}`);
+                    if (targetUserId === currentUserId) {
+                        await loadUserDataFromSupabase();
+                        renderMinersStore();
+                    }
+                } else {
+                    alert("User ID not found in database!");
+                }
+            } catch (err) { alert("Exception occurred: " + err.message); }
+        }
+
+        async function adminUpdateUserReferralRewards() {
+            let targetUserId = document.getElementById('adm-ref-user-id').value.trim();
+            const targetClaims = parseInt(document.getElementById('adm-ref-available-input').value) || 0;
+
+            if (!targetUserId) {
+                alert("Please enter a User ID!");
+                return;
+            }
+
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) return;
+
+            try {
+                const { data, error } = await _supabase
+                    .from('grm_users')
+                    .update({ available_referral_claims: targetClaims, updated_at: new Date().toISOString() })
+                    .eq('user_id', targetUserId)
+                    .select();
+
+                if (error) {
+                    alert("Error updating referral claims: " + error.message);
+                    return;
+                }
+
+                alert(`Successfully set available referral claims to ${targetClaims} for user ${targetUserId}`);
+                if (targetUserId === currentUserId) {
+                    await loadUserDataFromSupabase();
+                }
+            } catch (err) { alert("Error: " + err.message); }
+        }
+
+        async function adminSetUserVerification(status) {
+            let targetUserId = document.getElementById('adm-target-user-id').value.trim();
+            if (!targetUserId) {
+                alert("Please enter a User ID!");
+                return;
+            }
+
+            if (!targetUserId.startsWith('tg_') && !targetUserId.startsWith('user_')) {
+                targetUserId = 'tg_' + targetUserId;
+            }
+
+            if (!_supabase) return;
+
+            try {
+                const { data, error } = await _supabase
+                    .from('grm_users')
+                    .update({ is_verified: status, updated_at: new Date().toISOString() })
+                    .eq('user_id', targetUserId)
+                    .select();
+
+                if (error) {
+                    alert("Error setting verification: " + error.message);
+                    return;
+                }
+
+                alert(`User verification status set to ${status ? 'VERIFIED' : 'UNVERIFIED'}!`);
+                if (targetUserId === currentUserId) {
+                    await loadUserDataFromSupabase();
+                }
+            } catch (e) { alert("Error: " + e.message); }
+        }
+
+        tonConnectUI.onStatusChange(async (walletInfo) => {
+            let addressToSave = null;
+            try {
+                if (walletInfo) addressToSave = extractUserFriendlyAddress(walletInfo);
+                if (!addressToSave) addressToSave = getActiveWalletAddress();
+            } catch (err) { console.error("Wallet status change error:", err); }
+
+            if (addressToSave) {
+                await updateSupabaseField({ wallet_address: addressToSave });
+            } else {
+                await updateSupabaseField({ wallet_address: null });
+            }
+            checkWalletAndButtonState();
+        });
+
+        function hideSplashScreen() {
+            const splash = document.getElementById('splash-screen');
+            const mainApp = document.querySelector('.main-container');
+            if (splash && splash.style.display !== 'none') {
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    if (mainApp) mainApp.style.display = 'block';
+                }, 400);
+            }
+        }
+
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            const targetTab = document.getElementById('tab-' + tabName);
+            if (targetTab) targetTab.classList.add('active');
+            if (element) element.classList.add('active');
+            
+            if (tabName === 'tasks') {
+                fetchTasksFromSupabase();
+                checkAdminPermissions();
+            } else if (tabName === 'friends') {
+                fetchReferralStats();
+            }
+        }
+
+        function checkWalletAndButtonState() {
+            const btn = document.getElementById('mining-action-btn');
+            const activeAddr = getActiveWalletAddress();
+            
+            if (!activeAddr) {
+                btn.innerText = "START MINING";
+                btn.style.background = "linear-gradient(135deg, #555 0%, #333 100%)";
+                btn.style.color = "#aaa";
+            } else if (!isMining) {
+                btn.innerText = "START MINING";
+                btn.style.background = "linear-gradient(135deg, #00f0ff 0%, #0055ff 100%)";
+                btn.style.color = "#fff";
+            }
+        }
+
+        async function updateSupabaseField(fields) {
+            if (!_supabase) return;
+            try {
+                fields.updated_at = new Date().toISOString();
+                
+                const { data: existing } = await _supabase
+                    .from('grm_users')
+                    .select('user_id, wallet_address')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
+                if (existing) {
+                    if (fields.wallet_address === null && existing.wallet_address) delete fields.wallet_address;
+                    await _supabase.from('grm_users').update(fields).eq('user_id', currentUserId);
+                } else {
+                    fields.user_id = currentUserId;
+                    fields.username = currentUserName;
+                    fields.balance = baseInitialBalance;
+                    fields.mined_amount = 0;
+                    fields.mining_state = 'stopped';
+                    fields.level = 0;
+                    fields.is_verified = false;
+                    fields.available_referral_claims = 0;
+                    
+                    if (!fields.wallet_address) {
+                        let activeAddr = getActiveWalletAddress();
+                        if (activeAddr) fields.wallet_address = activeAddr;
+                    }
+
+                    await _supabase.from('grm_users').upsert([fields], { onConflict: 'user_id' });
+                }
+            } catch (err) { console.error('Supabase update general error:', err); }
+        }
+
+        async function loadUserDataFromSupabase() {
+            if (!_supabase) return;
+            try {
+                const { data } = await _supabase
+                    .from('grm_users')
+                    .select('*')
+                    .eq('user_id', currentUserId)
+                    .maybeSingle();
+
+                const verifiedBadge = document.getElementById('profile-verified-badge');
+                const verificationSubtext = document.getElementById('profile-verification-subtext');
+                const verifyIcon = document.getElementById('profile-verify-icon');
+
+                if (data) {
+                    baseInitialBalance = parseFloat(data.balance) || 0.000000;
+                    currentBalance = baseInitialBalance;
+                    miningStartTime = parseInt(data.mining_start_time) || Date.now();
+                    currentLevel = (data.level !== undefined && data.level !== null) ? parseInt(data.level) : 0;
+                    availableReferralClaims = parseInt(data.available_referral_claims) || 0;
+                    
+                    const lvlBadge = document.querySelector('.lvl-badge');
+                    if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
+
+                    updateBalanceUI();
+                    updateReferralClaimUI();
+
+                    if (data.mining_state === 'mining') {
+                        startAutoMiningUI();
+                    } else {
+                        checkWalletAndButtonState();
+                    }
+
+                    if (data.is_verified === true) {
+                        verifiedBadge.innerText = "Verified ✔️";
+                        verifiedBadge.style.backgroundColor = "#238636";
+                        verifiedBadge.style.color = "#ffffff";
+                        if (verificationSubtext) verificationSubtext.innerText = "Verified User";
+                        if (verifyIcon) {
+                            verifyIcon.innerText = "✔";
+                            verifyIcon.style.borderColor = "rgba(35, 134, 54, 0.4)";
+                            verifyIcon.style.color = "#2ea043";
+                        }
+                    } else {
+                        verifiedBadge.innerText = "Unverified ❌";
+                        verifiedBadge.style.backgroundColor = "#da3633";
+                        verifiedBadge.style.color = "#ffffff";
+                        if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
+                        if (verifyIcon) {
+                            verifyIcon.innerText = "❌";
+                            verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
+                            verifyIcon.style.color = "#da3633";
+                        }
+                    }
+                } else {
+                    currentLevel = 0;
+                    availableReferralClaims = 0;
+                    const lvlBadge = document.querySelector('.lvl-badge');
+                    if (lvlBadge) lvlBadge.innerText = `Lvl ${currentLevel}`;
+                    updateBalanceUI();
+                    updateReferralClaimUI();
+                    checkWalletAndButtonState();
+                    
+                    if (verifiedBadge) {
+                        verifiedBadge.innerText = "Unverified ❌";
+                        verifiedBadge.style.backgroundColor = "#da3633";
+                        verifiedBadge.style.color = "#ffffff";
+                        if (verificationSubtext) verificationSubtext.innerText = "Unverified User";
+                        if (verifyIcon) {
+                            verifyIcon.innerText = "❌";
+                            verifyIcon.style.borderColor = "rgba(218, 54, 51, 0.4)";
+                            verifyIcon.style.color = "#da3633";
+                        }
+                    }
+                }
+            } catch (err) { console.error('Load user data exception:', err); }
+        }
+
+        function updateBalanceUI() {
+            const formatted = currentBalance.toFixed(6) + " GRM";
+            const mainAsset = document.getElementById('asset-balance');
+            const profilePool = document.getElementById('profile-pool-balance');
+            if (mainAsset) mainAsset.innerText = formatted;
+            if (profilePool) profilePool.innerText = formatted;
+        }
+
+        function handleMiningAction() {
+            const btn = document.getElementById('mining-action-btn');
+            const statusBadge = document.getElementById('mining-status-badge');
+            const coinBox = document.getElementById('coin-box-elem');
+            const amountDisplay = document.getElementById('mining-amount-display');
+            const activeAddr = getActiveWalletAddress();
+
+            if (!activeAddr) {
+                alert("Please connect your TON wallet first to start mining!");
+                return;
+            }
+
+            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000050;
+
+            if (btn.innerText === "START MINING") {
+                isMining = true;
+                miningStartTime = Date.now();
+                btn.innerText = "CLAIM";
+                btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
+                btn.style.color = "#fff";
+                
+                if (statusBadge) {
+                    statusBadge.innerText = "MINING AUTO";
+                    statusBadge.style.color = "#2ea043";
+                }
+                if (coinBox) coinBox.classList.add('mining-anim');
+
+                updateSupabaseField({ mining_state: 'mining', mining_start_time: miningStartTime });
+
+                if (miningInterval) clearInterval(miningInterval);
+                miningInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
+                    minedAmount = elapsed * currentRate;
+                    amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+                }, 1000);
+
+            } else if (btn.innerText === "CLAIM") {
+                const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
+                const earnedMined = elapsed * currentRate;
+
+                baseInitialBalance += earnedMined; 
+                currentBalance = baseInitialBalance;
+                
+                miningStartTime = Date.now();
+                minedAmount = 0;
+                amountDisplay.innerText = "0.000000 GRM";
+                
+                updateBalanceUI();
+
+                updateSupabaseField({
+                    balance: baseInitialBalance,
+                    mined_amount: 0,
+                    mining_state: 'mining',
+                    mining_start_time: miningStartTime
+                });
+            }
+        }
+
+        function startAutoMiningUI() {
+            isMining = true;
+            const btn = document.getElementById('mining-action-btn');
+            const statusBadge = document.getElementById('mining-status-badge');
+            const coinBox = document.getElementById('coin-box-elem');
+            const amountDisplay = document.getElementById('mining-amount-display');
+            const currentRate = levelMiningRates[currentLevel] !== undefined ? levelMiningRates[currentLevel] : 0.000050;
+
+            btn.innerText = "CLAIM";
+            btn.style.background = "linear-gradient(135deg, #238636 0%, #2ea043 100%)";
+            btn.style.color = "#fff";
+
+            if (statusBadge) {
+                statusBadge.innerText = "MINING AUTO";
+                statusBadge.style.color = "#2ea043";
+            }
+            if (coinBox) coinBox.classList.add('mining-anim');
+
+            if (miningInterval) clearInterval(miningInterval);
+            miningInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - miningStartTime) / 1000);
+                minedAmount = elapsed * currentRate;
+                amountDisplay.innerText = minedAmount.toFixed(6) + " GRM";
+            }, 1000);
+        }
+
+        // --- NEW ARCHERY GAME LOGIC (Deduct 10 GRM / Win 20 GRM) ---
+        async function playArcheryGame() {
+            const statusText = document.getElementById('game-status-text');
+            if (currentBalance < 10) {
+                alert("Insufficient balance! You need at least 10 GRM to play the game.");
+                return;
+            }
+
+            statusText.innerText = "Shooting arrow... 🏹🎯";
+
+            try {
+                // Call API or Supabase to deduct 10 GRM for starting the game
+                if (_supabase) {
+                    const { data: userData, error: fetchErr } = await _supabase
+                        .from('grm_users')
+                        .select('balance')
+                        .eq('user_id', currentUserId)
+                        .single();
+
+                    if (fetchErr || !userData || (userData.balance || 0) < 10) {
+                        alert("Insufficient balance on server!");
+                        statusText.innerText = "Ready to Play?";
+                        return;
+                    }
+
+                    const newBalance = userData.balance - 10;
+                    const { error: updateErr } = await _supabase
+                        .from('grm_users')
+                        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+
+                    if (updateErr) {
+                        alert("Error processing game start: " + updateErr.message);
+                        statusText.innerText = "Ready to Play?";
+                        return;
+                    }
+
+                    baseInitialBalance = newBalance;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
+                }
+
+                // Simulate game outcome after 1.5 seconds (50% win chance)
+                setTimeout(async () => {
+                    const isWin = Math.random() >= 0.4; // 60% chance to win
+
+                    if (isWin) {
+                        if (_supabase) {
+                            const { data: winData } = await _supabase
+                                .from('grm_users')
+                                .select('balance')
+                                .eq('user_id', currentUserId)
+                                .single();
+
+                            const winBalance = (winData ? winData.balance : currentBalance) + 20;
+                            await _supabase
+                                .from('grm_users')
+                                .update({ balance: winBalance, updated_at: new Date().toISOString() })
+                                .eq('user_id', currentUserId);
+
+                            baseInitialBalance = winBalance;
+                            currentBalance = baseInitialBalance;
+                            updateBalanceUI();
+                        }
+                        statusText.innerHTML = "🎉 Bullseye! You hit the target and won <span style='color: #2ea043;'>+20 GRM</span>!";
+                        alert("Congratulations! You won 20 GRM!");
+                    } else {
+                        statusText.innerHTML = "❌ Missed the target! Better luck next time (-10 GRM).";
+                        alert("Aww, you missed the target!");
+                    }
+                }, 1500);
+
+            } catch (err) {
+                console.error("Game error:", err);
+                statusText.innerText = "Ready to Play?";
+            }
+        }
+
+        function openWithdrawModal() {
+            document.getElementById('modal-available-balance').innerText = currentBalance.toFixed(6) + " GRM";
+            const activeWallet = getActiveWalletAddress();
+            if (activeWallet) document.getElementById('withdraw-address-input').value = activeWallet;
+            document.getElementById('withdraw-modal').style.display = 'flex';
+        }
+
+        function closeWithdrawModal() {
+            document.getElementById('withdraw-modal').style.display = 'none';
+        }
+
+        async function notifyAdminWithdrawal(txRecord) {
+            if (!BOT_TOKEN || BOT_TOKEN === "YOUR_TELEGRAM_BOT_TOKEN_HERE") return;
+            
+            const message = `🚨 <b>NEW WITHDRAWAL REQUEST</b> 🚨\n\n` +
+                            `👤 <b>User:</b> ${currentUserName}\n` +
+                            `🆔 <b>User ID:</b> <code>${rawUserId || currentUserId}</code>\n` +
+                            `💰 <b>Amount:</b> <code>${txRecord.amount} GRM</code>\n` +
+                            `💎 <b>Wallet Address:</b>\n<code>${txRecord.address}</code>\n` +
+                            `⏰ <b>Date:</b> ${txRecord.date}`;
+
+            try {
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: ADMIN_ID,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (e) { console.error("Error sending Telegram Notification:", e); }
+        }
+
+        async function submitWithdrawal() {
+            const amountVal = parseFloat(document.getElementById('withdraw-amount-input').value);
+            const addressVal = document.getElementById('withdraw-address-input').value.trim();
+
+            if (isNaN(amountVal) || amountVal <= 0) {
+                alert("Please enter a valid amount!");
+                return;
+            }
+
+            if (amountVal < 500) {
+                alert("Minimum withdrawal amount is 500 GRM!");
+                return;
+            }
+
+            if (currentBalance < 500 || amountVal > currentBalance) {
+                alert("Insufficient balance! Minimum 500 GRM required.");
+                return;
+            }
+
+            if (!addressVal) {
+                alert("Please enter a valid TON wallet address!");
+                return;
+            }
+
+            baseInitialBalance -= amountVal;
+            currentBalance = baseInitialBalance;
+            updateBalanceUI();
+
+            const txRecord = {
+                id: 'tx_' + Date.now(),
+                user_id: currentUserId,
+                raw_user_id: rawUserId,
+                user_name: currentUserName,
+                amount: amountVal,
+                address: addressVal,
+                date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                status: 'Pending'
+            };
+
+            withdrawalHistory.unshift(txRecord);
+
+            if (_supabase) {
+                await _supabase.from('grm_withdrawals').insert([{
+                    id: txRecord.id,
+                    user_id: currentUserId,
+                    amount: amountVal,
+                    address: addressVal,
+                    status: 'Pending'
+                }]);
+            }
+
+            updateSupabaseField({ balance: baseInitialBalance });
+            notifyAdminWithdrawal(txRecord);
+            fetchAdminWithdrawalRequests();
+
+            alert(`Withdrawal request of ${amountVal} GRM submitted successfully! Admin will process it shortly.`);
+            closeWithdrawModal();
+            document.getElementById('withdraw-amount-input').value = '';
+        }
+
+        async function fetchWithdrawalHistory() {
+            if (!_supabase) return;
+            try {
+                const { data } = await _supabase
+                    .from('grm_withdrawals')
+                    .select('*')
+                    .eq('user_id', currentUserId)
+                    .order('created_at', { ascending: false });
+
+                if (data && data.length > 0) {
+                    withdrawalHistory = data.map(tx => ({
+                        id: tx.id,
+                        amount: parseFloat(tx.amount),
+                        address: tx.address,
+                        date: new Date(tx.created_at).toLocaleDateString() + ' ' + new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        status: tx.status
+                    }));
+                }
+            } catch (err) { console.error("Error fetching withdrawal history:", err); }
+        }
+
+        function openHistoryModal() {
+            renderHistoryList();
+            document.getElementById('history-modal').style.display = 'flex';
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').style.display = 'none';
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('history-list-container');
+            if (!container) return;
+
+            if (withdrawalHistory.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 12px; padding: 15px;">No transactions recorded yet.</div>';
+                return;
+            }
+
+            let html = '';
+            withdrawalHistory.forEach(tx => {
+                let statusColor = tx.status === 'Completed' ? '#2ea043' : (tx.status === 'Rejected' ? '#da3633' : '#ffb400');
+                html += `
+                    <div class="history-item">
+                        <div>
+                            <div style="font-weight: bold; color: #ffb400;">-${tx.amount.toFixed(2)} GRM</div>
+                            <div style="color: #8b949e; font-size: 10px;">${tx.date}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: ${statusColor}; font-weight: bold;">${tx.status}</div>
+                            <div style="color: #8b949e; font-size: 10px;">${tx.address.substring(0, 4)}...${tx.address.substring(tx.address.length - 4)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function fetchAdminWithdrawalRequests() {
+            const container = document.getElementById('admin-withdrawals-list');
+            if (!container || !_supabase) return;
+
+            try {
+                const { data, error } = await _supabase
+                    .from('grm_withdrawals')
+                    .select('*')
+                    .eq('status', 'Pending')
+                    .order('created_at', { ascending: false });
+
+                if (error || !data || data.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #8b949e; font-size: 11px;">No pending withdrawal requests.</div>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(req => {
+                    html += `
+                        <div class="withdraw-req-card">
+                            <div><strong>User:</strong> ${req.user_id}</div>
+                            <div><strong>Amount:</strong> <span style="color: #ffb400;">${req.amount} GRM</span></div>
+                            <div style="word-break: break-all;"><strong>Address:</strong> ${req.address}</div>
+                            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                                <button class="action-btn" style="flex:1; background:#2ea043; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Completed')">Mark Completed</button>
+                                <button class="action-btn" style="flex:1; background:#da3633; color:#fff; font-size:10px; padding:4px;" onclick="adminProcessWithdrawal('${req.id}', 'Rejected')">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (err) { console.error("Error loading admin withdrawal requests:", err); }
+        }
+
+        async function adminProcessWithdrawal(reqId, newStatus) {
+            if (!_supabase) return;
+            try {
+                const { error } = await _supabase
+                    .from('grm_withdrawals')
+                    .update({ status: newStatus })
+                    .eq('id', reqId);
+
+                if (error) {
+                    alert("Error updating status: " + error.message);
+                    return;
+                }
+
+                alert(`Request marked as ${newStatus}!`);
+                fetchAdminWithdrawalRequests();
+            } catch (err) { console.error("Error processing withdrawal:", err); }
+        }
+
+        function parseTelegramChatId(link) {
+            if (!link) return null;
+            let cleaned = link.trim();
+            if (cleaned.includes('t.me/')) {
+                let parts = cleaned.split('t.me/')[1].split('/')[0].split('?')[0];
+                let target = parts.replace('+', '');
+                if (target.startsWith('joinchat')) return null;
+                return target.startsWith('@') ? target : '@' + target;
+            }
+            if (!cleaned.startsWith('@') && !cleaned.startsWith('-')) return '@' + cleaned;
+            return cleaned;
+        }
+
+        async function checkMembership(chatIdentifier) {
+            if (!BOT_TOKEN || BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN_HERE') return true;
+            if (!rawUserId) return false;
+
+            const targetChat = parseTelegramChatId(chatIdentifier);
+            if (!targetChat) return true;
+
+            try {
+                const targetUrl = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(targetChat)}&user_id=${rawUserId}`;
+                const response = await fetch(targetUrl);
+                const data = await response.json();
+
+                if (data.ok && data.result) {
+                    return ['member', 'administrator', 'creator'].includes(data.result.status);
+                } else return true;
+            } catch (err) { return true; }
+        }
+
+        function renderTasksList() {
+            const container = document.getElementById('tasks-list-container');
+            if (!container) return;
+            
+            let html = '';
+            const isAdmin = (rawUserId === ADMIN_ID || currentUserId === 'tg_' + ADMIN_ID);
+
+            if (activeTasksList.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #8b949e; padding: 20px;">No active tasks available right now.</div>';
+                return;
+            }
+
+            activeTasksList.forEach(task => {
+                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
+                const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
+                const now = Date.now();
+                
+                let btnText = 'Join';
+                let btnStyle = 'background-color: #00f0ff; color: #000;';
+                let btnDisabled = false;
+
+                if (cooldownEnd && cooldownEnd > now) {
+                    btnDisabled = true;
+                    btnStyle = 'background-color: #333333; color: #888888;';
+                } else if (taskStates[task.id] === 'verify') {
+                    btnText = 'Verify Check';
+                    btnStyle = 'background-color: #ffb400; color: #000;';
+                } else if (taskStates[task.id] === 'joined') {
+                    btnText = `Claim`;
+                    btnStyle = 'background-color: #2ea043; color: #fff;';
+                }
+
+                html += `
+                    <div class="card profile-row" id="card-${task.id}">
+                        <div>
+                            <strong>${task.title}</strong>
+                            <p style="font-size: 12px; color: #8b949e;">Earn +${task.reward} GRM</p>
+                        </div>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <button class="action-btn" id="btn-${task.id}" style="${btnStyle}" ${btnDisabled ? 'disabled' : ''} onclick="handleDynamicTaskAction('${task.id}')">${btnText}</button>
+                            ${isAdmin ? `<button class="action-btn" style="background: #da3633; color: #fff;" onclick="adminDeleteTask('${task.id}')">✕</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            activeTasksList.forEach(task => {
+                const cooldownKey = `grm_task_cd_${task.id}_${currentUserId}`;
+                const cooldownEnd = parseInt(localStorage.getItem(cooldownKey) || '0');
+                const now = Date.now();
+                if (cooldownEnd && cooldownEnd > now) {
+                    runTaskTimer(task.id, cooldownEnd - now);
+                }
+            });
+        }
+
+        async function handleDynamicTaskAction(taskId) {
+            const task = activeTasksList.find(t => t.id === taskId);
+            if (!task) return;
+
+            const btn = document.getElementById(`btn-${taskId}`);
+            const state = taskStates[taskId] || 'init';
+
+            if (state === 'init') {
+                taskStates[taskId] = 'verify';
+                
+                if (tg && tg.openTelegramLink) {
+                    tg.openTelegramLink(task.channelLink);
+                } else {
+                    window.open(task.channelLink, '_blank');
+                }
+
+                if (task.groupLink) {
+                    setTimeout(() => {
+                        if (tg && tg.openTelegramLink) tg.openTelegramLink(task.groupLink);
+                        else window.open(task.groupLink, '_blank');
+                    }, 1000);
+                }
+
+                renderTasksList();
+
+            } else if (state === 'verify') {
+                btn.innerText = "Verifying...";
+                btn.disabled = true;
+
+                const isChannelMember = await checkMembership(task.channelLink);
+                let isGroupMember = task.groupLink ? await checkMembership(task.groupLink) : true;
+
+                if (isChannelMember && isGroupMember) {
+                    taskStates[taskId] = 'joined';
+                    renderTasksList();
+                } else {
+                    alert("Please join the channel first✅");
+                    btn.innerText = "Verify Check";
+                    btn.disabled = false;
+                }
+
+            } else if (state === 'joined') {
+                baseInitialBalance += task.reward;
+                currentBalance = baseInitialBalance;
+                updateBalanceUI();
+
+                updateSupabaseField({ balance: baseInitialBalance });
+
+                alert(`Congratulations! Received +${task.reward} GRM`);
+
+                const cooldownEnd = Date.now() + COOLDOWN_TIME;
+                localStorage.setItem(`grm_task_cd_${taskId}_${currentUserId}`, cooldownEnd.toString());
+                delete taskStates[taskId];
+
+                runTaskTimer(taskId, COOLDOWN_TIME);
+            }
+        }
+
+        function runTaskTimer(taskId, durationMs) {
+            const btn = document.getElementById(`btn-${taskId}`);
+            let remaining = Math.floor(durationMs / 1000);
+
+            const timer = setInterval(() => {
+                if (remaining <= 0) {
+                    clearInterval(timer);
+                    localStorage.removeItem(`grm_task_cd_${taskId}_${currentUserId}`);
+                    renderTasksList();
+                    return;
+                }
+
+                const h = Math.floor(remaining / 3600);
+                const m = Math.floor((remaining % 3600) / 60);
+                const s = remaining % 60;
+                const formatted = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+
+                if (btn) {
+                    btn.innerText = formatted;
+                    btn.disabled = true;
+                    btn.style.backgroundColor = '#333333';
+                    btn.style.color = '#888888';
+                }
+                remaining--;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
