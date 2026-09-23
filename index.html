@@ -455,7 +455,7 @@
         </div>
     </div>
 
-    <!-- 1 VS 1 DICE BATTLE MODAL -->
+    <!-- 1 VS 1 DICE BATTLE MODAL (ဘယ်ညာ သီးသန့် အန်စာတုံးဒီဇိုင်း) -->
     <div id="pvp-modal" class="modal-overlay">
         <div class="modal-card" style="text-align: center;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -467,21 +467,26 @@
             <div id="pvp-status-box" style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
                 <div style="font-size: 13px; color: #00f0ff; font-weight: bold; margin-bottom: 10px;" id="pvp-battle-title">Ready to Battle</div>
                 
-                <!-- အန်စာတုံးပုံစံကို 3D Dice Graphic သို့မဟုတ် ကြီးမားသော Emoji ဖြင့် လှုပ်ရှားမှုပါအောင် ပြင်ဆင်ထားသည် -->
-                <div style="font-size: 55px; margin: 10px 0; display: inline-block;" id="dice-graphic">🎲</div>
-
+                <!-- ဘယ်ညာ နှစ်ယောက်အတွက် အန်စာတုံးပုံစံများ (အလယ်တွင်မပါတော့ပါ) -->
                 <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px;">
-                    <div>
-                        <div style="font-size: 11px; color: #8b949e;" id="pvp-p1-name">Player 1</div>
-                        <div style="font-size: 22px; font-weight: bold; color: #ffb400;" id="pvp-p1-score">-</div>
+                    <!-- Player 1 Box -->
+                    <div style="background: rgba(13, 22, 38, 0.8); border: 1px solid rgba(0,240,255,0.3); border-radius: 10px; padding: 10px; width: 45%;">
+                        <div style="font-size: 11px; color: #8b949e; margin-bottom: 4px;" id="pvp-p1-name">Player 1</div>
+                        <div style="font-size: 40px; margin: 5px 0;" id="p1-dice-graphic">🎲</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #ffb400;" id="pvp-p1-score">-</div>
                     </div>
+
                     <div style="font-size: 16px; font-weight: bold; color: #fff;">VS</div>
-                    <div>
-                        <div style="font-size: 11px; color: #8b949e;" id="pvp-p2-name">Player 2</div>
-                        <div style="font-size: 22px; font-weight: bold; color: #ffb400;" id="pvp-p2-score">-</div>
+
+                    <!-- Player 2 Box -->
+                    <div style="background: rgba(13, 22, 38, 0.8); border: 1px solid rgba(0,240,255,0.3); border-radius: 10px; padding: 10px; width: 45%;">
+                        <div style="font-size: 11px; color: #8b949e; margin-bottom: 4px;" id="pvp-p2-name">Waiting...</div>
+                        <div style="font-size: 40px; margin: 5px 0;" id="p2-dice-graphic">🎲</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #ffb400;" id="pvp-p2-score">-</div>
                     </div>
                 </div>
-                <div id="pvp-result-announcement" style="font-size: 13px; font-weight: bold; color: #2ea043; margin-top: 8px;"></div>
+
+                <div id="pvp-result-announcement" style="font-size: 12px; font-weight: bold; color: #2ea043; margin-top: 8px; min-height: 20px;"></div>
             </div>
 
             <button class="action-btn" id="pvp-play-btn" style="width: 100%; background: #ffb400; color: #000; padding: 12px; font-size: 15px;" onclick="handleDiceAction()">Play (10 GRM)</button>
@@ -1435,7 +1440,7 @@
             }, 1000);
         }
 
-        // 1 VS 1 DICE GAME LOGIC (အဆင့်မြှင့်တင်ပြီး)
+        // 1 VS 1 DICE GAME LOGIC (ပြင်ဆင်ပြီး - ဘယ်ညာ သီးသန့် အန်စာတုံးပြသရန်)
         async function openPvpModal() {
             document.getElementById('pvp-modal').style.display = 'flex';
             await checkAndUpdatePvpDisplay();
@@ -1448,7 +1453,6 @@
         async function checkAndUpdatePvpDisplay() {
             if (!_supabase) return;
             try {
-                // waiting အခြေအနေရှိသော မိတ်ချ์ (match) ကို ရှာမည်
                 let { data: openMatch } = await _supabase
                     .from('grm_pvp_matches')
                     .select('*')
@@ -1459,13 +1463,16 @@
 
                 if (openMatch) {
                     if (openMatch.player_1_id === currentUserId) {
-                        // မိမိကိုယ်တိုင်က အစကတည်းက စတင်ဖန်တီးထားသူဖြစ်လျှင် (Waiting for P2)
+                        // မိမိကိုယ်တိုင်က အစကတည်းက ပွဲဖန်တီးထားသူဖြစ်လျှင်
                         document.getElementById('pvp-battle-title').innerText = "Waiting for Opponent...";
                         document.getElementById('pvp-p1-name').innerText = openMatch.player_1_name || currentUserName;
-                        document.getElementById('pvp-p1-score').innerText = openMatch.player_1_score || '-';
-                        document.getElementById('pvp-p2-name').innerText = "Searching...";
+                        document.getElementById('pvp-p1-score').innerText = openMatch.player_1_score;
+                        document.getElementById('p1-dice-graphic').innerText = getDiceEmoji(openMatch.player_1_score);
+                        
+                        document.getElementById('pvp-p2-name').innerText = "Waiting...";
                         document.getElementById('pvp-p2-score').innerText = '-';
-                        document.getElementById('dice-graphic').innerText = getDiceEmoji(openMatch.player_1_score);
+                        document.getElementById('p2-dice-graphic').innerText = '🎲';
+                        
                         document.getElementById('pvp-result-announcement').innerText = "Your dice roll is saved. Waiting for player 2 to join & play!";
                         playBtn.innerText = "Waiting for Opponent...";
                         playBtn.disabled = true;
@@ -1474,21 +1481,27 @@
                         document.getElementById('pvp-battle-title').innerText = "Join Open Battle (10 GRM)";
                         document.getElementById('pvp-p1-name').innerText = openMatch.player_1_name || 'Player 1';
                         document.getElementById('pvp-p1-score').innerText = openMatch.player_1_score;
+                        document.getElementById('p1-dice-graphic').innerText = getDiceEmoji(openMatch.player_1_score);
+
                         document.getElementById('pvp-p2-name').innerText = currentUserName;
                         document.getElementById('pvp-p2-score').innerText = '-';
-                        document.getElementById('dice-graphic').innerText = '🎲';
-                        document.getElementById('pvp-result-announcement').innerText = "Opponent is waiting! Roll the dice to complete the match.";
+                        document.getElementById('p2-dice-graphic').innerText = '🎲';
+
+                        document.getElementById('pvp-result-announcement').innerText = "Opponent is waiting! Roll your dice to complete the match.";
                         playBtn.innerText = "Play & Complete (10 GRM)";
                         playBtn.disabled = false;
                     }
                 } else {
-                    // ပွဲအသစ်စတင်ရန်
+                    // ပွဲအသစ်စတင်ရန် (Player 1 အနေဖြင့်)
                     document.getElementById('pvp-battle-title').innerText = "New Dice Battle";
                     document.getElementById('pvp-p1-name').innerText = currentUserName;
                     document.getElementById('pvp-p1-score').innerText = '-';
+                    document.getElementById('p1-dice-graphic').innerText = '🎲';
+
                     document.getElementById('pvp-p2-name').innerText = "Opponent";
                     document.getElementById('pvp-p2-score').innerText = '-';
-                    document.getElementById('dice-graphic').innerText = '🎲';
+                    document.getElementById('p2-dice-graphic').innerText = '🎲';
+
                     document.getElementById('pvp-result-announcement').innerText = "";
                     playBtn.innerText = "Play (10 GRM)";
                     playBtn.disabled = false;
@@ -1521,18 +1534,24 @@
                 playBtn.innerText = "Rolling...";
                 playBtn.disabled = true;
 
-                // အန်စာတုံး လှည့်နေစဉ် Animation ပါဝင်စေရန် 클래스 ထည့်သွင်းခြင်း
-                const diceElem = document.getElementById('dice-graphic');
-                diceElem.classList.add('dice-rolling');
+                // ကိုယ့်ဘက်က အန်စာတုံးကို လှည့်နေစဉ် Animation ပြမည်
+                let myDiceElem = document.getElementById('p2-dice-graphic');
+                let { data: openMatch } = _supabase ? await _supabase.from('grm_pvp_matches').select('*').eq('status', 'waiting').maybeSingle() : { data: null };
+                
+                if (!openMatch) {
+                    myDiceElem = document.getElementById('p1-dice-graphic');
+                }
+                
+                myDiceElem.classList.add('dice-rolling');
 
                 let rollAnimCount = 0;
                 const rollInterval = setInterval(() => {
                     let tempVal = Math.floor(Math.random() * 6) + 1;
-                    diceElem.innerText = getDiceEmoji(tempVal);
+                    myDiceElem.innerText = getDiceEmoji(tempVal);
                     rollAnimCount++;
                     if (rollAnimCount > 12) {
                         clearInterval(rollInterval);
-                        diceElem.classList.remove('dice-rolling');
+                        myDiceElem.classList.remove('dice-rolling');
                         finalizeDiceRoll();
                     }
                 }, 100);
@@ -1540,9 +1559,7 @@
         }
 
         async function finalizeDiceRoll() {
-            const myDiceScore = Math.floor(Math.random() * 6) + 1; // 1 to 6
-            const diceElem = document.getElementById('dice-graphic');
-            diceElem.innerText = getDiceEmoji(myDiceScore);
+            const myDiceScore = Math.floor(Math.random() * 6) + 1; 
 
             if (!_supabase) {
                 alert("Supabase connection missing!");
@@ -1567,9 +1584,10 @@
                         status: 'waiting'
                     }]);
 
+                    document.getElementById('p1-dice-graphic').innerText = getDiceEmoji(myDiceScore);
                     document.getElementById('pvp-p1-score').innerText = myDiceScore;
                     document.getElementById('pvp-battle-title').innerText = "Waiting for Opponent...";
-                    document.getElementById('pvp-result-announcement').innerText = `You rolled: ${myDiceScore} 🎲. Waiting for another player to match!`;
+                    document.getElementById('pvp-result-announcement').innerText = `You rolled: ${myDiceScore}. Waiting for another player to match!`;
                     
                     const playBtn = document.getElementById('pvp-play-btn');
                     playBtn.innerText = "Waiting for Opponent...";
@@ -1582,10 +1600,13 @@
                     let winnerText = "";
                     let prizePool = 20;
 
+                    document.getElementById('p2-dice-graphic').innerText = getDiceEmoji(p2Score);
+                    document.getElementById('pvp-p2-score').innerText = p2Score;
+
                     if (p2Score > p1Score) {
                         baseInitialBalance += prizePool;
                         currentBalance = baseInitialBalance;
-                        winnerText = `${currentUserName} Won the ${prizePool} GRM pot! 🎉`;
+                        winnerText = `You Won the ${prizePool} GRM pot! 🎉`;
                     } else if (p1Score > p2Score) {
                         winnerText = `${openMatch.player_1_name} Won the ${prizePool} GRM pot! 🏆`;
                     } else {
@@ -1606,10 +1627,6 @@
                         winner_id: p2Score > p1Score ? currentUserId : (p1Score > p2Score ? openMatch.player_1_id : 'tie')
                     }).eq('id', openMatch.id);
 
-                    document.getElementById('pvp-p1-name').innerText = openMatch.player_1_name;
-                    document.getElementById('pvp-p1-score').innerText = p1Score;
-                    document.getElementById('pvp-p2-name').innerText = currentUserName;
-                    document.getElementById('pvp-p2-score').innerText = p2Score;
                     document.getElementById('pvp-battle-title').innerText = "Battle Completed!";
                     document.getElementById('pvp-result-announcement').innerText = winnerText;
                     
