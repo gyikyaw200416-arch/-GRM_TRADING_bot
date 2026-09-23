@@ -15,13 +15,12 @@ bot.start(async (ctx) => {
     const rawUserId = telegramUser.id.toString();
     const userId = 'tg_' + rawUserId; 
     const username = telegramUser.username ? '@' + telegramUser.username : (telegramUser.first_name || 'Miner');
-    const startPayload = ctx.payload; // Referral ID payload
+    const startPayload = ctx.payload; 
 
     let assignedReferrerId = null;
 
     if (startPayload && startPayload.trim() !== '') {
       let refRaw = startPayload.trim();
-      // Fixed: changed refParsed to refRaw in the ternary check below
       let refParsed = refRaw.startsWith('tg_') ? refRaw : 'tg_' + refRaw; 
       if (refParsed !== userId) {
         assignedReferrerId = refParsed; 
@@ -38,7 +37,6 @@ bot.start(async (ctx) => {
     if (fetchError) console.log('Fetch error:', fetchError.message);
 
     if (!existingUser) {
-      // New user registration
       let { error: insertError } = await supabase.from('grm_users').upsert([{
         user_id: userId,
         username: username,
@@ -54,7 +52,6 @@ bot.start(async (ctx) => {
       if (insertError) console.log('Insert error:', insertError.message);
 
     } else {
-      // Existing user: attach referrer if missing
       if (!existingUser.referrer_id && assignedReferrerId) {
         let { error: updateError } = await supabase.from('grm_users')
           .update({ 
@@ -88,7 +85,6 @@ bot.start(async (ctx) => {
 
         if (refError) console.log('Referral insert error:', refError.message);
 
-        // Notify Referrer about the new join
         let targetChatId = assignedReferrerId.replace('tg_', '');
         await bot.telegram.sendMessage(
           targetChatId,
@@ -98,14 +94,39 @@ bot.start(async (ctx) => {
       }
     }
 
-    // 3. Send Mini App Launch Button
-    await ctx.reply('Welcome to GRM Mining Core! Click below to start mining and trading.', {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🚀 Open GRM App', web_app: { url: MINI_APP_URL } }]
-        ]
-      }
-    });
+    // 3. Send Photo with Welcome Message and Web App / Channel Buttons
+    const captionText = 
+      "🚀 *To use this bot, you must join our channel:* [A-TOOLS X](https://t.me/A_ToolsX)\n\n" +
+      "👋 *Welcome to GRAM Mining Core!*\n\n" +
+      "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+      "⚡ *Tap to boost mining speed!*\n" +
+      "🔗 *Connect your TON wallet.*\n" +
+      "💰 *GRAM to upgrade your miner level!*";
+
+    const replyMarkup = {
+      inline_keyboard: [
+        [{ text: '📢 VIEW CHANNEL', url: 'https://t.me/A_ToolsX' }],
+        [{ text: '🚀 Start Mining', web_app: { url: MINI_APP_URL } }]
+      ]
+    };
+
+    // Try sending photo first, fallback to text-only if photo ID fails
+    try {
+      await ctx.replyWithPhoto(
+        "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
+        {
+          caption: captionText,
+          parse_mode: 'Markdown',
+          reply_markup: replyMarkup
+        }
+      );
+    } catch (photoErr) {
+      console.log('Photo send failed, sending text instead:', photoErr.message);
+      await ctx.reply(captionText, {
+        parse_mode: 'Markdown',
+        reply_markup: replyMarkup
+      });
+    }
 
   } catch (err) {
     console.error('Error in bot start command:', err);
