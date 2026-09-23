@@ -5,6 +5,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN || "8693095942:AAFhQ-g838_CbWL5QqpfXR0T7
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://uyblmdckdvqgammrfati.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
 const MINI_APP_URL = process.env.MINI_APP_URL || "https://t.me/GRM_TRADING_bot/app";
+const COMMUNITY_URL = "https://t.me/A_ToolsX"; // လိုအပ်ပါက သင့် Community Link ထည့်ပါ
 
 const bot = new Telegraf(BOT_TOKEN);
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -94,22 +95,23 @@ bot.start(async (ctx) => {
       }
     }
 
-    // 3. Send Photo with Channel Join & Start Mining Buttons
+    // 3. ပုံအဟောင်းအတိုင်း ပုံစံထုတ်ပေးမည့် စာသားနှင့် ခလုတ်များ (Start Mining & Community)
     const captionText = 
-      "🚀 *To use this bot, you must join our channel:* [A-TOOLS X](https://t.me/A_ToolsX)\n\n" +
       "👋 *Welcome to GRAM Mining Core!*\n\n" +
-      "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+      "📉 *Mine GRAM tokens directly to your Pool Wallet.*\n" +
       "⚡ *Tap to boost mining speed!*\n" +
       "🔗 *Connect your TON wallet.*\n" +
-      "💰 *GRAM to upgrade your miner level!*";
+      "💰 *GRAM to upgrade your miner level!*\n\n" +
+      "*Click below to start.*";
 
     const replyMarkup = {
       inline_keyboard: [
-        [{ text: '📢 VIEW CHANNEL', url: 'https://t.me/A_ToolsX' }],
-        [{ text: '🚀 Start Mining', web_app: { url: MINI_APP_URL } }]
+        [{ text: '🚀 Start Mining', web_app: { url: MINI_APP_URL } }],
+        [{ text: '🌐 Community', url: COMMUNITY_URL }]
       ]
     };
 
+    // ပုံအဟောင်းပါ ဖိုင်အိုင်ဒီဖြင့် ပြန်လည်ပို့ဆောင်ခြင်း
     try {
       await ctx.replyWithPhoto(
         "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -120,7 +122,7 @@ bot.start(async (ctx) => {
         }
       );
     } catch (photoErr) {
-      console.log('Photo send failed, sending text instead:', photoErr.message);
+      console.log('Photo send failed:', photoErr.message);
       await ctx.reply(captionText, {
         parse_mode: 'Markdown',
         reply_markup: replyMarkup
