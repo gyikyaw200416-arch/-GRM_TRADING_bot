@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
 const SUPABASE_URL = "https://uyblmdckdvqgammrfati.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
+const MINI_APP_URL = "https://grm-trading-bot.vercel.app/";
+const COMMUNITY_URL = "https://discord.gg/NwsPcvukX";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -22,7 +24,6 @@ async function callTelegramAPI(method, payload) {
 }
 
 export default async function handler(req, res) {
-  // CORS headers for admin/mini-app requests if needed
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -47,7 +48,6 @@ export default async function handler(req, res) {
       }
       const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
 
-      // Fetch current balance from grm_users
       const { data: user, error: fetchError } = await supabase
         .from('grm_users')
         .select('balance')
@@ -64,7 +64,6 @@ export default async function handler(req, res) {
 
       const newBalance = user.balance - 10;
 
-      // Update new balance
       const { error: updateError } = await supabase
         .from('grm_users')
         .update({ balance: newBalance, updated_at: new Date().toISOString() })
@@ -85,7 +84,6 @@ export default async function handler(req, res) {
       }
       const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
 
-      // Fetch current balance
       const { data: user, error: fetchError } = await supabase
         .from('grm_users')
         .select('balance')
@@ -98,7 +96,6 @@ export default async function handler(req, res) {
 
       const newBalance = (user.balance || 0) + 20;
 
-      // Update winner balance with 20 GRM added
       const { error: updateError } = await supabase
         .from('grm_users')
         .update({ balance: newBalance, updated_at: new Date().toISOString() })
@@ -149,17 +146,17 @@ export default async function handler(req, res) {
         const startPayload = parts.length > 1 ? parts[1].trim() : null;
 
         const captionText = 
-          "👋 *Welcome to GRAM Mining Core!*\n\n" +
-          "✈ *Mine GRAM tokens directly to your Pool Wallet.*\n" +
+          "⛏ *Welcome to GRAM Mining Core!*\n\n" +
+          "📉 *Mine GRAM tokens directly to your Pool Wallet.*\n" +
           "⚡ *Tap to boost mining speed!*\n" +
           "🔗 *Connect your TON wallet.*\n" +
           "💰 *GRAM to upgrade your miner level!*\n\n" +
-          "Click below to start.";
+          "*Click below to start.*";
 
         const replyMarkup = {
           inline_keyboard: [
-            [{ text: "🚀 Start Mining", web_app: { url: "https://grm-trading-bot.vercel.app/" } }],
-            [{ text: "🌐 Community", url: "https://discord.gg/NwsPcvukX" }]
+            [{ text: '🚀 Start Mining', web_app: { url: MINI_APP_URL } }],
+            [{ text: '🌐 Community', url: COMMUNITY_URL }]
           ]
         };
 
