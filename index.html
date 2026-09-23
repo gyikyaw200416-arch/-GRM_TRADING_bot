@@ -324,9 +324,10 @@
                     <canvas id="archery-canvas" width="340" height="260" style="display: block; width: 100%; height: 100%;"></canvas>
                 </div>
 
-                <div id="game-status-text" style="font-size: 13px; font-weight: bold; color: #ffb400; margin-bottom: 12px;">Aim by dragging or click Play to shoot</div>
+                <div id="game-status-text" style="font-size: 13px; font-weight: bold; color: #ffb400; margin-bottom: 12px;">Pull back & release to shoot arrow!</div>
 
-                <button class="action-btn" id="shoot-arrow-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 12px; font-size: 15px;" onclick="startArcheryShot()">🎯 Play & Shoot Arrow (Cost: 10 GRM)</button>
+                <!-- Play Arrow 10GRM Button -->
+                <button class="action-btn" id="shoot-arrow-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 12px; font-size: 15px;" onclick="triggerDirectPlayArrow()">Play Arrow 10GRM</button>
             </div>
         </div>
 
@@ -1402,17 +1403,18 @@
             }, 1000);
         }
 
-        // --- INTERACTIVE ARCHERY CANVAS GAME LOGIC ---
+        // --- INTERACTIVE ARCHERY CANVAS GAME LOGIC (WITH DRAG-TO-PULL BOW & PRE-DEDUCT 10 GRM) ---
         let archeryCanvas, archeryCtx;
-        let gameState = 'IDLE'; // IDLE, AIMING, FLYING, RESULT
+        let gameState = 'IDLE'; // IDLE, FLYING, RESULT
         let arrowX = 50, arrowY = 190;
         let targetX = 290, targetY = 90, targetRadius = 20;
-        let targetSpeedY = 2.8; // Faster movement
+        let targetSpeedY = 2.8; 
         let powerPower = 0;
         let powerAngle = 0;
         let arrowVelX = 0, arrowVelY = 0;
         let isDragging = false;
-        let dragStartX = 0, dragStartY = 0;
+        let dragStartX = 50, dragStartY = 190;
+        let currentPullX = 50, currentPullY = 190;
 
         function initArcheryCanvasGame() {
             archeryCanvas = document.getElementById('archery-canvas');
@@ -1421,33 +1423,50 @@
 
             resizeArcheryCanvas();
 
-            archeryCanvas.addEventListener('pointerdown', (e) => {
+            archeryCanvas.addEventListener('pointerdown', async (e) => {
                 if (gameState !== 'IDLE') return;
+                
+                // Check balance before pulling bow
+                if (currentBalance < 10) {
+                    alert("Insufficient balance! Minimum 10 GRM required.");
+                    return;
+                }
+
                 const rect = archeryCanvas.getBoundingClientRect();
                 const clientX = e.clientX - rect.left;
                 const clientY = e.clientY - rect.top;
 
-                if (Math.hypot(clientX - arrowX, clientY - arrowY) < 50) {
+                if (Math.hypot(clientX - 50, clientY - 190) < 55) {
                     isDragging = true;
-                    dragStartX = clientX;
-                    dragStartY = clientY;
-                    powerAngle = 0;
-                    powerPower = 0;
+                    dragStartX = 50;
+                    dragStartY = 190;
+                    currentPullX = clientX;
+                    currentPullY = clientY;
                 }
             });
 
             archeryCanvas.addEventListener('pointermove', (e) => {
                 if (!isDragging || gameState !== 'IDLE') return;
                 const rect = archeryCanvas.getBoundingClientRect();
-                const clientX = e.clientX - rect.left;
-                const clientY = e.clientY - rect.top;
+                let clientX = e.clientX - rect.left;
+                let clientY = e.clientY - rect.top;
 
-                let dx = dragStartX - clientX;
-                let dy = dragStartY - clientY;
-                powerPower = Math.min(Math.hypot(dx, dy) * 0.25, 25);
-                if (powerPower > 2) {
-                    powerAngle = Math.atan2(dy, dx);
+                // Limit pulling distance for tension effect
+                let dx = clientX - 50;
+                let dy = clientY - 190;
+                let dist = Math.hypot(dx, dy);
+                if (dist > 50) {
+                    clientX = 50 + (dx / dist) * 50;
+                    clientY = 190 + (dy / dist) * 50;
                 }
+
+                currentPullX = clientX;
+                currentPullY = clientY;
+
+                let pullDx = 50 - currentPullX;
+                let pullDy = 190 - currentPullY;
+                powerPower = Math.min(Math.hypot(pullDx, pullDy) * 0.35, 22);
+                powerAngle = Math.atan2(pullDy, pullDx);
             });
 
             archeryCanvas.addEventListener('pointerup', async () => {
@@ -1455,8 +1474,10 @@
                 isDragging = false;
 
                 if (powerPower > 3) {
-                    await startArcheryShot();
+                    await deductAndShootArrow();
                 } else {
+                    currentPullX = 50;
+                    currentPullY = 190;
                     powerPower = 0;
                 }
             });
@@ -1468,6 +1489,70 @@
             if (!archeryCanvas) return;
             archeryCanvas.width = 340;
             archeryCanvas.height = 260;
+        }
+
+        async function triggerDirectPlayArrow() {
+            if (gameState === 'FLYING') return;
+
+            if (currentBalance < 10) {
+                alert("Insufficient balance! Minimum 10 GRM required.");
+                return;
+            }
+
+            // Direct button shoot with automatic optimal tension
+            powerPower = 16;
+            powerAngle = Math.atan2(targetY - 190, targetX - 50);
+            currentPullX = 50 - Math.cos(powerAngle) * 40;
+            currentPullY = 190 - Math.sin(powerAngle) * 40;
+
+            await deductAndShootArrow();
+        }
+
+        async function deductAndShootArrow() {
+            try {
+                if (_supabase) {
+                    const { data: userData } = await _supabase
+                        .from('grm_users')
+                        .select('balance')
+                        .eq('user_id', currentUserId)
+                        .single();
+
+                    if (!userData || (userData.balance || 0) < 10) {
+                        alert("Insufficient balance on server!");
+                        currentPullX = 50; currentPullY = 190; powerPower = 0;
+                        return;
+                    }
+
+                    const newBalance = userData.balance - 10;
+                    await _supabase
+                        .from('grm_users')
+                        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+                        .eq('user_id', currentUserId);
+
+                    baseInitialBalance = newBalance;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
+                } else {
+                    baseInitialBalance -= 10;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
+                }
+
+                arrowX = currentPullX;
+                arrowY = currentPullY;
+                gameState = 'FLYING';
+                document.getElementById('game-status-text').innerText = "🏹 Arrow flying...";
+                document.getElementById('shoot-arrow-btn').disabled = true;
+
+                let force = Math.max(powerPower, 14);
+                arrowVelX = Math.cos(powerAngle) * force;
+                arrowVelY = Math.sin(powerAngle) * force;
+                powerPower = 0;
+
+            } catch (err) {
+                console.error("Archery shoot error:", err);
+                currentPullX = 50; currentPullY = 190;
+            }
         }
 
         function archeryGameLoop() {
@@ -1484,7 +1569,7 @@
                     archeryCtx.beginPath(); archeryCtx.moveTo(0, y); archeryCtx.lineTo(archeryCanvas.width, y); archeryCtx.stroke();
                 }
 
-                if (gameState === 'IDLE' || gameState === 'AIMING') {
+                if (gameState === 'IDLE') {
                     targetY += targetSpeedY;
                     if (targetY < 40 || targetY > 220) targetSpeedY *= -1;
                 }
@@ -1506,12 +1591,12 @@
                     }
                 }
 
-                drawStaticBow(50, 190);
-                
-                if (gameState === 'FLYING') {
+                if (isDragging) {
+                    drawPullingBowAndArrow(50, 190, currentPullX, currentPullY);
+                } else if (gameState === 'FLYING') {
                     drawFlyingArrow(arrowX, arrowY, Math.atan2(arrowVelY, arrowVelX));
                 } else {
-                    drawFlyingArrow(arrowX, arrowY, isDragging ? powerAngle : 0);
+                    drawStaticBowAndArrow(50, 190);
                 }
             }
             requestAnimationFrame(archeryGameLoop);
@@ -1532,7 +1617,7 @@
             archeryCtx.beginPath(); archeryCtx.arc(x, y, radius, 0, Math.PI * 2); archeryCtx.stroke();
         }
 
-        function drawStaticBow(x, y) {
+        function drawStaticBowAndArrow(x, y) {
             archeryCtx.save();
             archeryCtx.translate(x, y);
             archeryCtx.strokeStyle = '#00f0ff';
@@ -1541,12 +1626,65 @@
             archeryCtx.arc(0, 0, 24, -Math.PI / 2, Math.PI / 2);
             archeryCtx.stroke();
 
+            // Bowstring
             archeryCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
             archeryCtx.lineWidth = 1;
             archeryCtx.beginPath();
             archeryCtx.moveTo(0, -24);
             archeryCtx.lineTo(0, 24);
             archeryCtx.stroke();
+
+            // Arrow resting
+            archeryCtx.strokeStyle = '#ffb400';
+            archeryCtx.lineWidth = 3;
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(-15, 0);
+            archeryCtx.lineTo(20, 0);
+            archeryCtx.stroke();
+
+            archeryCtx.restore();
+        }
+
+        function drawPullingBowAndArrow(bx, by, px, py) {
+            archeryCtx.save();
+            archeryCtx.translate(bx, by);
+            archeryCtx.strokeStyle = '#00f0ff';
+            archeryCtx.lineWidth = 3;
+            archeryCtx.beginPath();
+            archeryCtx.arc(0, 0, 24, -Math.PI / 2, Math.PI / 2);
+            archeryCtx.stroke();
+
+            let localPx = px - bx;
+            let localPy = py - by;
+
+            // Elastic bowstring pulled back to user's finger (px, py)
+            archeryCtx.strokeStyle = '#ffb400';
+            archeryCtx.lineWidth = 1.5;
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(0, -24);
+            archeryCtx.lineTo(localPx, localPy);
+            archeryCtx.lineTo(0, 24);
+            archeryCtx.stroke();
+
+            // Arrow shaft attached to pulling position
+            let angle = Math.atan2(localPy, localPx);
+            archeryCtx.rotate(angle);
+            archeryCtx.strokeStyle = '#ffb400';
+            archeryCtx.lineWidth = 3;
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(-Math.hypot(localPx, localPy), 0);
+            archeryCtx.lineTo(15, 0);
+            archeryCtx.stroke();
+
+            // Arrow head
+            archeryCtx.fillStyle = '#00f0ff';
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(15, 0);
+            archeryCtx.lineTo(10, -4);
+            archeryCtx.lineTo(10, 4);
+            archeryCtx.closePath();
+            archeryCtx.fill();
+
             archeryCtx.restore();
         }
 
@@ -1562,7 +1700,6 @@
             archeryCtx.lineTo(18, 0);
             archeryCtx.stroke();
 
-            // Arrow head
             archeryCtx.fillStyle = '#00f0ff';
             archeryCtx.beginPath();
             archeryCtx.moveTo(18, 0);
@@ -1572,65 +1709,6 @@
             archeryCtx.fill();
 
             archeryCtx.restore();
-        }
-
-        async function startArcheryShot() {
-            if (gameState === 'FLYING') return;
-
-            // Strict Balance Check & Deduction BEFORE shooting
-            if (currentBalance < 10) {
-                alert("Insufficient balance! Minimum 10 GRM required.");
-                isDragging = false;
-                powerPower = 0;
-                return;
-            }
-
-            try {
-                if (_supabase) {
-                    const { data: userData } = await _supabase
-                        .from('grm_users')
-                        .select('balance')
-                        .eq('user_id', currentUserId)
-                        .single();
-
-                    if (!userData || (userData.balance || 0) < 10) {
-                        alert("Insufficient balance on server!");
-                        isDragging = false;
-                        powerPower = 0;
-                        return;
-                    }
-
-                    const newBalance = userData.balance - 10;
-                    await _supabase
-                        .from('grm_users')
-                        .update({ balance: newBalance, updated_at: new Date().toISOString() })
-                        .eq('user_id', currentUserId);
-
-                    baseInitialBalance = newBalance;
-                    currentBalance = baseInitialBalance;
-                    updateBalanceUI();
-                } else {
-                    baseInitialBalance -= 10;
-                    currentBalance = baseInitialBalance;
-                    updateBalanceUI();
-                }
-
-                arrowX = 50;
-                arrowY = 190;
-                gameState = 'FLYING';
-                document.getElementById('game-status-text').innerText = "🏹 Arrow flying...";
-                document.getElementById('shoot-arrow-btn').disabled = true;
-
-                let force = Math.max(powerPower > 0 ? powerPower : 16, 14);
-                let angle = powerPower > 0 ? powerAngle : Math.atan2(targetY - arrowY, targetX - arrowX);
-                
-                arrowVelX = Math.cos(angle) * force;
-                arrowVelY = Math.sin(angle) * force;
-                powerPower = 0;
-
-            } catch (err) {
-                console.error("Archery shoot error:", err);
-            }
         }
 
         async function onArrowHitResult(isHit) {
@@ -1665,11 +1743,11 @@
             }
 
             setTimeout(() => {
-                arrowX = 50;
-                arrowY = 190;
+                currentPullX = 50;
+                currentPullY = 190;
                 gameState = 'IDLE';
                 shootBtn.disabled = false;
-                statusText.innerText = "Aim by dragging or click Play to shoot";
+                statusText.innerText = "Pull back & release to shoot arrow!";
             }, 2000);
         }
 
