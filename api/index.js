@@ -40,11 +40,11 @@ export default async function handler(req, res) {
       } catch (e) {}
     }
 
-    // --- GAME START HANDLER ---
+    // --- GAME START HANDLER (Deduct 10 GRM) ---
     if (bodyData && bodyData.action === "start_game") {
       const rawUserId = bodyData.user_id;
       if (!rawUserId) {
-        return res.status(400).json({ ok: false, error: "Missing user_id" });
+        return res.status(400).json({ ok: false, error: "Missing user_id for game start" });
       }
       const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
 
@@ -63,19 +63,24 @@ export default async function handler(req, res) {
       }
 
       const newBalance = user.balance - 10;
-      await supabase
+
+      const { error: updateError } = await supabase
         .from('grm_users')
         .update({ balance: newBalance, updated_at: new Date().toISOString() })
         .eq('user_id', userId);
 
-      return res.status(200).json({ ok: true, message: "10 GRM deducted", balance: newBalance });
+      if (updateError) {
+        return res.status(500).json({ ok: false, error: updateError.message });
+      }
+
+      return res.status(200).json({ ok: true, message: "10 GRM deducted successfully", balance: newBalance });
     }
 
-    // --- GAME WIN HANDLER ---
+    // --- GAME WIN HANDLER (Add 20 GRM to Winner) ---
     if (bodyData && bodyData.action === "win_game") {
       const rawUserId = bodyData.user_id;
       if (!rawUserId) {
-        return res.status(400).json({ ok: false, error: "Missing user_id" });
+        return res.status(400).json({ ok: false, error: "Missing user_id for game win" });
       }
       const userId = rawUserId.toString().startsWith('tg_') ? rawUserId : 'tg_' + rawUserId;
 
@@ -90,15 +95,43 @@ export default async function handler(req, res) {
       }
 
       const newBalance = (user.balance || 0) + 20;
-      await supabase
+
+      const { error: updateError } = await supabase
         .from('grm_users')
         .update({ balance: newBalance, updated_at: new Date().toISOString() })
         .eq('user_id', userId);
 
-      return res.status(200).json({ ok: true, message: "20 GRM added", balance: newBalance });
+      if (updateError) {
+        return res.status(500).json({ ok: false, error: updateError.message });
+      }
+
+      return res.status(200).json({ ok: true, message: "20 GRM added to winner balance", balance: newBalance });
     }
 
-    // --- TELEGRAM BOT WEBHOOK HANDLER (/start) ---
+    // --- ADMIN PANEL REFERRAL CLAIM COUNT UPDATE HANDLER ---
+    if (bodyData && (bodyData.action === "update_claim_count" || bodyData.max_reward_limit !== undefined || bodyData.claim_count !== undefined)) {
+      const targetUserId = bodyData.user_id ? (bodyData.user_id.toString().startsWith('tg_') ? bodyData.user_id : 'tg_' + bodyData.user_id) : null;
+      const newLimit = parseInt(bodyData.max_reward_limit || bodyData.claim_count || 100, 10);
+
+      if (!targetUserId) {
+        return res.status(400).json({ ok: false, error: "Missing user_id for claim count update" });
+      }
+
+      const { data, error } = await supabase
+        .from('grm_users')
+        .update({ max_reward_limit: newLimit })
+        .eq('user_id', targetUserId)
+        .select();
+
+      if (error) {
+        console.error("Admin claim count update error:", error);
+        return res.status(500).json({ ok: false, error: error.message });
+      }
+
+      return res.status(200).json({ ok: true, message: "Claim count updated successfully", data });
+    }
+
+    // --- TELEGRAM BOT WEBHOOK HANDLER ---
     if (bodyData && bodyData.message && bodyData.message.text) {
       const chatId = bodyData.message.chat.id;
       const text = bodyData.message.text.trim();
@@ -127,7 +160,6 @@ export default async function handler(req, res) {
           ]
         };
 
-        // ပထမပုံပါ Image File ID ဖြင့် ပို့ပေးခြင်း
         const photoResult = await callTelegramAPI("sendPhoto", {
           chat_id: chatId,
           photo: "AgACAgUAAxkBAAIBNGqi2DLQ5k1Da8CwjDq78x-ymAbrAAJOE2sb384YVfji7oChJMUsAQADAgADeQADPQQ",
@@ -145,7 +177,7 @@ export default async function handler(req, res) {
           });
         }
 
-        // Database & Referral Background Process
+        // Background Database & Referral Process
         (async () => {
           try {
             let { data: existingUser } = await supabase
@@ -156,6 +188,7 @@ export default async function handler(req, res) {
 
             if (!existingUser) {
               let assignedReferrerId = null;
+
               if (startPayload && startPayload !== '') {
                 let refParsed = startPayload.startsWith('tg_') ? startPayload : 'tg_' + startPayload;
                 if (refParsed !== userId) {
@@ -175,11 +208,43 @@ export default async function handler(req, res) {
                 max_reward_limit: 1,
                 updated_at: new Date().toISOString()
               }], { onConflict: 'user_id' });
+
+              if (assignedReferrerId) {
+                const refRelationId = 'ref_' + rawUserId;
+                
+                let { data: existingRef } = await supabase
+                  .from('grm_referrals')
+                  .select('*')
+                  .eq('id', refRelationId)
+                  .maybeSingle();
+
+                if (!existingRef) {
+                  await supabase.from('grm_referrals').upsert([{
+                    id: refRelationId,
+                    referrer_id: assignedReferrerId,
+                    referred_id: userId,
+                    status: 'active',
+                    created_at: new Date().toISOString()
+                  }], { onConflict: 'id' });
+
+                  let targetChatId = assignedReferrerId.replace('tg_', '').replace('user_', '');
+                  await callTelegramAPI("sendMessage", {
+                    chat_id: targetChatId,
+                    text: `✅ *New Referral Joined!* 🎉\n\n👤 *User:* ${username}\n🆔 *ID:* \`${rawUserId}\`\n\n🎁 Check your Mini App Friends section to see the history!`,
+                    parse_mode: 'Markdown'
+                  });
+                }
+              }
             }
           } catch (dbErr) {
-            console.error("DB error:", dbErr);
+            console.error("Database referral error:", dbErr);
           }
         })();
+      } else {
+        await callTelegramAPI("sendMessage", {
+          chat_id: chatId,
+          text: "Please type /start to open the GRAM Mining bot."
+        });
       }
     }
 
