@@ -1,48 +1,79 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database'); // database.js ချိတ်ဆက်ရန်
+const supabase = require('../database'); // Connect to Supabase client from database.js
 
-// 1. Deduct 10 GRM when starting the game
+// 1. API to deduct 10 GRM when starting the game
 router.post('/start-game', async (req, res) => {
     const { userId } = req.body;
     try {
-        // Deduct 10 GRM from user balance in database
-        // (Modify the database query according to your database.js implementation)
-        const stakeAmount = 10;
-        
-        // Example logic:
-        // await db.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [stakeAmount, userId]);
+        // First, check the user's current balance
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('balance')
+            .eq('telegram_id', userId)
+            .single();
+
+        if (fetchError || !user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Prevent playing if balance is less than 10 GRM
+        if (user.balance < 10) {
+            return res.status(400).json({ success: false, message: "Insufficient balance (Need 10 GRM)" });
+        }
+
+        const newBalance = user.balance - 10;
+
+        // Update the new balance in Supabase
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ balance: newBalance })
+            .eq('telegram_id', userId);
+
+        if (updateError) throw updateError;
 
         res.json({ 
             success: true, 
-            message: "10 GRM deducted successfully" 
+            message: "10 GRM deducted successfully", 
+            balance: newBalance 
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// 2. Add 20 GRM to the winner's balance
-router.post('/win-game', async (res, req) => {
+// 2. API to add 20 GRM to the winner's balance
+router.post('/win-game', async (req, res) => {
     const { userId } = req.body;
     try {
-        const prizeAmount = 20;
+        // Get the winner's current balance
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('balance')
+            .eq('telegram_id', userId)
+            .single();
 
-        // Example logic to add 20 GRM:
-        // await db.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [prizeAmount, userId]);
+        if (fetchError || !user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const newBalance = user.balance + 20;
+
+        // Add 20 GRM reward to the balance
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ balance: newBalance })
+            .eq('telegram_id', userId);
+
+        if (updateError) throw updateError;
 
         res.json({ 
             success: true, 
-            message: "20 GRM added to winner balance" 
+            message: "20 GRM added to winner balance", 
+            balance: newBalance 
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
