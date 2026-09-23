@@ -324,9 +324,9 @@
                     <canvas id="archery-canvas" width="340" height="260" style="display: block; width: 100%; height: 100%;"></canvas>
                 </div>
 
-                <div id="game-status-text" style="font-size: 13px; font-weight: bold; color: #ffb400; margin-bottom: 12px;">Drag back to aim and release, or shoot directly! (Cost 10 GRM)</div>
+                <div id="game-status-text" style="font-size: 13px; font-weight: bold; color: #ffb400; margin-bottom: 12px;">Aim by dragging or click Play to shoot</div>
 
-                <button class="action-btn" id="shoot-arrow-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 12px; font-size: 15px;" onclick="startArcheryShot()">🎯 Shoot Arrow (Cost: 10 GRM)</button>
+                <button class="action-btn" id="shoot-arrow-btn" style="width: 100%; background: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%); color: #000; padding: 12px; font-size: 15px;" onclick="startArcheryShot()">🎯 Play & Shoot Arrow (Cost: 10 GRM)</button>
             </div>
         </div>
 
@@ -1402,12 +1402,12 @@
             }, 1000);
         }
 
-        // --- UPDATED INTERACTIVE ARCHERY CANVAS GAME LOGIC ---
+        // --- INTERACTIVE ARCHERY CANVAS GAME LOGIC ---
         let archeryCanvas, archeryCtx;
-        let gameState = 'IDLE'; 
+        let gameState = 'IDLE'; // IDLE, AIMING, FLYING, RESULT
         let arrowX = 50, arrowY = 190;
-        let targetX = 300, targetY = 90, targetRadius = 22;
-        let targetSpeedY = 2.5; // Increased target speed
+        let targetX = 290, targetY = 90, targetRadius = 20;
+        let targetSpeedY = 2.8; // Faster movement
         let powerPower = 0;
         let powerAngle = 0;
         let arrowVelX = 0, arrowVelY = 0;
@@ -1455,7 +1455,7 @@
                 isDragging = false;
 
                 if (powerPower > 3) {
-                    await processDeductAndShoot(powerAngle, powerPower);
+                    await startArcheryShot();
                 } else {
                     powerPower = 0;
                 }
@@ -1486,7 +1486,7 @@
 
                 if (gameState === 'IDLE' || gameState === 'AIMING') {
                     targetY += targetSpeedY;
-                    if (targetY < 45 || targetY > 215) targetSpeedY *= -1;
+                    if (targetY < 40 || targetY > 220) targetSpeedY *= -1;
                 }
 
                 drawTarget(targetX, targetY, targetRadius);
@@ -1506,8 +1506,13 @@
                     }
                 }
 
-                let currentDrawAngle = isDragging ? powerAngle : 0;
-                drawBowAndCorrectArrow(arrowX, arrowY, currentDrawAngle, isDragging ? powerPower : 0);
+                drawStaticBow(50, 190);
+                
+                if (gameState === 'FLYING') {
+                    drawFlyingArrow(arrowX, arrowY, Math.atan2(arrowVelY, arrowVelX));
+                } else {
+                    drawFlyingArrow(arrowX, arrowY, isDragging ? powerAngle : 0);
+                }
             }
             requestAnimationFrame(archeryGameLoop);
         }
@@ -1527,63 +1532,57 @@
             archeryCtx.beginPath(); archeryCtx.arc(x, y, radius, 0, Math.PI * 2); archeryCtx.stroke();
         }
 
-        function drawBowAndCorrectArrow(x, y, angle, power) {
+        function drawStaticBow(x, y) {
             archeryCtx.save();
             archeryCtx.translate(x, y);
-
-            // Draw Bow Arc (Fixed position)
             archeryCtx.strokeStyle = '#00f0ff';
             archeryCtx.lineWidth = 3;
             archeryCtx.beginPath();
-            archeryCtx.arc(0, 0, 25, -Math.PI / 2, Math.PI / 2);
+            archeryCtx.arc(0, 0, 24, -Math.PI / 2, Math.PI / 2);
             archeryCtx.stroke();
 
-            // Rotate for Arrow aiming direction
+            archeryCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            archeryCtx.lineWidth = 1;
+            archeryCtx.beginPath();
+            archeryCtx.moveTo(0, -24);
+            archeryCtx.lineTo(0, 24);
+            archeryCtx.stroke();
+            archeryCtx.restore();
+        }
+
+        function drawFlyingArrow(x, y, angle) {
+            archeryCtx.save();
+            archeryCtx.translate(x, y);
             archeryCtx.rotate(angle);
 
-            if (power > 0) {
-                archeryCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-                archeryCtx.lineWidth = 1;
-                archeryCtx.beginPath();
-                archeryCtx.moveTo(0, -25);
-                archeryCtx.lineTo(-power * 1.5, 0);
-                archeryCtx.lineTo(0, 25);
-                archeryCtx.stroke();
-            }
-
-            // Corrected Arrow Head facing forward (Right side -> Tip at positive X)
             archeryCtx.strokeStyle = '#ffb400';
             archeryCtx.lineWidth = 3;
             archeryCtx.beginPath();
-            archeryCtx.moveTo(-35, 0);
-            archeryCtx.lineTo(15, 0);
+            archeryCtx.moveTo(-18, 0);
+            archeryCtx.lineTo(18, 0);
             archeryCtx.stroke();
 
-            // Arrow Head Triangle (pointing forward to the right)
-            archeryCtx.fillStyle = '#ffb400';
-            archeryCtx.beginPath();
-            archeryCtx.moveTo(20, 0);
-            archeryCtx.lineTo(10, -5);
-            archeryCtx.lineTo(10, 5);
-            archeryCtx.closePath();
-            archeryCtx.fill();
-
-            // Arrow Fletching (Feathers at the back)
+            // Arrow head
             archeryCtx.fillStyle = '#00f0ff';
             archeryCtx.beginPath();
-            archeryCtx.moveTo(-30, 0);
-            archeryCtx.lineTo(-38, -6);
-            archeryCtx.lineTo(-33, 0);
+            archeryCtx.moveTo(18, 0);
+            archeryCtx.lineTo(12, -4);
+            archeryCtx.lineTo(12, 4);
             archeryCtx.closePath();
             archeryCtx.fill();
 
             archeryCtx.restore();
         }
 
-        async function processDeductAndShoot(angle, power) {
+        async function startArcheryShot() {
+            if (gameState === 'FLYING') return;
+
+            // Strict Balance Check & Deduction BEFORE shooting
             if (currentBalance < 10) {
                 alert("Insufficient balance! Minimum 10 GRM required.");
-                return false;
+                isDragging = false;
+                powerPower = 0;
+                return;
             }
 
             try {
@@ -1596,7 +1595,9 @@
 
                     if (!userData || (userData.balance || 0) < 10) {
                         alert("Insufficient balance on server!");
-                        return false;
+                        isDragging = false;
+                        powerPower = 0;
+                        return;
                     }
 
                     const newBalance = userData.balance - 10;
@@ -1608,43 +1609,28 @@
                     baseInitialBalance = newBalance;
                     currentBalance = baseInitialBalance;
                     updateBalanceUI();
+                } else {
+                    baseInitialBalance -= 10;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
                 }
 
                 arrowX = 50;
                 arrowY = 190;
-                powerAngle = angle;
-                powerPower = power;
+                gameState = 'FLYING';
+                document.getElementById('game-status-text').innerText = "🏹 Arrow flying...";
+                document.getElementById('shoot-arrow-btn').disabled = true;
 
-                await fireArrowAction();
-                return true;
+                let force = Math.max(powerPower > 0 ? powerPower : 16, 14);
+                let angle = powerPower > 0 ? powerAngle : Math.atan2(targetY - arrowY, targetX - arrowX);
+                
+                arrowVelX = Math.cos(angle) * force;
+                arrowVelY = Math.sin(angle) * force;
+                powerPower = 0;
+
             } catch (err) {
-                console.error("Deduct and shoot error:", err);
-                return false;
+                console.error("Archery shoot error:", err);
             }
-        }
-
-        async function startArcheryShot() {
-            if (gameState === 'FLYING' || gameState === 'AIMING') return;
-
-            if (currentBalance < 10) {
-                alert("လက်ကျန်ငွေ မလုံလောက်ပါ။ (အနည်းဆုံး 10 GRM လိုအပ်ပါသည်)");
-                return;
-            }
-
-            let defaultAngle = Math.atan2(targetY - arrowY, targetX - arrowX);
-            let defaultPower = 18;
-
-            await processDeductAndShoot(defaultAngle, defaultPower);
-        }
-
-        async function fireArrowAction() {
-            gameState = 'FLYING';
-            document.getElementById('game-status-text').innerText = "🏹 လေးကို ပစ်လွှတ်လိုက်ပါပြီ...";
-            document.getElementById('shoot-arrow-btn').disabled = true;
-
-            let force = Math.max(powerPower, 12);
-            arrowVelX = Math.cos(powerAngle) * force;
-            arrowVelY = Math.sin(powerAngle) * force;
         }
 
         async function onArrowHitResult(isHit) {
@@ -1668,10 +1654,14 @@
                     baseInitialBalance = winBalance;
                     currentBalance = baseInitialBalance;
                     updateBalanceUI();
+                } else {
+                    baseInitialBalance += 20;
+                    currentBalance = baseInitialBalance;
+                    updateBalanceUI();
                 }
-                statusText.innerHTML = "🎉 ထိမှန်ပါပြီ! ဆုကြေးအဖြစ် <span style='color: #2ea043;'>+20 GRM</span> ရရှိသွားပါပြီ!";
+                statusText.innerHTML = "🎉 Target Hit! Won <span style='color: #2ea043;'>+20 GRM</span>!";
             } else {
-                statusText.innerHTML = "❌ လွဲသွားပါသည်! နောက်တစ်ကြိမ် ထပ်ကြိုးစားပါ။ (-10 GRM)";
+                statusText.innerHTML = "❌ Missed! Try again. (-10 GRM)";
             }
 
             setTimeout(() => {
@@ -1679,7 +1669,7 @@
                 arrowY = 190;
                 gameState = 'IDLE';
                 shootBtn.disabled = false;
-                statusText.innerText = "Drag back to aim and release, or shoot directly! (Cost 10 GRM)";
+                statusText.innerText = "Aim by dragging or click Play to shoot";
             }, 2000);
         }
 
