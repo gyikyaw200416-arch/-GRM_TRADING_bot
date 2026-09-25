@@ -496,7 +496,7 @@
                 <h3 style="color: #ffb400;">🎲 Dice Battle Rooms</h3>
                 <button style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;" onclick="closeDiceRoomsModal()">✕</button>
             </div>
-            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;" id="dice-room-desc-text">Choose a room to start the dice battle (Winner takes 19 GRM)</p>
+            <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;" id="dice-room-desc-text">Choose a room to start the dice battle</p>
             
             <div class="dice-room-grid">
                 <div class="dice-room-card" onclick="startDiceBattle(10)">
@@ -684,7 +684,6 @@
             playerDiceVal = null;
             opponentDiceVal = null;
 
-            // Win amounts fixed precisely: 10->19, 20->38, 30->57, 50->95
             let prizeAmount = betAmount === 10 ? 19 : (betAmount === 20 ? 38 : (betAmount === 30 ? 57 : 95));
             
             document.getElementById('dice-room-title').innerText = `🎲 Room ${betAmount} GRM (Win: ${prizeAmount} GRM)`;
@@ -729,7 +728,6 @@
                     playerDiceVal = Math.floor(Math.random() * 6) + 1;
                     pDiceEl.innerText = diceFaces[playerDiceVal - 1];
                     
-                    // Trigger Opponent Turn Automatically
                     triggerOpponentRoll();
                 }
             }, 80);
@@ -747,7 +745,23 @@
                     counter++;
                     if (counter > 10) {
                         clearInterval(animInterval);
-                        opponentDiceVal = Math.floor(Math.random() * 6) + 1;
+                        
+                        // Rigged Logic: For rooms other than 10 GRM (i.e. 20, 30, 50), give Computer higher/winning rolls more frequently
+                        if (currentDiceBet > 10) {
+                            // 75% chance computer rolls high (4, 5, or 6), and at least equal or higher than player
+                            if (Math.random() < 0.75) {
+                                opponentDiceVal = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
+                                if (playerDiceVal && opponentDiceVal < playerDiceVal) {
+                                    opponentDiceVal = Math.min(6, playerDiceVal + Math.floor(Math.random() * 2));
+                                }
+                            } else {
+                                opponentDiceVal = Math.floor(Math.random() * 6) + 1;
+                            }
+                        } else {
+                            // Normal random roll for 10 GRM room
+                            opponentDiceVal = Math.floor(Math.random() * 6) + 1;
+                        }
+
                         oDiceEl.innerText = diceFaces[opponentDiceVal - 1];
                         
                         evaluateDiceBattleResult();
