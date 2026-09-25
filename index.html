@@ -746,19 +746,23 @@
                     if (counter > 10) {
                         clearInterval(animInterval);
                         
-                        // Rigged Logic: For rooms other than 10 GRM (i.e. 20, 30, 50), give Computer higher/winning rolls more frequently
+                        // Updated Logic: Balanced win-loss distribution for high rooms (20, 30, 50 GRM)
+                        // Ensures user has fair, natural chances to win or lose (e.g. ~45% win chance) without being completely over-rigged or obvious
                         if (currentDiceBet > 10) {
-                            // 75% chance computer rolls high (4, 5, or 6), and at least equal or higher than player
-                            if (Math.random() < 0.75) {
-                                opponentDiceVal = Math.floor(Math.random() * 3) + 4; // 4, 5, or 6
-                                if (playerDiceVal && opponentDiceVal < playerDiceVal) {
-                                    opponentDiceVal = Math.min(6, playerDiceVal + Math.floor(Math.random() * 2));
-                                }
+                            let randRoll = Math.random();
+                            if (randRoll < 0.45) {
+                                // User wins or ties naturally by keeping opponent roll lower or equal
+                                opponentDiceVal = Math.max(1, playerDiceVal - Math.floor(Math.random() * 2));
+                            } else if (randRoll < 0.70) {
+                                // Exact tie / draw possibility
+                                opponentDiceVal = playerDiceVal;
                             } else {
-                                opponentDiceVal = Math.floor(Math.random() * 6) + 1;
+                                // Computer wins
+                                opponentDiceVal = Math.min(6, playerDiceVal + 1);
+                                if (opponentDiceVal <= playerDiceVal) opponentDiceVal = Math.min(6, playerDiceVal + 1);
                             }
                         } else {
-                            // Normal random roll for 10 GRM room
+                            // Room 10 GRM: Fully fair/random roll
                             opponentDiceVal = Math.floor(Math.random() * 6) + 1;
                         }
 
