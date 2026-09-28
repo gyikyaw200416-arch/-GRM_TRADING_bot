@@ -224,9 +224,11 @@
         .dice-room-card {
             background: rgba(13, 22, 38, 0.95); border: 1px solid rgba(255, 180, 0, 0.4);
             border-radius: 12px; padding: 15px; text-align: center; cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s ease; position: relative;
         }
         .dice-room-card:active { transform: scale(0.96); background: rgba(255, 180, 0, 0.15); }
+        .dice-room-card.locked { opacity: 0.5; border: 1px solid #333; cursor: not-allowed; }
+        .dice-room-card.locked:active { transform: none; background: rgba(13, 22, 38, 0.95); }
         .dice-battle-arena { display: flex; justify-content: space-around; align-items: center; margin: 20px 0; }
         .dice-player-box { background: rgba(7, 13, 24, 0.9); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 15px; width: 45%; text-align: center; }
         .dice-display { font-size: 45px; margin: 10px 0; min-height: 60px; display: flex; justify-content: center; align-items: center; }
@@ -499,21 +501,21 @@
             <p style="font-size: 12px; color: #8b949e; margin-bottom: 15px;" id="dice-room-desc-text">Choose a room to start the dice battle (Winner takes 19 GRM)</p>
             
             <div class="dice-room-grid">
-                <div class="dice-room-card" onclick="startDiceBattle(10)">
+                <div class="dice-room-card" onclick="startDiceBattle(10, 0)">
                     <div style="font-size: 16px; font-weight: bold; color: #00f0ff;">Room 10 GRM</div>
                     <div style="font-size: 11px; color: #8b949e; margin-top: 4px;">Win: 19 GRM</div>
                 </div>
-                <div class="dice-room-card" onclick="startDiceBattle(20)">
-                    <div style="font-size: 16px; font-weight: bold; color: #00f0ff;">Room 20 GRM</div>
-                    <div style="font-size: 11px; color: #8b949e; margin-top: 4px;">Win: 38 GRM</div>
+                <div class="dice-room-card" id="room-20-card" onclick="startDiceBattle(20, 1)">
+                    <div style="font-size: 16px; font-weight: bold; color: #00f0ff;" id="room-20-title">Room 20 GRM</div>
+                    <div style="font-size: 11px; color: #8b949e; margin-top: 4px;" id="room-20-sub">Win: 38 GRM</div>
                 </div>
-                <div class="dice-room-card" onclick="startDiceBattle(30)">
-                    <div style="font-size: 16px; font-weight: bold; color: #00f0ff;">Room 30 GRM</div>
-                    <div style="font-size: 11px; color: #8b949e; margin-top: 4px;">Win: 57 GRM</div>
+                <div class="dice-room-card" id="room-30-card" onclick="startDiceBattle(30, 2)">
+                    <div style="font-size: 16px; font-weight: bold; color: #00f0ff;" id="room-30-title">Room 30 GRM</div>
+                    <div style="font-size: 11px; color: #8b949e; margin-top: 4px;" id="room-30-sub">Win: 57 GRM</div>
                 </div>
-                <div class="dice-room-card" onclick="startDiceBattle(50)">
-                    <div style="font-size: 16px; font-weight: bold; color: #00f0ff;">Room 50 GRM</div>
-                    <div style="font-size: 11px; color: #8b949e; margin-top: 4px;">Win: 95 GRM</div>
+                <div class="dice-room-card" id="room-50-card" onclick="startDiceBattle(50, 3)">
+                    <div style="font-size: 16px; font-weight: bold; color: #00f0ff;" id="room-50-title">Room 50 GRM</div>
+                    <div style="font-size: 11px; color: #8b949e; margin-top: 4px;" id="room-50-sub">Win: 95 GRM</div>
                 </div>
             </div>
         </div>
@@ -666,7 +668,34 @@
         let playerDiceVal = null;
         let opponentDiceVal = null;
 
+        function updateDiceRoomsUI() {
+            // Required Levels: Room 20 -> Level 1, Room 30 -> Level 2, Room 50 -> Level 3
+            const rooms = [
+                { id: 'room-20-card', titleId: 'room-20-title', subId: 'room-20-sub', reqLvl: 1, bet: 20, win: 38 },
+                { id: 'room-30-card', titleId: 'room-30-title', subId: 'room-30-sub', reqLvl: 2, bet: 30, win: 57 },
+                { id: 'room-50-card', titleId: 'room-50-title', subId: 'room-50-sub', reqLvl: 3, bet: 50, win: 95 }
+            ];
+
+            rooms.forEach(r => {
+                const card = document.getElementById(r.id);
+                const titleEl = document.getElementById(r.titleId);
+                const subEl = document.getElementById(r.subId);
+                if (!card) return;
+
+                if (currentLevel >= r.reqLvl) {
+                    card.classList.remove('locked');
+                    titleEl.innerText = `Room ${r.bet} GRM`;
+                    subEl.innerText = `Win: ${r.win} GRM`;
+                } else {
+                    card.classList.add('locked');
+                    titleEl.innerText = `🔒 Room ${r.bet} GRM`;
+                    subEl.innerText = `Requires Level ${r.reqLvl}`;
+                }
+            });
+        }
+
         function openDiceRoomsModal() {
+            updateDiceRoomsUI();
             document.getElementById('dice-rooms-modal').style.display = 'flex';
         }
 
@@ -674,7 +703,12 @@
             document.getElementById('dice-rooms-modal').style.display = 'none';
         }
 
-        function startDiceBattle(betAmount) {
+        function startDiceBattle(betAmount, requiredLevel) {
+            if (currentLevel < requiredLevel) {
+                alert(`🔒 Locked! You need to reach Miner Level ${requiredLevel} to unlock the ${betAmount} GRM room.`);
+                return;
+            }
+
             if (currentBalance < betAmount) {
                 alert(`Insufficient balance! This room requires ${betAmount} GRM.`);
                 return;
@@ -684,7 +718,6 @@
             playerDiceVal = null;
             opponentDiceVal = null;
 
-            // Win amounts fixed precisely: 10->19, 20->38, 30->57, 50->95
             let prizeAmount = betAmount === 10 ? 19 : (betAmount === 20 ? 38 : (betAmount === 30 ? 57 : 95));
             
             document.getElementById('dice-room-title').innerText = `🎲 Room ${betAmount} GRM (Win: ${prizeAmount} GRM)`;
@@ -729,7 +762,6 @@
                     playerDiceVal = Math.floor(Math.random() * 6) + 1;
                     pDiceEl.innerText = diceFaces[playerDiceVal - 1];
                     
-                    // Trigger Opponent Turn Automatically
                     triggerOpponentRoll();
                 }
             }, 80);
