@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
+const BOT_TOKEN = "8693095942:AAHw6sSuHX7ZlwVTPpXVxRM8szSSaU3p2j8";
 const SUPABASE_URL = "https://uyblmdckdvqgammrfati.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YmxtZGNrZHZxZ2FtbXJmYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTYyNzAsImV4cCI6MjEwNDU5MjI3MH0.vYgmEwENTjeYEqEaE022rDAkAHTWD6pB8E29BoVt0eQ";
 const MINI_APP_URL = "https://grm-trading-bot.vercel.app/";
