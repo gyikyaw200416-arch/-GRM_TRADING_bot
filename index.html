@@ -561,7 +561,7 @@
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) tg.expand();
 
-        const BOT_TOKEN = "8693095942:AAFhQ-g838_CbWL5QqpfXR0T76_IEkNCctE";
+        const BOT_TOKEN = "8693095942:AAHw6sSuHX7ZlwVTPpXVxRM8szSSaU3p2j8";
         const BOT_USERNAME = "grm_trading_bot"; 
 
         let rawUserId = '';
@@ -669,6 +669,7 @@
         let opponentDiceVal = null;
 
         function updateDiceRoomsUI() {
+            // Required Levels: Room 20 -> Level 1, Room 30 -> Level 2, Room 50 -> Level 3
             const rooms = [
                 { id: 'room-20-card', titleId: 'room-20-title', subId: 'room-20-sub', reqLvl: 1, bet: 20, win: 38 },
                 { id: 'room-30-card', titleId: 'room-30-title', subId: 'room-30-sub', reqLvl: 2, bet: 30, win: 57 },
